@@ -1,0 +1,68 @@
+<section class="grid two fade-in">
+  <article class="panel">
+    <div class="panel-title">
+      <div><h2>Portal de treinamentos</h2><p>Cadastre treinamentos e acompanhe participação.</p></div>
+      <span>{{ vm.treinamentos().length }} treinamentos</span>
+    </div>
+    <form class="form-grid cols-2" (ngSubmit)="vm.salvarTreinamento()">
+      <input name="treTitulo" [(ngModel)]="vm.treinamentoForm.titulo" placeholder="Título" required />
+      <input name="treInstrutor" [(ngModel)]="vm.treinamentoForm.instrutor" placeholder="Instrutor" />
+      <input name="treInicio" [(ngModel)]="vm.treinamentoForm.dataInicio" type="datetime-local" />
+      <input name="treFim" [(ngModel)]="vm.treinamentoForm.dataFim" type="datetime-local" />
+      <input name="treCarga" [(ngModel)]="vm.treinamentoForm.cargaHoraria" type="number" placeholder="Carga horária" />
+      <select name="treStatus" [(ngModel)]="vm.treinamentoForm.status">
+        <option>Planejado</option>
+        <option>Em andamento</option>
+        <option>Concluído</option>
+        <option>Cancelado</option>
+      </select>
+      <textarea class="span-2" name="treDesc" [(ngModel)]="vm.treinamentoForm.descricao" placeholder="Descrição"></textarea>
+      <label class="check"><input name="treObrigatorio" [(ngModel)]="vm.treinamentoForm.obrigatorio" type="checkbox" /> Obrigatório</label>
+      <button type="submit">{{ vm.treinamentoForm.id ? 'Atualizar' : 'Salvar treinamento' }}</button>
+    </form>
+    <div class="cards compact">
+      <article *ngFor="let item of vm.treinamentos()">
+        <div class="card-head"><strong>{{ item.titulo }}</strong><span class="status">{{ item.status }}</span></div>
+        <span>{{ item.instrutor }} · {{ item.cargaHoraria }}h</span>
+        <small>{{ item.dataInicio | date: 'dd/MM/yyyy HH:mm' }}</small>
+        <div class="row-actions"><button class="soft" type="button" (click)="vm.editarGenerico('treinamentoForm', item)">Editar</button></div>
+      </article>
+    </div>
+  </article>
+
+  <article class="panel">
+    <div class="panel-title">
+      <div><h2>Colaboradores e presença</h2><p>Vincule participantes e marque presença.</p></div>
+      <span>{{ vm.treinamentosColaboradores().length }} vínculos</span>
+    </div>
+    <form class="form-grid cols-2" (ngSubmit)="vm.vincularTreinamentoColaborador()">
+      <select name="tcTreinamento" [(ngModel)]="vm.treinamentoColaboradorForm.treinamentoId" required>
+        <option [ngValue]="undefined">Treinamento</option>
+        <option *ngFor="let item of vm.treinamentos()" [ngValue]="item.id">{{ item.titulo }}</option>
+      </select>
+      <select name="tcColaborador" [(ngModel)]="vm.treinamentoColaboradorForm.colaboradorId" required>
+        <option [ngValue]="undefined">Colaborador</option>
+        <option *ngFor="let colab of vm.colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option>
+      </select>
+      <select name="tcStatus" [(ngModel)]="vm.treinamentoColaboradorForm.status">
+        <option>Inscrito</option>
+        <option>Convocado</option>
+        <option>Presente</option>
+        <option>Ausente</option>
+      </select>
+      <button type="submit">Vincular</button>
+    </form>
+    <div class="timeline">
+      <article *ngFor="let item of vm.treinamentosColaboradores()">
+        <span></span>
+        <div>
+          <strong>{{ vm.nomeColaborador(item.colaboradorId) }}</strong>
+          <small>{{ vm.nomeTreinamento(item.treinamentoId) }} · {{ item.status }}</small>
+        </div>
+        <button class="soft" type="button" (click)="vm.marcarPresenca(item, !item.presente)">
+          {{ item.presente ? 'Remover presença' : 'Presente' }}
+        </button>
+      </article>
+    </div>
+  </article>
+</section>

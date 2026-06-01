@@ -1,0 +1,6 @@
+@UniFlowPeople.Api_HostAddress = http://localhost:5036
+
+GET {{UniFlowPeople.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

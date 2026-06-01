@@ -1,0 +1,32 @@
+<section class="panel fade-in">
+  <div class="panel-title">
+    <div><h2>Controle de ponto</h2><p>Registre entrada, saída, intervalo e observações.</p></div>
+    <span>{{ vm.pontos().length }} marcações</span>
+  </div>
+  <form class="form-grid cols-6" (ngSubmit)="vm.salvarPonto()">
+    <select name="pontoColab" [(ngModel)]="vm.pontoForm.colaboradorId" required>
+      <option [ngValue]="undefined">Colaborador</option>
+      <option *ngFor="let colab of vm.colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option>
+    </select>
+    <input name="pontoData" [(ngModel)]="vm.pontoForm.dataHora" type="datetime-local" />
+    <select name="pontoTipo" [(ngModel)]="vm.pontoForm.tipo">
+      <option>Entrada</option>
+      <option>Saída</option>
+      <option>Intervalo início</option>
+      <option>Intervalo fim</option>
+    </select>
+    <input name="pontoIp" [(ngModel)]="vm.pontoForm.ip" placeholder="IP" />
+    <input name="pontoObs" [(ngModel)]="vm.pontoForm.observacao" placeholder="Observação" />
+    <button type="submit">Lançar ponto</button>
+  </form>
+  <div class="timeline">
+    <article *ngFor="let item of vm.pontos()">
+      <span></span>
+      <div>
+        <strong>{{ vm.nomeColaborador(item.colaboradorId) }} · {{ item.tipo }}</strong>
+        <small>{{ item.dataHora | date: 'dd/MM/yyyy HH:mm' }} {{ item.ip ? '· ' + item.ip : '' }}</small>
+      </div>
+      <button type="button" class="danger-soft" (click)="vm.pedirExclusao('registrosPonto', item.id, item.tipo)">Excluir</button>
+    </article>
+  </div>
+</section>

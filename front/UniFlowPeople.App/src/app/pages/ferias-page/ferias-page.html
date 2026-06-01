@@ -1,0 +1,30 @@
+<section class="panel fade-in">
+  <div class="panel-title"><div><h2>Férias</h2><p>Planeje períodos aquisitivos e gozo de férias.</p></div><span>{{ vm.ferias().length }}</span></div>
+  <form class="form-grid cols-6" (ngSubmit)="vm.salvarFerias()">
+    <select name="feriasColab" [(ngModel)]="vm.feriasForm.colaboradorId" required>
+      <option [ngValue]="undefined">Colaborador</option>
+      <option *ngFor="let colab of vm.colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option>
+    </select>
+    <input name="feriasAqIni" [(ngModel)]="vm.feriasForm.periodoAquisitivoInicio" type="date" />
+    <input name="feriasAqFim" [(ngModel)]="vm.feriasForm.periodoAquisitivoFim" type="date" />
+    <input name="feriasIni" [(ngModel)]="vm.feriasForm.dataInicio" type="date" />
+    <input name="feriasFim" [(ngModel)]="vm.feriasForm.dataFim" type="date" />
+    <select name="feriasStatus" [(ngModel)]="vm.feriasForm.status">
+      <option>Pendente</option>
+      <option>Aprovada</option>
+      <option>Concluída</option>
+      <option>Cancelada</option>
+    </select>
+    <input name="feriasDias" [(ngModel)]="vm.feriasForm.dias" type="number" placeholder="Dias" />
+    <label class="check"><input name="feriasAbono" [(ngModel)]="vm.feriasForm.abono" type="checkbox" /> Abono</label>
+    <button type="submit">{{ vm.feriasForm.id ? 'Atualizar' : 'Salvar férias' }}</button>
+  </form>
+  <div class="cards">
+    <article *ngFor="let item of vm.ferias()">
+      <div class="card-head"><strong>{{ vm.nomeColaborador(item.colaboradorId) }}</strong><span class="status">{{ item.status }}</span></div>
+      <span>{{ item.dataInicio | date: 'dd/MM/yyyy' }} até {{ item.dataFim | date: 'dd/MM/yyyy' }}</span>
+      <small>{{ item.dias }} dias</small>
+      <div class="row-actions"><button class="soft" type="button" (click)="vm.editarGenerico('feriasForm', item)">Editar</button></div>
+    </article>
+  </div>
+</section>

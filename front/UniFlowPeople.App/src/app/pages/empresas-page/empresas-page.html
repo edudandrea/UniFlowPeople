@@ -1,0 +1,35 @@
+<section class="panel fade-in">
+  <div class="panel-title">
+    <div>
+      <h2>Empresas contratantes</h2>
+      <p>Cadastre empresas clientes e mantenha os dados comerciais atualizados.</p>
+    </div>
+    <span>{{ vm.filteredEmpresas().length }} registros</span>
+  </div>
+
+  <form class="form-grid cols-4" (ngSubmit)="vm.salvarEmpresa()">
+    <input name="razaoSocial" [(ngModel)]="vm.empresaForm.razaoSocial" placeholder="Razão social" required />
+    <input name="nomeFantasia" [(ngModel)]="vm.empresaForm.nomeFantasia" placeholder="Nome fantasia" required />
+    <input name="cnpj" [(ngModel)]="vm.empresaForm.cnpj" placeholder="CNPJ" required />
+    <input name="telefone" [(ngModel)]="vm.empresaForm.telefone" placeholder="Telefone" />
+    <input name="email" [(ngModel)]="vm.empresaForm.email" placeholder="E-mail" />
+    <input name="cidade" [(ngModel)]="vm.empresaForm.cidade" placeholder="Cidade" />
+    <input name="estado" [(ngModel)]="vm.empresaForm.estado" placeholder="UF" />
+    <button type="submit">{{ vm.empresaForm.id ? 'Atualizar' : 'Criar empresa' }}</button>
+  </form>
+
+  <div class="cards company-cards">
+    <article *ngFor="let empresa of vm.filteredEmpresas()">
+      <div class="card-head">
+        <strong>{{ empresa.nomeFantasia }}</strong>
+        <span class="status" [class.off]="!empresa.ativo">{{ empresa.ativo ? 'Ativa' : 'Inativa' }}</span>
+      </div>
+      <p>{{ empresa.razaoSocial }}</p>
+      <small>{{ empresa.cnpj }} · {{ empresa.cidade }} {{ empresa.estado }}</small>
+      <div class="row-actions">
+        <button type="button" class="soft" (click)="vm.editarEmpresa(empresa)">Editar</button>
+        <button type="button" class="danger-soft" (click)="vm.pedirExclusao('empresas', empresa.id, empresa.nomeFantasia)">Excluir</button>
+      </div>
+    </article>
+  </div>
+</section>

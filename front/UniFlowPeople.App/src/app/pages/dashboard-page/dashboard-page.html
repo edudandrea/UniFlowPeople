@@ -1,0 +1,39 @@
+<section class="grid metrics fade-in">
+  <article>
+    <span>{{ vm.isSistemaAdmin() ? 'Empresas contratantes' : 'Colaboradores' }}</span>
+    <strong>{{ vm.isSistemaAdmin() ? vm.metricas().empresasContratantes : vm.colaboradores().length }}</strong>
+    <small>{{ vm.isSistemaAdmin() ? 'Carteira ativa' : 'Pessoas cadastradas' }}</small>
+  </article>
+  <article>
+    <span>{{ vm.isSistemaAdmin() ? 'Pagamentos efetuados' : 'Cargos' }}</span>
+    <strong>{{ vm.isSistemaAdmin() ? vm.metricas().pagamentosEfetuados : vm.cargos().length }}</strong>
+    <small>{{ vm.isSistemaAdmin() ? 'Contratos em dia' : 'Estrutura de funções' }}</small>
+  </article>
+  <article>
+    <span>{{ vm.isSistemaAdmin() ? 'Pagamentos pendentes' : 'Vagas abertas' }}</span>
+    <strong>{{ vm.isSistemaAdmin() ? vm.metricas().pagamentosPendentes : vm.vagas().length }}</strong>
+    <small>{{ vm.isSistemaAdmin() ? 'Acompanhar cobrança' : 'Recrutamento ativo' }}</small>
+  </article>
+  <article>
+    <span>{{ vm.isSistemaAdmin() ? 'Contratos vencidos' : 'Benefícios' }}</span>
+    <strong>{{ vm.isSistemaAdmin() ? vm.metricas().contratosVencidos : vm.beneficios().length }}</strong>
+    <small>{{ vm.isSistemaAdmin() ? 'Risco operacional' : 'Pacotes oferecidos' }}</small>
+  </article>
+</section>
+
+<section class="panel hero-panel fade-in">
+  <div>
+    <span class="eyebrow">UniFlow People</span>
+    <h2>{{ vm.isSistemaAdmin() ? 'Gestão centralizada dos clientes SaaS' : 'Operação completa de RH em um só lugar' }}</h2>
+    <p>
+      {{ vm.isSistemaAdmin()
+        ? 'Controle contratos, pagamentos, vencimentos e acessos das empresas contratantes.'
+        : 'Cadastre pessoas, acompanhe ponto, férias, benefícios, documentos e recrutamento com segurança multiempresa.' }}
+    </p>
+  </div>
+  <button type="button" (click)="vm.setModule(vm.isSistemaAdmin() ? 'contratos' : 'colaboradores')">
+    Começar agora
+  </button>
+</section>
+
+<app-contratos-page *ngIf="vm.isSistemaAdmin()" [vm]="vm"></app-contratos-page>

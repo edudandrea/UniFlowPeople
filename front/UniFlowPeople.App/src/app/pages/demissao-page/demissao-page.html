@@ -1,0 +1,38 @@
+<section class="panel fade-in">
+  <div class="panel-title">
+    <div><h2>Fluxo demissional</h2><p>Controle desligamento, etapas, prazos e conclusão.</p></div>
+    <span>{{ vm.demissoes().length }} processos</span>
+  </div>
+  <form class="form-grid cols-6" (ngSubmit)="vm.salvarDemissao()">
+    <select name="demColaborador" [(ngModel)]="vm.demissaoForm.colaboradorId" required>
+      <option [ngValue]="undefined">Colaborador</option>
+      <option *ngFor="let colab of vm.colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option>
+    </select>
+    <select name="demTipo" [(ngModel)]="vm.demissaoForm.tipoDemissao">
+      <option>Sem justa causa</option>
+      <option>Com justa causa</option>
+      <option>Pedido de demissão</option>
+      <option>Término de contrato</option>
+    </select>
+    <input name="demDesligamento" [(ngModel)]="vm.demissaoForm.dataDesligamento" type="date" />
+    <select name="demStatus" [(ngModel)]="vm.demissaoForm.status">
+      <option>Em andamento</option>
+      <option>Concluido</option>
+      <option>Cancelado</option>
+    </select>
+    <input name="demMotivo" [(ngModel)]="vm.demissaoForm.motivo" placeholder="Motivo" />
+    <button type="submit">{{ vm.demissaoForm.id ? 'Atualizar' : 'Criar demissão' }}</button>
+  </form>
+  <div class="cards">
+    <article *ngFor="let item of vm.demissoes()">
+      <div class="card-head"><strong>{{ vm.nomeColaborador(item.colaboradorId) }}</strong><span class="status">{{ item.status }}</span></div>
+      <span>{{ item.tipoDemissao }}</span>
+      <small>Desligamento: {{ item.dataDesligamento | date: 'dd/MM/yyyy' }}</small>
+      <p>{{ item.motivo }}</p>
+      <div class="row-actions">
+        <button class="soft" type="button" (click)="vm.editarGenerico('demissaoForm', item)">Editar</button>
+        <button type="button" (click)="vm.concluirDemissao(item)">Concluir</button>
+      </div>
+    </article>
+  </div>
+</section>

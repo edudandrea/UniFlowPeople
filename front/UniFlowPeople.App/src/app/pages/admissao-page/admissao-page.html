@@ -1,0 +1,50 @@
+<section class="grid two fade-in">
+  <article class="panel">
+    <div class="panel-title">
+      <div><h2>Fluxo admissional</h2><p>Controle etapas até a admissão e gere documentos institucionais.</p></div>
+      <div class="panel-title-actions">
+        <span>{{ vm.admissoes().length }} processos</span>
+        <button type="button" (click)="vm.abrirModalColaboradorAdmissao()">Adicionar colaborador</button>
+      </div>
+    </div>
+    <form class="form-grid cols-2" (ngSubmit)="vm.salvarAdmissao()">
+      <input name="admNome" [(ngModel)]="vm.admissaoForm.nomeCandidato" placeholder="Nome do candidato" required />
+      <input name="admCargo" [(ngModel)]="vm.admissaoForm.cargoPretendido" placeholder="Cargo pretendido" />
+      <input name="admEmail" [(ngModel)]="vm.admissaoForm.email" placeholder="E-mail" />
+      <input name="admTelefone" [(ngModel)]="vm.admissaoForm.telefone" placeholder="Telefone" />
+      <input name="admData" [(ngModel)]="vm.admissaoForm.dataPrevistaAdmissao" type="date" />
+      <select name="admColaborador" [(ngModel)]="vm.admissaoForm.colaboradorId">
+        <option [ngValue]="undefined">Colaborador vinculado após cadastro</option>
+        <option *ngFor="let colab of vm.colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option>
+      </select>
+      <button type="submit">{{ vm.admissaoForm.id ? 'Atualizar' : 'Criar admissão' }}</button>
+    </form>
+    <div class="cards compact">
+      <article *ngFor="let item of vm.admissoes()">
+        <div class="card-head"><strong>{{ item.nomeCandidato }}</strong><span class="status">{{ item.status }}</span></div>
+        <span>{{ item.cargoPretendido }}</span>
+        <small>{{ item.dataPrevistaAdmissao | date: 'dd/MM/yyyy' }}</small>
+        <div class="row-actions">
+          <button class="soft" type="button" (click)="vm.editarGenerico('admissaoForm', item)">Editar</button>
+          <button class="soft" type="button" (click)="vm.abrirModalColaboradorAdmissao(item)">Adicionar colaborador</button>
+          <button type="button" (click)="vm.admitirColaborador(item)">Admitir e gerar docs</button>
+        </div>
+      </article>
+    </div>
+  </article>
+
+  <article class="panel">
+    <div class="panel-title">
+      <div><h2>Documentação institucional</h2><p>Documentos gerados na admissão.</p></div>
+      <span>{{ vm.documentosInstitucionais().length }} documentos</span>
+    </div>
+    <div class="cards compact">
+      <article *ngFor="let item of vm.documentosInstitucionais()">
+        <strong>{{ item.titulo }}</strong>
+        <span>{{ item.tipoDocumento }}</span>
+        <small>{{ item.dataGeracao | date: 'dd/MM/yyyy HH:mm' }}</small>
+        <p>{{ item.conteudo }}</p>
+      </article>
+    </div>
+  </article>
+</section>

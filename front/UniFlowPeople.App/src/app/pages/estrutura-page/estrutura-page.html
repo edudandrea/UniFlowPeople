@@ -1,0 +1,16 @@
+<section class="panel fade-in">
+    <div class="panel-title"><div><h2>Filiais</h2><p>Unidades da empresa.</p></div><span>{{ vm.filiais().length }}</span></div>
+    <form class="form-grid cols-2" (ngSubmit)="vm.salvarFilial()">
+      <input name="filialNome" [(ngModel)]="vm.filialForm.nome" placeholder="Nome da filial" required />
+      <input name="filialCnpj" [(ngModel)]="vm.filialForm.cnpj" placeholder="CNPJ" />
+      <input name="filialCidade" [(ngModel)]="vm.filialForm.cidade" placeholder="Cidade" />
+      <input name="filialEstado" [(ngModel)]="vm.filialForm.estado" placeholder="UF" />
+      <button type="submit">{{ vm.filialForm.id ? 'Atualizar' : 'Salvar filial' }}</button>
+    </form>
+    <div class="cards compact">
+      <article *ngFor="let item of vm.filiais()">
+        <strong>{{ item.nome }}</strong><span>{{ item.cidade }} {{ item.estado }}</span>
+        <div class="row-actions"><button class="soft" type="button" (click)="vm.editarGenerico('filialForm', item)">Editar</button></div>
+      </article>
+    </div>
+</section>

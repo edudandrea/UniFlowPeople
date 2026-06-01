@@ -1,0 +1,314 @@
+<main class="app-shell" *ngIf="isLogged(); else loginView">
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="assets/uniflow-logo.png" alt="UniFlow People" />
+      <div>
+        <strong>UniFlow People</strong>
+        <span>People Suite</span>
+      </div>
+    </div>
+
+    <nav class="module-nav">
+      <ng-container *ngIf="isSistemaAdmin(); else companyMenu">
+        <button
+          *ngFor="let module of modules()"
+          type="button"
+          [class.active]="activeModule() === module.id"
+          (click)="setModule(module.id)"
+        >
+          <span class="nav-icon">{{ module.icon }}</span>
+          <span>{{ module.label }}</span>
+        </button>
+      </ng-container>
+
+      <ng-template #companyMenu>
+        <button
+          *ngFor="let module of modules().slice(0, 2)"
+          type="button"
+          [class.active]="activeModule() === module.id"
+          (click)="setModule(module.id)"
+        >
+          <span class="nav-icon">{{ module.icon }}</span>
+          <span>{{ module.label }}</span>
+        </button>
+
+        <div class="nav-group">
+          <button
+            class="nav-group-toggle"
+            type="button"
+            [class.active]="activeModule() === 'cargos' || activeModule() === 'colaboradores' || activeModule() === 'departamentos'"
+            (click)="cadastroMenuOpen.set(!cadastroMenuOpen())"
+          >
+            <span class="nav-icon">▦</span>
+            <span>Cadastros</span>
+            <b>{{ cadastroMenuOpen() ? '⌃' : '⌄' }}</b>
+          </button>
+
+          <div class="nav-submenu" *ngIf="cadastroMenuOpen()">
+            <button
+              *ngFor="let module of cadastroModules()"
+              type="button"
+              [class.active]="activeModule() === module.id"
+              (click)="setModule(module.id)"
+            >
+              <span class="nav-icon">{{ module.icon }}</span>
+              <span>{{ module.label }}</span>
+            </button>
+          </div>
+        </div>
+
+        <button
+          *ngFor="let module of modules().slice(2, 5)"
+          type="button"
+          [class.active]="activeModule() === module.id"
+          (click)="setModule(module.id)"
+        >
+          <span class="nav-icon">{{ module.icon }}</span>
+          <span>{{ module.label }}</span>
+        </button>
+
+        <div class="nav-group">
+        <button
+          class="nav-group-toggle"
+          type="button"
+          [class.active]="activeModule() === 'admissao' || activeModule() === 'demissao'"
+          (click)="peopleMenuOpen.set(!peopleMenuOpen())"
+        >
+          <span class="nav-icon">☷</span>
+          <span>Gestão de Pessoas</span>
+          <b>{{ peopleMenuOpen() ? '⌃' : '⌄' }}</b>
+        </button>
+
+        <div class="nav-submenu" *ngIf="peopleMenuOpen()">
+          <button
+            *ngFor="let module of peopleModules()"
+            type="button"
+            [class.active]="activeModule() === module.id"
+            (click)="setModule(module.id)"
+          >
+            <span class="nav-icon">{{ module.icon }}</span>
+            <span>{{ module.label }}</span>
+          </button>
+        </div>
+      </div>
+
+        <button
+          *ngFor="let module of modules().slice(5)"
+          type="button"
+          [class.active]="activeModule() === module.id"
+          (click)="setModule(module.id)"
+        >
+          <span class="nav-icon">{{ module.icon }}</span>
+          <span>{{ module.label }}</span>
+        </button>
+      </ng-template>
+    </nav>
+
+    <div class="sidebar-card">
+      <small>Ambiente</small>
+      <strong>{{ isSistemaAdmin() ? 'Backoffice SaaS' : 'Portal da Empresa' }}</strong>
+      <span>{{ usuario()?.role }}</span>
+    </div>
+  </aside>
+
+  <section class="workspace">
+    <header class="topbar">
+      <div class="page-heading">
+        <span class="eyebrow">{{ topbarEyebrow() }}</span>
+        <h1>{{ pageTitle() }}</h1>
+        <p>{{ pageDescription() }}</p>
+      </div>
+
+      <div class="top-actions">
+        <div class="search-box">
+          <span>⌕</span>
+          <input
+            [ngModel]="search()"
+            (ngModelChange)="search.set($event)"
+            name="search"
+            placeholder="Pesquisar nesta página"
+          />
+        </div>
+
+        <button class="icon-button" type="button" (click)="carregarDados()" title="Atualizar">↻</button>
+
+        <div class="user-menu">
+          <button class="user-chip" type="button" (click)="userMenuOpen.set(!userMenuOpen())">
+            <span class="avatar avatar-photo">
+              <img *ngIf="profilePhotoUrl(); else avatarInitials" [src]="profilePhotoUrl()" alt="Foto do usuário" />
+              <ng-template #avatarInitials>{{ userInitials() }}</ng-template>
+              <label class="avatar-upload" title="Enviar foto" (click)="$event.stopPropagation()">
+                <input type="file" accept="image/*" (change)="selecionarFotoPerfil($event)" />
+                <span>＋</span>
+              </label>
+            </span>
+            <span>
+              <strong>{{ userName() }}</strong>
+              <small>{{ usuario()?.email }}</small>
+            </span>
+            <b>⌄</b>
+          </button>
+
+          <div class="dropdown" *ngIf="userMenuOpen()">
+            <button type="button" (click)="abrirPerfil()">Editar perfil</button>
+            <button type="button" (click)="abrirSenha()">Alterar senha</button>
+            <button type="button" class="danger" (click)="logout()">Efetuar logoff</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <p
+      class="toast"
+      [class.success]="mensagemTipo() === 'success'"
+      [class.error]="mensagemTipo() === 'error'"
+      *ngIf="mensagem()"
+    >
+      {{ mensagem() }}
+    </p>
+
+    <div class="loading-bar" *ngIf="loading()"><span></span></div>
+
+    <app-dashboard-page *ngIf="activeModule() === 'dashboard'" [vm]="vm"></app-dashboard-page>
+    <app-empresas-page *ngIf="isSistemaAdmin() && activeModule() === 'empresas'" [vm]="vm"></app-empresas-page>
+    <app-contratos-page *ngIf="isSistemaAdmin() && activeModule() === 'contratos'" [vm]="vm"></app-contratos-page>
+    <app-colaboradores-page *ngIf="!isSistemaAdmin() && activeModule() === 'colaboradores'" [vm]="vm"></app-colaboradores-page>
+    <app-departamentos-page *ngIf="!isSistemaAdmin() && activeModule() === 'departamentos'" [vm]="vm"></app-departamentos-page>
+    <app-cargos-page *ngIf="!isSistemaAdmin() && activeModule() === 'cargos'" [vm]="vm"></app-cargos-page>
+    <app-estrutura-page *ngIf="!isSistemaAdmin() && activeModule() === 'estrutura'" [vm]="vm"></app-estrutura-page>
+    <app-ponto-page *ngIf="!isSistemaAdmin() && activeModule() === 'ponto'" [vm]="vm"></app-ponto-page>
+    <app-ferias-page *ngIf="!isSistemaAdmin() && activeModule() === 'ferias'" [vm]="vm"></app-ferias-page>
+    <app-beneficios-page *ngIf="!isSistemaAdmin() && activeModule() === 'beneficios'" [vm]="vm"></app-beneficios-page>
+    <app-documentos-page *ngIf="!isSistemaAdmin() && activeModule() === 'documentos'" [vm]="vm"></app-documentos-page>
+    <app-recrutamento-page *ngIf="!isSistemaAdmin() && activeModule() === 'recrutamento'" [vm]="vm"></app-recrutamento-page>
+    <app-treinamentos-page *ngIf="!isSistemaAdmin() && activeModule() === 'treinamentos'" [vm]="vm"></app-treinamentos-page>
+    <app-admissao-page *ngIf="!isSistemaAdmin() && activeModule() === 'admissao'" [vm]="vm"></app-admissao-page>
+    <app-demissao-page *ngIf="!isSistemaAdmin() && activeModule() === 'demissao'" [vm]="vm"></app-demissao-page>
+    <app-usuarios-page *ngIf="activeModule() === 'usuarios'" [vm]="vm"></app-usuarios-page>
+  </section>
+</main>
+
+<section class="modal-backdrop" *ngIf="profileModalOpen()">
+  <form class="modal-card pop" (ngSubmit)="salvarPerfil()">
+    <div class="modal-head">
+      <h2>Editar perfil</h2>
+      <button type="button" (click)="profileModalOpen.set(false)">×</button>
+    </div>
+    <label>Nome<input name="perfilNome" [(ngModel)]="profileForm.nome" required /></label>
+    <label>E-mail<input name="perfilEmail" [(ngModel)]="profileForm.email" required /></label>
+    <div class="modal-actions">
+      <button type="button" class="soft" (click)="profileModalOpen.set(false)">Cancelar</button>
+      <button type="submit">Salvar</button>
+    </div>
+  </form>
+</section>
+
+<section class="modal-backdrop" *ngIf="passwordModalOpen()">
+  <form class="modal-card pop" (ngSubmit)="alterarSenha()">
+    <div class="modal-head">
+      <h2>Alterar senha</h2>
+      <button type="button" (click)="passwordModalOpen.set(false)">×</button>
+    </div>
+    <label>Senha atual<input name="senhaAtual" [(ngModel)]="passwordForm.senhaAtual" type="password" required /></label>
+    <label>Nova senha<input name="novaSenha" [(ngModel)]="passwordForm.novaSenha" type="password" required /></label>
+    <label>Confirmar nova senha<input name="confirmarSenha" [(ngModel)]="passwordForm.confirmarSenha" type="password" required /></label>
+    <div class="modal-actions">
+      <button type="button" class="soft" (click)="passwordModalOpen.set(false)">Cancelar</button>
+      <button type="submit">Alterar</button>
+    </div>
+  </form>
+</section>
+
+<section class="modal-backdrop" *ngIf="admissaoColaboradorModalOpen()">
+  <form class="modal-card modal-card-wide pop" (ngSubmit)="salvarColaboradorAdmissao()">
+    <div class="modal-head">
+      <div>
+        <h2>Adicionar colaborador</h2>
+        <p>Cadastro rápido sem sair do fluxo de admissão.</p>
+      </div>
+      <button type="button" (click)="admissaoColaboradorModalOpen.set(false)">×</button>
+    </div>
+
+    <div class="form-grid cols-2 no-margin">
+      <label>Nome<input name="admColabNome" [(ngModel)]="colaboradorForm.nome" required /></label>
+      <label>CPF<input name="admColabCpf" [(ngModel)]="colaboradorForm.cpf" /></label>
+      <label>E-mail<input name="admColabEmail" [(ngModel)]="colaboradorForm.email" type="email" /></label>
+      <label>Telefone<input name="admColabTelefone" [(ngModel)]="colaboradorForm.telefone" /></label>
+      <label>Data de admissão<input name="admColabData" [(ngModel)]="colaboradorForm.dataAdmissao" type="date" /></label>
+      <label>Tipo de contrato
+        <select name="admColabContrato" [(ngModel)]="colaboradorForm.tipoContrato">
+          <option>CLT</option>
+          <option>PJ</option>
+          <option>Estágio</option>
+          <option>Temporário</option>
+        </select>
+      </label>
+      <label>Departamento
+        <select name="admColabDepartamento" [(ngModel)]="colaboradorForm.departamentoId">
+          <option [ngValue]="undefined">Selecione</option>
+          <option *ngFor="let depto of departamentos()" [ngValue]="depto.id">{{ depto.nome }}</option>
+        </select>
+      </label>
+      <label>Cargo
+        <select name="admColabCargo" [(ngModel)]="colaboradorForm.cargoId">
+          <option [ngValue]="undefined">Selecione</option>
+          <option *ngFor="let cargo of cargos()" [ngValue]="cargo.id">{{ cargo.nome }}</option>
+        </select>
+      </label>
+      <label>Salário<input name="admColabSalario" [(ngModel)]="colaboradorForm.salario" type="number" min="0" step="0.01" /></label>
+      <label>Status
+        <select name="admColabStatus" [(ngModel)]="colaboradorForm.status">
+          <option>Ativo</option>
+          <option>Em admissão</option>
+          <option>Inativo</option>
+        </select>
+      </label>
+      <label class="span-all">Observações<textarea name="admColabObs" [(ngModel)]="colaboradorForm.observacoes"></textarea></label>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="soft" (click)="admissaoColaboradorModalOpen.set(false)">Cancelar</button>
+      <button type="submit">Cadastrar colaborador</button>
+    </div>
+  </form>
+</section>
+
+<section class="modal-backdrop" *ngIf="confirmDelete() as item">
+  <div class="modal-card pop">
+    <div class="modal-head">
+      <h2>Confirmar exclusão</h2>
+      <button type="button" (click)="confirmDelete.set(null)">×</button>
+    </div>
+    <p>Deseja excluir <strong>{{ item.label }}</strong>? Esta ação não poderá ser desfeita.</p>
+    <div class="modal-actions">
+      <button type="button" class="soft" (click)="confirmDelete.set(null)">Cancelar</button>
+      <button type="button" class="danger" (click)="confirmarExclusao()">Excluir</button>
+    </div>
+  </div>
+</section>
+
+<ng-template #loginView>
+  <main class="login-shell">
+    <section class="login-hero">
+      <div class="orb one"></div>
+      <div class="orb two"></div>
+      <img src="assets/uniflow-logo.png" alt="UniFlow People" />
+      <div class="hero-copy">
+        <span>People Management Suite</span>
+        <h2>Gestão de RH moderna, segura e multiempresa.</h2>
+      </div>
+    </section>
+    <section class="login-panel pop">
+      <span class="eyebrow">SaaS de RH</span>
+      <h1>Bem-vindo ao UniFlow People</h1>
+      <p>Entre para administrar contratos, empresas e toda a jornada dos colaboradores.</p>
+      <form (ngSubmit)="login()">
+        <input name="login" [(ngModel)]="loginForm.login" placeholder="Login ou e-mail" required />
+        <input name="senha" [(ngModel)]="loginForm.senha" type="password" placeholder="Senha" required />
+        <button type="submit" [disabled]="loading()">{{ loading() ? 'Entrando...' : 'Entrar' }}</button>
+      </form>
+      <button class="ghost wide" type="button" (click)="bootstrapAdmin()">Criar admin inicial</button>
+      <p class="toast error" *ngIf="mensagem()">{{ mensagem() }}</p>
+    </section>
+  </main>
+</ng-template>

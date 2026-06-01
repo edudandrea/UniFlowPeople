@@ -1,0 +1,248 @@
+<section class="panel fade-in colaboradores-panel">
+  <div class="panel-title">
+    <div>
+      <h2>Colaboradores</h2>
+      <p>Pesquisa, cadastro e manutenção do vínculo dos colaboradores.</p>
+    </div>
+    <span>{{ vm.filteredColaboradoresCadastro().length }} pessoas</span>
+  </div>
+
+  <div class="tabs">
+    <button type="button" [class.active]="vm.colaboradoresTab() === 'pesquisa'" (click)="vm.colaboradoresTab.set('pesquisa')">
+      Pesquisa
+    </button>
+    <button type="button" [class.active]="vm.colaboradoresTab() === 'dados'" (click)="vm.colaboradoresTab.set('dados')">
+      Dados do colaborador
+    </button>
+  </div>
+
+  <div class="tab-panel" *ngIf="vm.colaboradoresTab() === 'pesquisa'">
+    <div class="curriculo-toolbar colaborador-search">
+      <label>
+        <span>Pesquisar colaborador</span>
+        <input
+          type="search"
+          [ngModel]="vm.colaboradorSearch()"
+          (ngModelChange)="vm.colaboradorSearch.set($event)"
+          name="colaboradorSearch"
+          placeholder="Nome, CPF, telefone ou cargo"
+        />
+      </label>
+    </div>
+
+    <div class="table-wrap excel-wrap">
+      <table class="excel-table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>CPF</th>
+            <th>Telefone</th>
+            <th>Cargo</th>
+            <th>Status</th>
+            <th>Admissão</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of vm.filteredColaboradoresCadastro()">
+            <td>{{ item.nome }}</td>
+            <td>{{ item.cpf }}</td>
+            <td>{{ item.telefone || '-' }}</td>
+            <td>{{ vm.nomeCargo(item.cargoId) }}</td>
+            <td><span class="status" [class.off]="item.status === 'Demitido'">{{ item.status }}</span></td>
+            <td>{{ item.dataAdmissao | date: 'dd/MM/yyyy' }}</td>
+            <td class="actions">
+              <button type="button" class="soft" (click)="vm.editarColaborador(item)">Editar</button>
+            </td>
+          </tr>
+          <tr *ngIf="!vm.filteredColaboradoresCadastro().length">
+            <td colspan="7" class="empty-cell">Nenhum colaborador encontrado.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-panel" *ngIf="vm.colaboradoresTab() === 'dados'">
+    <div class="empty-state" *ngIf="!vm.colaboradorForm.id">
+      <strong>Selecione um colaborador</strong>
+      <span>Use a aba Pesquisa para localizar e editar um cadastro existente.</span>
+    </div>
+
+    <form class="colaborador-form" *ngIf="vm.colaboradorForm.id" (ngSubmit)="vm.salvarColaborador()">
+      <ng-container *ngTemplateOutlet="colaboradorFields"></ng-container>
+      <div class="form-actions">
+        <button type="submit">Atualizar dados</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="panel-footer">
+    <button type="button" (click)="vm.abrirNovoColaboradorModal()">Cadastrar novo colaborador</button>
+  </div>
+</section>
+
+<section class="modal-backdrop" *ngIf="vm.colaboradorModalOpen()">
+  <form class="modal-card modal-card-xxl pop colaborador-form" (ngSubmit)="vm.salvarColaborador()">
+    <div class="modal-head">
+      <div>
+        <h2>Cadastrar colaborador</h2>
+        <p>Preencha a ficha completa do colaborador.</p>
+      </div>
+      <button type="button" (click)="vm.colaboradorModalOpen.set(false)">×</button>
+    </div>
+
+    <ng-container *ngTemplateOutlet="colaboradorFields"></ng-container>
+
+    <div class="modal-actions">
+      <button type="button" class="soft" (click)="vm.colaboradorModalOpen.set(false)">Cancelar</button>
+      <button type="submit">Cadastrar colaborador</button>
+    </div>
+  </form>
+</section>
+
+<ng-template #colaboradorFields>
+  <section class="form-section">
+    <div class="section-title">
+      <span>01</span>
+      <div>
+        <strong>Identificação</strong>
+        <small>Dados principais e documentos pessoais.</small>
+      </div>
+    </div>
+
+    <div class="form-grid cols-4 no-margin">
+      <label class="span-2">Nome completo<input name="colabNome" [(ngModel)]="vm.colaboradorForm.nome" required /></label>
+      <label>CPF<input name="colabCpf" [(ngModel)]="vm.colaboradorForm.cpf" required /></label>
+      <label>RG<input name="colabRg" [(ngModel)]="vm.colaboradorForm.rg" /></label>
+      <label>E-mail<input name="colabEmail" [(ngModel)]="vm.colaboradorForm.email" type="email" /></label>
+      <label>Telefone<input name="colabTelefone" [(ngModel)]="vm.colaboradorForm.telefone" /></label>
+      <label>Matrícula<input name="colabMatricula" [(ngModel)]="vm.colaboradorForm.matricula" /></label>
+      <label class="span-2 colaborador-photo-field">Foto do colaborador
+        <div class="photo-upload-row">
+          <span class="photo-preview">
+            <img *ngIf="vm.colaboradorForm.fotoUrl; else fotoPlaceholder" [src]="vm.colaboradorForm.fotoUrl" alt="Foto do colaborador" />
+            <ng-template #fotoPlaceholder>{{ (vm.colaboradorForm.nome || 'UF').slice(0, 2).toUpperCase() }}</ng-template>
+          </span>
+          <input name="colabFotoArquivo" type="file" accept="image/*" (change)="vm.selecionarFotoColaborador($event)" />
+        </div>
+      </label>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <div class="section-title">
+      <span>02</span>
+      <div>
+        <strong>Dados pessoais</strong>
+        <small>Informações de perfil civil e nascimento.</small>
+      </div>
+    </div>
+
+    <div class="form-grid cols-4 no-margin">
+      <label>Data de nascimento<input name="colabNascimento" [(ngModel)]="vm.colaboradorForm.dataNascimento" type="date" /></label>
+      <label>Sexo
+        <select name="colabSexo" [(ngModel)]="vm.colaboradorForm.sexo">
+          <option value="">Selecione</option>
+          <option>Feminino</option>
+          <option>Masculino</option>
+          <option>Outro</option>
+          <option>Prefiro não informar</option>
+        </select>
+      </label>
+      <label>Estado civil
+        <select name="colabEstadoCivil" [(ngModel)]="vm.colaboradorForm.estadoCivil">
+          <option value="">Selecione</option>
+          <option>Solteiro(a)</option>
+          <option>Casado(a)</option>
+          <option>Divorciado(a)</option>
+          <option>Viúvo(a)</option>
+          <option>União estável</option>
+        </select>
+      </label>
+      <label>PIS<input name="colabPis" [(ngModel)]="vm.colaboradorForm.pis" /></label>
+      <label>CTPS<input name="colabCtps" [(ngModel)]="vm.colaboradorForm.ctps" /></label>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <div class="section-title">
+      <span>03</span>
+      <div>
+        <strong>Endereço</strong>
+        <small>Localização residencial e contato postal.</small>
+      </div>
+    </div>
+
+    <div class="form-grid cols-4 no-margin">
+      <label class="span-2">Endereço<input name="colabEndereco" [(ngModel)]="vm.colaboradorForm.endereco" /></label>
+      <label>Bairro<input name="colabBairro" [(ngModel)]="vm.colaboradorForm.bairro" /></label>
+      <label>CEP<input name="colabCep" [(ngModel)]="vm.colaboradorForm.cep" /></label>
+      <label>Cidade<input name="colabCidade" [(ngModel)]="vm.colaboradorForm.cidade" /></label>
+      <label>Estado<input name="colabEstado" [(ngModel)]="vm.colaboradorForm.estado" maxlength="2" /></label>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <div class="section-title">
+      <span>04</span>
+      <div>
+        <strong>Vínculo profissional</strong>
+        <small>Lotação, cargo, contrato e situação atual.</small>
+      </div>
+    </div>
+
+    <div class="form-grid cols-4 no-margin">
+      <label>Filial
+        <select name="colabFilial" [(ngModel)]="vm.colaboradorForm.filialId">
+          <option [ngValue]="undefined">Selecione</option>
+          <option *ngFor="let filial of vm.filiais()" [ngValue]="filial.id">{{ filial.nome }}</option>
+        </select>
+      </label>
+      <label>Departamento
+        <select name="colabDepartamento" [(ngModel)]="vm.colaboradorForm.departamentoId">
+          <option [ngValue]="undefined">Selecione</option>
+          <option *ngFor="let departamento of vm.departamentos()" [ngValue]="departamento.id">{{ departamento.nome }}</option>
+        </select>
+      </label>
+      <label>Cargo
+        <select name="colabCargo" [(ngModel)]="vm.colaboradorForm.cargoId">
+          <option [ngValue]="undefined">Selecione</option>
+          <option *ngFor="let cargo of vm.cargos()" [ngValue]="cargo.id">{{ cargo.nome }}</option>
+        </select>
+      </label>
+      <label>Tipo de contrato
+        <select name="colabContrato" [(ngModel)]="vm.colaboradorForm.tipoContrato">
+          <option>CLT</option>
+          <option>PJ</option>
+          <option>Estágio</option>
+          <option>Temporário</option>
+        </select>
+      </label>
+      <label>Data de admissão<input name="colabAdmissao" [(ngModel)]="vm.colaboradorForm.dataAdmissao" type="date" /></label>
+      <label *ngIf="vm.colaboradorForm.status === 'Demitido'">Data de demissão<input name="colabDemissao" [(ngModel)]="vm.colaboradorForm.dataDemissao" type="date" /></label>
+      <label>Salário<input name="colabSalario" [(ngModel)]="vm.colaboradorForm.salario" type="number" min="0" step="0.01" /></label>
+      <label>Carga horária semanal<input name="colabCarga" [(ngModel)]="vm.colaboradorForm.cargaHorariaSemanal" type="number" min="0" /></label>
+      <label>Status
+        <select name="colabStatus" [(ngModel)]="vm.colaboradorForm.status">
+          <option>Ativo</option>
+          <option>Demitido</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <div class="section-title">
+      <span>05</span>
+      <div>
+        <strong>Observações</strong>
+        <small>Notas internas sobre o colaborador.</small>
+      </div>
+    </div>
+
+    <div class="form-grid no-margin">
+      <label>Observações<textarea name="colabObservacoes" [(ngModel)]="vm.colaboradorForm.observacoes"></textarea></label>
+    </div>
+  </section>
+</ng-template>

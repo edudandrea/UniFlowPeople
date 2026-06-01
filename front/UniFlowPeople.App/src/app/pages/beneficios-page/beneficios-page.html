@@ -1,0 +1,38 @@
+<section class="grid two fade-in">
+  <article class="panel">
+    <div class="panel-title"><div><h2>Catálogo de benefícios</h2><p>Planos e valores padrão.</p></div><span>{{ vm.beneficios().length }}</span></div>
+    <form class="form-grid cols-2" (ngSubmit)="vm.salvarBeneficio()">
+      <input name="benefNome" [(ngModel)]="vm.beneficioForm.nome" placeholder="Benefício" required />
+      <input name="benefValor" [(ngModel)]="vm.beneficioForm.valorPadrao" type="number" placeholder="Valor" />
+      <input class="span-2" name="benefDesc" [(ngModel)]="vm.beneficioForm.descricao" placeholder="Descrição" />
+      <button type="submit">{{ vm.beneficioForm.id ? 'Atualizar' : 'Salvar benefício' }}</button>
+    </form>
+    <div class="cards compact">
+      <article *ngFor="let item of vm.beneficios()">
+        <strong>{{ item.nome }}</strong><span>{{ item.valorPadrao | currency: 'BRL' }}</span>
+        <div class="row-actions"><button class="soft" type="button" (click)="vm.editarGenerico('beneficioForm', item)">Editar</button></div>
+      </article>
+    </div>
+  </article>
+  <article class="panel">
+    <div class="panel-title"><div><h2>Vínculos</h2><p>Benefício por colaborador.</p></div><span>{{ vm.beneficiosColaboradores().length }}</span></div>
+    <form class="form-grid cols-2" (ngSubmit)="vm.salvarBeneficioColaborador()">
+      <select name="bcColab" [(ngModel)]="vm.beneficioColaboradorForm.colaboradorId" required>
+        <option [ngValue]="undefined">Colaborador</option>
+        <option *ngFor="let colab of vm.colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option>
+      </select>
+      <select name="bcBenef" [(ngModel)]="vm.beneficioColaboradorForm.beneficioId" required>
+        <option [ngValue]="undefined">Benefício</option>
+        <option *ngFor="let item of vm.beneficios()" [ngValue]="item.id">{{ item.nome }}</option>
+      </select>
+      <input name="bcValor" [(ngModel)]="vm.beneficioColaboradorForm.valor" type="number" placeholder="Valor" />
+      <input name="bcInicio" [(ngModel)]="vm.beneficioColaboradorForm.dataInicio" type="date" />
+      <button type="submit">Vincular</button>
+    </form>
+    <div class="cards compact">
+      <article *ngFor="let item of vm.beneficiosColaboradores()">
+        <strong>{{ vm.nomeColaborador(item.colaboradorId) }}</strong><span>{{ vm.nomeBeneficio(item.beneficioId) }} · {{ item.valor | currency: 'BRL' }}</span>
+      </article>
+    </div>
+  </article>
+</section>

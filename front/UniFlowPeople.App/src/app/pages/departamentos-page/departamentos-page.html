@@ -1,0 +1,37 @@
+<section class="panel fade-in">
+  <div class="panel-title">
+    <div>
+      <h2>Departamentos</h2>
+      <p>Cadastre áreas, responsáveis e descrições organizacionais.</p>
+    </div>
+    <span>{{ vm.departamentos().length }} departamentos</span>
+  </div>
+
+  <form class="form-grid cols-2" (ngSubmit)="vm.salvarDepartamento()">
+    <input name="depNome" [(ngModel)]="vm.departamentoForm.nome" placeholder="Departamento" required />
+    <select name="depGestor" [(ngModel)]="vm.departamentoForm.gestorId">
+      <option [ngValue]="undefined">Gestor</option>
+      <option *ngFor="let colab of vm.colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option>
+    </select>
+    <input class="span-2" name="depDesc" [(ngModel)]="vm.departamentoForm.descricao" placeholder="Descrição" />
+    <button type="submit">{{ vm.departamentoForm.id ? 'Atualizar' : 'Salvar departamento' }}</button>
+  </form>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Departamento</th><th>Descrição</th><th>Gestor</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of vm.departamentos()">
+          <td>{{ item.nome }}</td>
+          <td>{{ item.descricao || '-' }}</td>
+          <td>{{ vm.nomeColaborador(item.gestorId) }}</td>
+          <td class="actions">
+            <button class="soft" type="button" (click)="vm.editarGenerico('departamentoForm', item)">Editar</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>

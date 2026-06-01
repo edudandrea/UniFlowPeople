@@ -1,0 +1,58 @@
+<section class="panel fade-in">
+  <div class="panel-title">
+    <div>
+      <h2>Contratos e pagamentos</h2>
+      <p>Controle planos, limites, valores e vencimentos.</p>
+    </div>
+    <span>{{ vm.filteredContratos().length }} contratos</span>
+  </div>
+
+  <form class="form-grid cols-6" (ngSubmit)="vm.salvarContrato()">
+    <select name="empresaContrato" [(ngModel)]="vm.contratoForm.empresaId" required>
+      <option [ngValue]="0">Empresa</option>
+      <option *ngFor="let empresa of vm.empresas()" [ngValue]="empresa.id">{{ empresa.nomeFantasia }}</option>
+    </select>
+    <input name="plano" [(ngModel)]="vm.contratoForm.plano" placeholder="Plano" required />
+    <select name="status" [(ngModel)]="vm.contratoForm.status">
+      <option>Ativo</option>
+      <option>Pago</option>
+      <option>Pendente</option>
+      <option>Vencido</option>
+      <option>Cancelado</option>
+    </select>
+    <input name="limite" [(ngModel)]="vm.contratoForm.limiteColaboradores" type="number" placeholder="Limite pessoas" />
+    <input name="fim" [(ngModel)]="vm.contratoForm.dataFim" type="date" />
+    <input name="valor" [(ngModel)]="vm.contratoForm.valorMensal" type="number" placeholder="Valor mensal" />
+    <button type="submit">{{ vm.contratoForm.id ? 'Atualizar' : 'Salvar contrato' }}</button>
+  </form>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Empresa</th>
+          <th>Plano</th>
+          <th>Status</th>
+          <th>Limite</th>
+          <th>Vencimento</th>
+          <th>Valor</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let contrato of vm.filteredContratos()">
+          <td>{{ contrato.empresa?.nomeFantasia || vm.nomeEmpresa(contrato.empresaId) }}</td>
+          <td>{{ contrato.plano }}</td>
+          <td><span class="status">{{ contrato.status }}</span></td>
+          <td>{{ contrato.limiteColaboradores }}</td>
+          <td>{{ contrato.dataFim | date: 'dd/MM/yyyy' }}</td>
+          <td>{{ contrato.valorMensal | currency: 'BRL' }}</td>
+          <td class="actions">
+            <button type="button" class="soft" (click)="vm.editarContrato(contrato)">Editar</button>
+            <button type="button" class="danger-soft" (click)="vm.pedirExclusao('contratos', contrato.id, contrato.plano)">Excluir</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>

@@ -1,0 +1,109 @@
+<section class="grid two fade-in">
+  <article class="panel">
+    <div class="panel-title"><div><h2>Vagas</h2><p>Aberturas e oportunidades internas.</p></div><span>{{ vm.filteredVagas().length }}</span></div>
+    <form class="form-grid cols-2" (ngSubmit)="vm.salvarVaga()">
+      <input name="vagaTitulo" [(ngModel)]="vm.vagaForm.titulo" placeholder="Título da vaga" required />
+      <select name="vagaStatus" [(ngModel)]="vm.vagaForm.status">
+        <option>Aberta</option>
+        <option>Pausada</option>
+        <option>Encerrada</option>
+      </select>
+      <select name="vagaDep" [(ngModel)]="vm.vagaForm.departamentoId">
+        <option [ngValue]="undefined">Departamento</option>
+        <option *ngFor="let item of vm.departamentos()" [ngValue]="item.id">{{ item.nome }}</option>
+      </select>
+      <select name="vagaCargo" [(ngModel)]="vm.vagaForm.cargoId">
+        <option [ngValue]="undefined">Cargo</option>
+        <option *ngFor="let item of vm.cargos()" [ngValue]="item.id">{{ item.nome }}</option>
+      </select>
+      <input name="vagaQtd" [(ngModel)]="vm.vagaForm.quantidade" type="number" placeholder="Quantidade" />
+      <input name="vagaSalario" [(ngModel)]="vm.vagaForm.salario" type="number" placeholder="Salário" />
+      <textarea class="span-2" name="vagaDesc" [(ngModel)]="vm.vagaForm.descricao" placeholder="Descrição"></textarea>
+      <button type="submit">{{ vm.vagaForm.id ? 'Atualizar' : 'Salvar vaga' }}</button>
+    </form>
+    <div class="cards compact">
+      <article *ngFor="let item of vm.filteredVagas()">
+        <div class="card-head"><strong>{{ item.titulo }}</strong><span class="status">{{ item.status }}</span></div>
+        <span>{{ item.quantidade }} posição(ões)</span>
+        <div class="row-actions"><button class="soft" type="button" (click)="vm.editarVaga(item)">Editar</button></div>
+      </article>
+    </div>
+  </article>
+  <article class="panel">
+    <div class="panel-title"><div><h2>Candidatos</h2><p>Pipeline simplificado por vaga.</p></div><span>{{ vm.filteredCandidatos().length }}</span></div>
+    <form class="form-grid cols-2" (ngSubmit)="vm.salvarCandidato()">
+      <select name="candVaga" [(ngModel)]="vm.candidatoForm.vagaId" required>
+        <option [ngValue]="undefined">Vaga</option>
+        <option *ngFor="let item of vm.vagas()" [ngValue]="item.id">{{ item.titulo }}</option>
+      </select>
+      <input name="candNome" [(ngModel)]="vm.candidatoForm.nome" placeholder="Nome" required />
+      <input name="candEmail" [(ngModel)]="vm.candidatoForm.email" placeholder="E-mail" />
+      <input name="candTel" [(ngModel)]="vm.candidatoForm.telefone" placeholder="Telefone" />
+      <select name="candStatus" [(ngModel)]="vm.candidatoForm.status">
+        <option>Recebido</option>
+        <option>Triagem</option>
+        <option>Entrevista</option>
+        <option>Aprovado</option>
+        <option>Reprovado</option>
+      </select>
+      <input name="candLinkedin" [(ngModel)]="vm.candidatoForm.linkedin" placeholder="LinkedIn" />
+      <button type="submit">{{ vm.candidatoForm.id ? 'Atualizar' : 'Salvar candidato' }}</button>
+    </form>
+    <div class="cards compact">
+      <article *ngFor="let item of vm.filteredCandidatos()">
+        <div class="card-head"><strong>{{ item.nome }}</strong><span class="status">{{ item.status }}</span></div>
+        <span>{{ vm.nomeVaga(item.vagaId) }}</span><small>{{ item.email }}</small>
+      </article>
+    </div>
+  </article>
+  <article class="panel recruitment-curriculos">
+    <div class="panel-title"><div><h2>Banco de currículos</h2><p>Cadastre contatos e faça upload do currículo.</p></div><span>{{ vm.filteredCurriculosBanco().length }}</span></div>
+    <form class="form-grid cols-2" (ngSubmit)="vm.salvarCurriculo()">
+      <input name="curNome" [(ngModel)]="vm.curriculoForm.nome" placeholder="Nome" required />
+      <input name="curTelefone" [(ngModel)]="vm.curriculoForm.telefone" placeholder="Telefone" />
+      <input name="curEmail" [(ngModel)]="vm.curriculoForm.email" placeholder="E-mail" required />
+      <input name="curArquivo" type="file" accept=".pdf,.doc,.docx" (change)="vm.selecionarCurriculoArquivo($event)" />
+      <button type="submit">Salvar currículo</button>
+    </form>
+    <div class="curriculo-toolbar">
+      <label>
+        <span>Pesquisar currículo</span>
+        <input
+          type="search"
+          [ngModel]="vm.curriculoSearch()"
+          (ngModelChange)="vm.curriculoSearch.set($event)"
+          name="curriculoSearch"
+          placeholder="Nome, telefone ou e-mail"
+        />
+      </label>
+    </div>
+    <div class="table-wrap excel-wrap">
+      <table class="excel-table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Telefone</th>
+            <th>E-mail</th>
+            <th>Status</th>
+            <th>Currículo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of vm.filteredCurriculosBanco()">
+            <td>{{ item.nome }}</td>
+            <td>{{ item.telefone || '-' }}</td>
+            <td>{{ item.email }}</td>
+            <td><span class="status">{{ item.status }}</span></td>
+            <td>
+              <a *ngIf="item.curriculoUrl; else semCurriculo" [href]="item.curriculoUrl" target="_blank">Abrir currículo</a>
+              <ng-template #semCurriculo>-</ng-template>
+            </td>
+          </tr>
+          <tr *ngIf="!vm.filteredCurriculosBanco().length">
+            <td colspan="5" class="empty-cell">Nenhum currículo encontrado.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+</section>
