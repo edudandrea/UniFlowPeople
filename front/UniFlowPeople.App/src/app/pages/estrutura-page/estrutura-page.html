@@ -1,16 +1,53 @@
 <section class="panel fade-in">
-    <div class="panel-title"><div><h2>Filiais</h2><p>Unidades da empresa.</p></div><span>{{ vm.filiais().length }}</span></div>
-    <form class="form-grid cols-2" (ngSubmit)="vm.salvarFilial()">
-      <input name="filialNome" [(ngModel)]="vm.filialForm.nome" placeholder="Nome da filial" required />
-      <input name="filialCnpj" [(ngModel)]="vm.filialForm.cnpj" placeholder="CNPJ" />
-      <input name="filialCidade" [(ngModel)]="vm.filialForm.cidade" placeholder="Cidade" />
-      <input name="filialEstado" [(ngModel)]="vm.filialForm.estado" placeholder="UF" />
-      <button type="submit">{{ vm.filialForm.id ? 'Atualizar' : 'Salvar filial' }}</button>
-    </form>
-    <div class="cards compact">
-      <article *ngFor="let item of vm.filiais()">
-        <strong>{{ item.nome }}</strong><span>{{ item.cidade }} {{ item.estado }}</span>
-        <div class="row-actions"><button class="soft" type="button" (click)="vm.editarGenerico('filialForm', item)">Editar</button></div>
-      </article>
+  <div class="panel-title"><div><h2>Filiais</h2><p>Pesquisa, cadastro e manutenção das unidades.</p></div><span>{{ vm.filiais().length }} filiais</span></div>
+
+  <div class="tabs">
+    <button type="button" [class.active]="vm.filiaisTab() === 'pesquisa'" (click)="vm.filiaisTab.set('pesquisa')">Pesquisa</button>
+    <button type="button" [class.active]="vm.filiaisTab() === 'dados'" (click)="vm.filiaisTab.set('dados')">Dados da filial</button>
+  </div>
+
+  <div class="tab-panel" *ngIf="vm.filiaisTab() === 'pesquisa'">
+    <div class="table-wrap excel-wrap">
+      <table class="excel-table">
+        <thead><tr><th>Filial</th><th>CNPJ</th><th>Cidade</th><th>UF</th><th></th></tr></thead>
+        <tbody>
+          <tr *ngFor="let item of vm.filiais()">
+            <td>{{ item.nome }}</td>
+            <td>{{ item.cnpj || '-' }}</td>
+            <td>{{ item.cidade || '-' }}</td>
+            <td>{{ item.estado || '-' }}</td>
+            <td class="actions"><button class="soft" type="button" (click)="vm.editarGenerico('filialForm', item); vm.filiaisTab.set('dados')">Editar</button></td>
+          </tr>
+          <tr *ngIf="!vm.filiais().length"><td colspan="5" class="empty-cell">Nenhuma filial encontrada.</td></tr>
+        </tbody>
+      </table>
     </div>
+  </div>
+
+  <div class="tab-panel" *ngIf="vm.filiaisTab() === 'dados'">
+    <form class="colaborador-form" (ngSubmit)="vm.salvarFilial()">
+      <section class="form-section">
+        <div class="section-title"><span>01</span><div><strong>Dados da unidade</strong><small>Identificação, endereço e contato.</small></div></div>
+        <div class="form-grid cols-4 no-margin">
+          <label>Nome da filial<input name="filialNome" [(ngModel)]="vm.filialForm.nome" required /></label>
+          <label>CNPJ<input name="filialCnpj" [(ngModel)]="vm.filialForm.cnpj" /></label>
+          <label>Cidade<input name="filialCidade" [(ngModel)]="vm.filialForm.cidade" /></label>
+          <label>UF<input name="filialEstado" [(ngModel)]="vm.filialForm.estado" maxlength="2" /></label>
+          <label>Telefone<input name="filialTelefone" [(ngModel)]="vm.filialForm.telefone" /></label>
+          <label class="span-2">Endereço<input name="filialEndereco" [(ngModel)]="vm.filialForm.endereco" /></label>
+          <label>Status
+            <select name="filialAtiva" [(ngModel)]="vm.filialForm.ativa">
+              <option [ngValue]="true">Ativa</option>
+              <option [ngValue]="false">Inativa</option>
+            </select>
+          </label>
+        </div>
+      </section>
+      <div class="form-actions">
+        <button type="submit">{{ vm.filialForm.id ? 'Atualizar filial' : 'Salvar filial' }}</button>
+        <button type="button" class="soft" (click)="vm.filialForm = vm.novaFilial()">Limpar</button>
+        <button type="button" class="danger-soft" *ngIf="vm.filialForm.id" (click)="vm.pedirExclusao('filiais', vm.filialForm.id, vm.filialForm.nome)">Excluir</button>
+      </div>
+    </form>
+  </div>
 </section>

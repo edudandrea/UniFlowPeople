@@ -1,38 +1,101 @@
 <section class="grid two fade-in">
   <article class="panel">
-    <div class="panel-title"><div><h2>Catálogo de benefícios</h2><p>Planos e valores padrão.</p></div><span>{{ vm.beneficios().length }}</span></div>
-    <form class="form-grid cols-2" (ngSubmit)="vm.salvarBeneficio()">
-      <input name="benefNome" [(ngModel)]="vm.beneficioForm.nome" placeholder="Benefício" required />
-      <input name="benefValor" [(ngModel)]="vm.beneficioForm.valorPadrao" type="number" placeholder="Valor" />
-      <input class="span-2" name="benefDesc" [(ngModel)]="vm.beneficioForm.descricao" placeholder="Descrição" />
-      <button type="submit">{{ vm.beneficioForm.id ? 'Atualizar' : 'Salvar benefício' }}</button>
-    </form>
-    <div class="cards compact">
-      <article *ngFor="let item of vm.beneficios()">
-        <strong>{{ item.nome }}</strong><span>{{ item.valorPadrao | currency: 'BRL' }}</span>
-        <div class="row-actions"><button class="soft" type="button" (click)="vm.editarGenerico('beneficioForm', item)">Editar</button></div>
-      </article>
+    <div class="panel-title"><div><h2>Catálogo de benefícios</h2><p>Pesquisa, cadastro e manutenção dos benefícios.</p></div><span>{{ vm.beneficios().length }} benefícios</span></div>
+
+    <div class="tabs">
+      <button type="button" [class.active]="vm.beneficiosTab() === 'pesquisa'" (click)="vm.beneficiosTab.set('pesquisa')">Pesquisa</button>
+      <button type="button" [class.active]="vm.beneficiosTab() === 'dados'" (click)="vm.beneficiosTab.set('dados')">Dados do benefício</button>
+    </div>
+
+    <div class="tab-panel" *ngIf="vm.beneficiosTab() === 'pesquisa'">
+      <div class="table-wrap excel-wrap">
+        <table class="excel-table">
+          <thead><tr><th>Benefício</th><th>Valor padrão</th><th>Descrição</th><th></th></tr></thead>
+          <tbody>
+            <tr *ngFor="let item of vm.beneficios()">
+              <td>{{ item.nome }}</td>
+              <td>{{ item.valorPadrao | currency: 'BRL' }}</td>
+              <td>{{ item.descricao || '-' }}</td>
+              <td class="actions"><button class="soft" type="button" (click)="vm.editarGenerico('beneficioForm', item); vm.beneficiosTab.set('dados')">Editar</button></td>
+            </tr>
+            <tr *ngIf="!vm.beneficios().length"><td colspan="4" class="empty-cell">Nenhum benefício encontrado.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tab-panel" *ngIf="vm.beneficiosTab() === 'dados'">
+      <form class="colaborador-form" (ngSubmit)="vm.salvarBeneficio()">
+        <section class="form-section">
+          <div class="section-title"><span>01</span><div><strong>Dados do benefício</strong><small>Nome, valor padrão e descrição.</small></div></div>
+          <div class="form-grid no-margin">
+            <label>Benefício<input name="benefNome" [(ngModel)]="vm.beneficioForm.nome" required /></label>
+            <label>Valor padrão<input name="benefValor" [(ngModel)]="vm.beneficioForm.valorPadrao" type="number" min="0" step="0.01" /></label>
+            <label>Descrição<textarea name="benefDesc" [(ngModel)]="vm.beneficioForm.descricao"></textarea></label>
+          </div>
+        </section>
+        <div class="form-actions">
+          <button type="submit">{{ vm.beneficioForm.id ? 'Atualizar benefício' : 'Salvar benefício' }}</button>
+          <button type="button" class="soft" (click)="vm.beneficioForm = vm.novoBeneficio()">Limpar</button>
+          <button type="button" class="danger-soft" *ngIf="vm.beneficioForm.id" (click)="vm.pedirExclusao('beneficios', vm.beneficioForm.id, vm.beneficioForm.nome)">Excluir</button>
+        </div>
+      </form>
     </div>
   </article>
+
   <article class="panel">
-    <div class="panel-title"><div><h2>Vínculos</h2><p>Benefício por colaborador.</p></div><span>{{ vm.beneficiosColaboradores().length }}</span></div>
-    <form class="form-grid cols-2" (ngSubmit)="vm.salvarBeneficioColaborador()">
-      <select name="bcColab" [(ngModel)]="vm.beneficioColaboradorForm.colaboradorId" required>
-        <option [ngValue]="undefined">Colaborador</option>
-        <option *ngFor="let colab of vm.colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option>
-      </select>
-      <select name="bcBenef" [(ngModel)]="vm.beneficioColaboradorForm.beneficioId" required>
-        <option [ngValue]="undefined">Benefício</option>
-        <option *ngFor="let item of vm.beneficios()" [ngValue]="item.id">{{ item.nome }}</option>
-      </select>
-      <input name="bcValor" [(ngModel)]="vm.beneficioColaboradorForm.valor" type="number" placeholder="Valor" />
-      <input name="bcInicio" [(ngModel)]="vm.beneficioColaboradorForm.dataInicio" type="date" />
-      <button type="submit">Vincular</button>
-    </form>
-    <div class="cards compact">
-      <article *ngFor="let item of vm.beneficiosColaboradores()">
-        <strong>{{ vm.nomeColaborador(item.colaboradorId) }}</strong><span>{{ vm.nomeBeneficio(item.beneficioId) }} · {{ item.valor | currency: 'BRL' }}</span>
-      </article>
+    <div class="panel-title"><div><h2>Vínculos</h2><p>Pesquisa, cadastro e manutenção dos benefícios por colaborador.</p></div><span>{{ vm.beneficiosColaboradores().length }} vínculos</span></div>
+
+    <div class="tabs">
+      <button type="button" [class.active]="vm.beneficiosVinculosTab() === 'pesquisa'" (click)="vm.beneficiosVinculosTab.set('pesquisa')">Pesquisa</button>
+      <button type="button" [class.active]="vm.beneficiosVinculosTab() === 'dados'" (click)="vm.beneficiosVinculosTab.set('dados')">Dados do vínculo</button>
+    </div>
+
+    <div class="tab-panel" *ngIf="vm.beneficiosVinculosTab() === 'pesquisa'">
+      <div class="table-wrap excel-wrap">
+        <table class="excel-table">
+          <thead><tr><th>Colaborador</th><th>Benefício</th><th>Valor</th><th>Início</th><th></th></tr></thead>
+          <tbody>
+            <tr *ngFor="let item of vm.beneficiosColaboradores()">
+              <td>{{ vm.nomeColaborador(item.colaboradorId) }}</td>
+              <td>{{ vm.nomeBeneficio(item.beneficioId) }}</td>
+              <td>{{ item.valor | currency: 'BRL' }}</td>
+              <td>{{ item.dataInicio | date: 'dd/MM/yyyy' }}</td>
+              <td class="actions"><button class="soft" type="button" (click)="vm.editarGenerico('beneficioColaboradorForm', item); vm.beneficiosVinculosTab.set('dados')">Editar</button></td>
+            </tr>
+            <tr *ngIf="!vm.beneficiosColaboradores().length"><td colspan="5" class="empty-cell">Nenhum vínculo encontrado.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tab-panel" *ngIf="vm.beneficiosVinculosTab() === 'dados'">
+      <form class="colaborador-form" (ngSubmit)="vm.salvarBeneficioColaborador()">
+        <section class="form-section">
+          <div class="section-title"><span>01</span><div><strong>Dados do vínculo</strong><small>Colaborador, benefício, valor e vigência.</small></div></div>
+          <div class="form-grid no-margin">
+            <label>Colaborador
+              <select name="bcColab" [(ngModel)]="vm.beneficioColaboradorForm.colaboradorId" required>
+                <option [ngValue]="undefined">Selecione</option>
+                <option *ngFor="let colab of vm.colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option>
+              </select>
+            </label>
+            <label>Benefício
+              <select name="bcBenef" [(ngModel)]="vm.beneficioColaboradorForm.beneficioId" required>
+                <option [ngValue]="undefined">Selecione</option>
+                <option *ngFor="let item of vm.beneficios()" [ngValue]="item.id">{{ item.nome }}</option>
+              </select>
+            </label>
+            <label>Valor<input name="bcValor" [(ngModel)]="vm.beneficioColaboradorForm.valor" type="number" min="0" step="0.01" /></label>
+            <label>Início<input name="bcInicio" [(ngModel)]="vm.beneficioColaboradorForm.dataInicio" type="date" /></label>
+            <label>Fim<input name="bcFim" [(ngModel)]="vm.beneficioColaboradorForm.dataFim" type="date" /></label>
+          </div>
+        </section>
+        <div class="form-actions">
+          <button type="submit">{{ vm.beneficioColaboradorForm.id ? 'Atualizar vínculo' : 'Vincular benefício' }}</button>
+          <button type="button" class="soft" (click)="vm.beneficioColaboradorForm = vm.novoBeneficioColaborador()">Limpar</button>
+        </div>
+      </form>
     </div>
   </article>
 </section>

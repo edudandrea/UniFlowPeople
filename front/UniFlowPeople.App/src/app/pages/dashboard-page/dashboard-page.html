@@ -1,39 +1,203 @@
-<section class="grid metrics fade-in">
-  <article>
-    <span>{{ vm.isSistemaAdmin() ? 'Empresas contratantes' : 'Colaboradores' }}</span>
-    <strong>{{ vm.isSistemaAdmin() ? vm.metricas().empresasContratantes : vm.colaboradores().length }}</strong>
-    <small>{{ vm.isSistemaAdmin() ? 'Carteira ativa' : 'Pessoas cadastradas' }}</small>
-  </article>
-  <article>
-    <span>{{ vm.isSistemaAdmin() ? 'Pagamentos efetuados' : 'Cargos' }}</span>
-    <strong>{{ vm.isSistemaAdmin() ? vm.metricas().pagamentosEfetuados : vm.cargos().length }}</strong>
-    <small>{{ vm.isSistemaAdmin() ? 'Contratos em dia' : 'Estrutura de funções' }}</small>
-  </article>
-  <article>
-    <span>{{ vm.isSistemaAdmin() ? 'Pagamentos pendentes' : 'Vagas abertas' }}</span>
-    <strong>{{ vm.isSistemaAdmin() ? vm.metricas().pagamentosPendentes : vm.vagas().length }}</strong>
-    <small>{{ vm.isSistemaAdmin() ? 'Acompanhar cobrança' : 'Recrutamento ativo' }}</small>
-  </article>
-  <article>
-    <span>{{ vm.isSistemaAdmin() ? 'Contratos vencidos' : 'Benefícios' }}</span>
-    <strong>{{ vm.isSistemaAdmin() ? vm.metricas().contratosVencidos : vm.beneficios().length }}</strong>
-    <small>{{ vm.isSistemaAdmin() ? 'Risco operacional' : 'Pacotes oferecidos' }}</small>
-  </article>
-</section>
+<ng-container *ngIf="vm.isSistemaAdmin(); else empresaDashboard">
+  <section class="grid metrics fade-in">
+    <article>
+      <span>Clientes em dia</span>
+      <strong>{{ vm.clientesEmDia() }}</strong>
+      <small>{{ vm.percentualClientesEmDia() }}% da carteira ativa</small>
+    </article>
+    <article>
+      <span>Clientes em atraso</span>
+      <strong>{{ vm.clientesEmAtraso() }}</strong>
+      <small>{{ vm.percentualClientesEmAtraso() }}% com cobrança vencida</small>
+    </article>
+    <article>
+      <span>Contratos a vencer</span>
+      <strong>{{ vm.contratosAVencerLista().length }}</strong>
+      <small>Próximos 30 dias</small>
+    </article>
+    <article>
+      <span>Cobranças em aberto</span>
+      <strong>{{ vm.cobrancasEmAberto() }}</strong>
+      <small>Pendentes de baixa</small>
+    </article>
+  </section>
 
-<section class="panel hero-panel fade-in">
-  <div>
-    <span class="eyebrow">UniFlow People</span>
-    <h2>{{ vm.isSistemaAdmin() ? 'Gestão centralizada dos clientes SaaS' : 'Operação completa de RH em um só lugar' }}</h2>
-    <p>
-      {{ vm.isSistemaAdmin()
-        ? 'Controle contratos, pagamentos, vencimentos e acessos das empresas contratantes.'
-        : 'Cadastre pessoas, acompanhe ponto, férias, benefícios, documentos e recrutamento com segurança multiempresa.' }}
-    </p>
-  </div>
-  <button type="button" (click)="vm.setModule(vm.isSistemaAdmin() ? 'contratos' : 'colaboradores')">
-    Começar agora
-  </button>
-</section>
+  <section class="grid two fade-in">
+    <article class="panel dashboard-card">
+      <div class="panel-title">
+        <div>
+          <h2>Planos mais usados</h2>
+          <p>Distribuição das contratações por plano.</p>
+        </div>
+        <span>{{ vm.contratos().length }} contratos</span>
+      </div>
 
-<app-contratos-page *ngIf="vm.isSistemaAdmin()" [vm]="vm"></app-contratos-page>
+      <div class="bar-chart" *ngIf="vm.planosMaisUsados().length; else semPlanos">
+        <div class="bar-row" *ngFor="let plano of vm.planosMaisUsados()">
+          <div>
+            <strong>{{ plano.nome }}</strong>
+            <span>{{ plano.quantidade }} contratação{{ plano.quantidade === 1 ? '' : 'es' }}</span>
+          </div>
+          <div class="bar-track">
+            <span [style.width.%]="plano.percentual"></span>
+          </div>
+          <b>{{ plano.percentual }}%</b>
+        </div>
+      </div>
+
+      <ng-template #semPlanos>
+        <div class="empty-state"><strong>Sem contratações</strong><span>Os planos aparecerão quando houver contratos.</span></div>
+      </ng-template>
+    </article>
+
+    <article class="panel dashboard-card">
+      <div class="panel-title">
+        <div>
+          <h2>Saúde da carteira</h2>
+          <p>Clientes em dia versus clientes em atraso.</p>
+        </div>
+        <span>{{ vm.clientesEmDia() + vm.clientesEmAtraso() }} clientes</span>
+      </div>
+
+      <div class="donut-wrap">
+        <div
+          class="donut-chart"
+          [style.background]="'conic-gradient(#4f9f64 0 ' + vm.percentualClientesEmDia() + '%, #d95f59 ' + vm.percentualClientesEmDia() + '% 100%)'"
+        >
+          <strong>{{ vm.percentualClientesEmDia() }}%</strong>
+          <span>em dia</span>
+        </div>
+        <div class="legend-list">
+          <article><i class="ok"></i><span>Clientes em dia</span><strong>{{ vm.clientesEmDia() }}</strong></article>
+          <article><i class="late"></i><span>Clientes em atraso</span><strong>{{ vm.clientesEmAtraso() }}</strong></article>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="grid two fade-in">
+    <article class="panel dashboard-card">
+      <div class="panel-title">
+        <div>
+          <h2>Contratos a vencer</h2>
+          <p>Contratos ativos com vencimento nos próximos 30 dias.</p>
+        </div>
+        <span>{{ vm.contratosAVencerLista().length }}</span>
+      </div>
+
+      <div class="compact-list" *ngIf="vm.contratosAVencerLista().length; else semVencimentos">
+        <article *ngFor="let contrato of vm.contratosAVencerLista().slice(0, 6)">
+          <div>
+            <strong>{{ contrato.empresa?.nomeFantasia || vm.nomeEmpresa(contrato.empresaId) }}</strong>
+            <span>{{ contrato.plano }}</span>
+          </div>
+          <b>{{ contrato.dataFim | date: 'dd/MM/yyyy' }}</b>
+        </article>
+      </div>
+
+      <ng-template #semVencimentos>
+        <div class="empty-state"><strong>Nenhum vencimento próximo</strong><span>A carteira está sem vencimentos críticos.</span></div>
+      </ng-template>
+    </article>
+
+    <article class="panel dashboard-card">
+      <div class="panel-title">
+        <div>
+          <h2>Cobranças em aberto</h2>
+          <p>Valores pendentes por status financeiro.</p>
+        </div>
+        <span>{{ vm.cobrancasEmAberto() }}</span>
+      </div>
+
+      <div class="compact-list" *ngIf="vm.cobrancasEmAberto(); else semAbertas">
+        <article *ngFor="let cobranca of vm.cobrancasAbertasLista().slice(0, 6)">
+          <div>
+            <strong>{{ cobranca.empresa?.nomeFantasia || vm.nomeEmpresa(cobranca.empresaId) }}</strong>
+            <span>{{ cobranca.descricao }}</span>
+          </div>
+          <b>{{ cobranca.valor | currency: 'BRL' }}</b>
+        </article>
+      </div>
+
+      <ng-template #semAbertas>
+        <div class="empty-state"><strong>Nenhuma cobrança aberta</strong><span>Não há pendências financeiras no momento.</span></div>
+      </ng-template>
+    </article>
+  </section>
+</ng-container>
+
+<ng-template #empresaDashboard>
+  <section class="grid metrics fade-in">
+    <article>
+      <span>Colaboradores</span>
+      <strong>{{ vm.colaboradores().length }}</strong>
+      <small>Pessoas cadastradas</small>
+    </article>
+    <article>
+      <span>Cargos</span>
+      <strong>{{ vm.cargos().length }}</strong>
+      <small>Estrutura de funções</small>
+    </article>
+    <article>
+      <span>Vagas abertas</span>
+      <strong>{{ vm.vagas().length }}</strong>
+      <small>Recrutamento ativo</small>
+    </article>
+    <article>
+      <span>Benefícios</span>
+      <strong>{{ vm.beneficios().length }}</strong>
+      <small>Pacotes oferecidos</small>
+    </article>
+  </section>
+
+  <section class="grid two fade-in">
+    <article class="panel">
+      <div class="panel-title">
+        <div>
+          <h2>Contrato ativo</h2>
+          <p>Plano contratado pela empresa.</p>
+        </div>
+        <span>{{ vm.contratoAtivoEmpresa()?.status || 'Sem contrato' }}</span>
+      </div>
+
+      <div class="detail-list" *ngIf="vm.contratoAtivoEmpresa() as contrato; else semContrato">
+        <article><span>Plano</span><strong>{{ contrato.plano }}</strong></article>
+        <article><span>Valor</span><strong>{{ contrato.valorMensal | currency: 'BRL' }}</strong></article>
+        <article><span>Vigência</span><strong>{{ contrato.dataInicio | date: 'dd/MM/yyyy' }} - {{ contrato.dataFim | date: 'dd/MM/yyyy' }}</strong></article>
+        <article><span>Limite de pessoas</span><strong>{{ contrato.limiteColaboradores }}</strong></article>
+      </div>
+      <ng-template #semContrato>
+        <div class="empty-state"><strong>Nenhum contrato ativo</strong><span>Quando uma contratação for efetivada, ela aparecerá aqui.</span></div>
+      </ng-template>
+    </article>
+
+    <article class="panel">
+      <div class="panel-title">
+        <div>
+          <h2>Cobrança gerada</h2>
+          <p>Última cobrança vinculada ao contrato.</p>
+        </div>
+        <span>{{ vm.ultimaCobrancaEmpresa()?.status || 'Sem cobrança' }}</span>
+      </div>
+
+      <div class="detail-list" *ngIf="vm.ultimaCobrancaEmpresa() as cobranca; else semCobranca">
+        <article><span>Descrição</span><strong>{{ cobranca.descricao }}</strong></article>
+        <article><span>Valor</span><strong>{{ cobranca.valor | currency: 'BRL' }}</strong></article>
+        <article><span>Gerada em</span><strong>{{ cobranca.dataGeracao | date: 'dd/MM/yyyy HH:mm' }}</strong></article>
+        <article><span>Vencimento</span><strong>{{ cobranca.dataVencimento | date: 'dd/MM/yyyy' }}</strong></article>
+      </div>
+      <ng-template #semCobranca>
+        <div class="empty-state"><strong>Nenhuma cobrança gerada</strong><span>A cobrança aparecerá após a contratação do plano.</span></div>
+      </ng-template>
+    </article>
+  </section>
+
+  <section class="panel hero-panel fade-in">
+    <div>
+      <span class="eyebrow">UniFlow People</span>
+      <h2>Operação completa de RH em um só lugar</h2>
+      <p>Cadastre pessoas, acompanhe ponto, férias, benefícios, documentos e recrutamento com segurança multiempresa.</p>
+    </div>
+    <button type="button" (click)="vm.setModule('colaboradores')">Começar agora</button>
+  </section>
+</ng-template>

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UniFlowPeople.Api.Data;
@@ -11,9 +12,11 @@ using UniFlowPeople.Api.Data;
 namespace UniFlowPeople.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260602011333_Admissao")]
+    partial class Admissao
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,44 +24,6 @@ namespace UniFlowPeople.Api.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("UniFlowPeople.Api.Models.AdmissaoDocumento", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AdmissaoProcessoId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("DataUpload")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("EmpresaId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("NomeArquivo")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("TipoArquivo")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("UrlArquivo")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AdmissaoProcessoId");
-
-                    b.HasIndex("EmpresaId");
-
-                    b.ToTable("AdmissaoDocumentos");
-                });
 
             modelBuilder.Entity("UniFlowPeople.Api.Models.AdmissaoEtapa", b =>
                 {
@@ -292,47 +257,6 @@ namespace UniFlowPeople.Api.Migrations
                     b.ToTable("Cargos");
                 });
 
-            modelBuilder.Entity("UniFlowPeople.Api.Models.Cobranca", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ContratoId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("DataGeracao")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("DataVencimento")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Descricao")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("EmpresaId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("Valor")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ContratoId");
-
-                    b.HasIndex("EmpresaId");
-
-                    b.ToTable("Cobrancas");
-                });
-
             modelBuilder.Entity("UniFlowPeople.Api.Models.Colaborador", b =>
                 {
                     b.Property<int>("Id")
@@ -476,9 +400,6 @@ namespace UniFlowPeople.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int?>("PlanoId")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
@@ -490,8 +411,6 @@ namespace UniFlowPeople.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("EmpresaId");
-
-                    b.HasIndex("PlanoId");
 
                     b.ToTable("Contratos");
                 });
@@ -863,40 +782,6 @@ namespace UniFlowPeople.Api.Migrations
                     b.ToTable("Filiais");
                 });
 
-            modelBuilder.Entity("UniFlowPeople.Api.Models.Plano", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("LimiteColaboradores")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Observacoes")
-                        .HasColumnType("text");
-
-                    b.Property<int>("PrazoDias")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("ValorCobranca")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Planos");
-                });
-
             modelBuilder.Entity("UniFlowPeople.Api.Models.RegistroPonto", b =>
                 {
                     b.Property<int>("Id")
@@ -1123,25 +1008,6 @@ namespace UniFlowPeople.Api.Migrations
                     b.ToTable("Vagas");
                 });
 
-            modelBuilder.Entity("UniFlowPeople.Api.Models.AdmissaoDocumento", b =>
-                {
-                    b.HasOne("UniFlowPeople.Api.Models.AdmissaoProcesso", "AdmissaoProcesso")
-                        .WithMany("DocumentosAnexados")
-                        .HasForeignKey("AdmissaoProcessoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("UniFlowPeople.Api.Models.Empresa", "Empresa")
-                        .WithMany()
-                        .HasForeignKey("EmpresaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AdmissaoProcesso");
-
-                    b.Navigation("Empresa");
-                });
-
             modelBuilder.Entity("UniFlowPeople.Api.Models.AdmissaoEtapa", b =>
                 {
                     b.HasOne("UniFlowPeople.Api.Models.AdmissaoProcesso", "AdmissaoProcesso")
@@ -1223,25 +1089,6 @@ namespace UniFlowPeople.Api.Migrations
                     b.Navigation("Empresa");
                 });
 
-            modelBuilder.Entity("UniFlowPeople.Api.Models.Cobranca", b =>
-                {
-                    b.HasOne("UniFlowPeople.Api.Models.Contrato", "Contrato")
-                        .WithMany("Cobrancas")
-                        .HasForeignKey("ContratoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("UniFlowPeople.Api.Models.Empresa", "Empresa")
-                        .WithMany("Cobrancas")
-                        .HasForeignKey("EmpresaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Contrato");
-
-                    b.Navigation("Empresa");
-                });
-
             modelBuilder.Entity("UniFlowPeople.Api.Models.Colaborador", b =>
                 {
                     b.HasOne("UniFlowPeople.Api.Models.Cargo", "Cargo")
@@ -1279,14 +1126,7 @@ namespace UniFlowPeople.Api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("UniFlowPeople.Api.Models.Plano", "PlanoCadastro")
-                        .WithMany("Contratos")
-                        .HasForeignKey("PlanoId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.Navigation("Empresa");
-
-                    b.Navigation("PlanoCadastro");
                 });
 
             modelBuilder.Entity("UniFlowPeople.Api.Models.Curriculo", b =>
@@ -1486,8 +1326,6 @@ namespace UniFlowPeople.Api.Migrations
 
             modelBuilder.Entity("UniFlowPeople.Api.Models.AdmissaoProcesso", b =>
                 {
-                    b.Navigation("DocumentosAnexados");
-
                     b.Navigation("DocumentosInstitucionais");
 
                     b.Navigation("Etapas");
@@ -1514,11 +1352,6 @@ namespace UniFlowPeople.Api.Migrations
                     b.Navigation("RegistrosPonto");
                 });
 
-            modelBuilder.Entity("UniFlowPeople.Api.Models.Contrato", b =>
-                {
-                    b.Navigation("Cobrancas");
-                });
-
             modelBuilder.Entity("UniFlowPeople.Api.Models.DemissaoProcesso", b =>
                 {
                     b.Navigation("Etapas");
@@ -1533,8 +1366,6 @@ namespace UniFlowPeople.Api.Migrations
                 {
                     b.Navigation("Cargos");
 
-                    b.Navigation("Cobrancas");
-
                     b.Navigation("Colaboradores");
 
                     b.Navigation("Contratos");
@@ -1547,11 +1378,6 @@ namespace UniFlowPeople.Api.Migrations
             modelBuilder.Entity("UniFlowPeople.Api.Models.Filial", b =>
                 {
                     b.Navigation("Colaboradores");
-                });
-
-            modelBuilder.Entity("UniFlowPeople.Api.Models.Plano", b =>
-                {
-                    b.Navigation("Contratos");
                 });
 
             modelBuilder.Entity("UniFlowPeople.Api.Models.Treinamento", b =>

@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { finalize, forkJoin } from 'rxjs';
 import { AdmissaoPage } from './pages/admissao-page/admissao-page';
 import { BeneficiosPage } from './pages/beneficios-page/beneficios-page';
 import { CargosPage } from './pages/cargos-page/cargos-page';
@@ -56,6 +56,7 @@ interface Empresa {
 interface Contrato {
   id?: number;
   empresaId: number;
+  planoId?: number | null;
   plano: string;
   status: string;
   dataInicio: string;
@@ -64,9 +65,35 @@ interface Contrato {
   valorMensal: number;
   observacoes?: string;
   empresa?: Empresa;
+  planoCadastro?: Plano;
+  cobrancas?: Cobranca[];
+}
+
+interface Plano {
+  id?: number;
+  nome: string;
+  prazoDias: number;
+  limiteColaboradores: number;
+  valorCobranca: number;
+  status: string;
+  observacoes?: string;
+}
+
+interface Cobranca {
+  id?: number;
+  empresaId: number;
+  contratoId: number;
+  descricao: string;
+  valor: number;
+  dataGeracao: string;
+  dataVencimento: string;
+  status: string;
+  empresa?: Empresa;
+  contrato?: Contrato;
 }
 
 interface UsuarioCreate {
+  id?: number;
   empresaId?: number;
   colaboradorId?: number;
   nome: string;
@@ -113,32 +140,54 @@ export class App {
   vm = this;
   private readonly http = inject(HttpClient);
   private readonly api = 'http://localhost:5036/api';
+  private readonly sessionTimeoutMs = 30 * 60 * 1000;
+  private inactivityTimeoutId?: ReturnType<typeof setTimeout>;
 
-  token = signal(localStorage.getItem('uniflow.token') ?? '');
+  token = signal(sessionStorage.getItem('uniflow.token') ?? '');
   usuario = signal<UsuarioInfo | null>(
-    JSON.parse(localStorage.getItem('uniflow.usuario') ?? 'null') as UsuarioInfo | null,
+    JSON.parse(sessionStorage.getItem('uniflow.usuario') ?? 'null') as UsuarioInfo | null,
   );
 
   activeModule = signal('dashboard');
   loading = signal(false);
   mensagem = signal('');
   mensagemTipo = signal<MessageType>('info');
+  systemAdminExists = signal(true);
   userMenuOpen = signal(false);
-  cadastroMenuOpen = signal(true);
-  peopleMenuOpen = signal(true);
+  cadastroMenuOpen = signal(false);
+  peopleMenuOpen = signal(false);
   profileModalOpen = signal(false);
   passwordModalOpen = signal(false);
+  admissaoProcessoModalOpen = signal(false);
+  admissaoDocumentosModalOpen = signal(false);
   admissaoColaboradorModalOpen = signal(false);
   colaboradorModalOpen = signal(false);
   confirmDelete = signal<{ endpoint: string; id: number; label: string } | null>(null);
   search = signal('');
   curriculoSearch = signal('');
   colaboradorSearch = signal('');
+  admissaoSearch = signal('');
+  planoSearch = signal('');
+  contratoSearch = signal('');
+  cobrancaSearch = signal('');
+  admissaoPage = signal(1);
+  empresasTab = signal<'pesquisa' | 'dados'>('pesquisa');
+  usuariosTab = signal<'pesquisa' | 'dados'>('pesquisa');
+  cargosTab = signal<'pesquisa' | 'dados'>('pesquisa');
+  departamentosTab = signal<'pesquisa' | 'dados'>('pesquisa');
+  filiaisTab = signal<'pesquisa' | 'dados'>('pesquisa');
+  beneficiosTab = signal<'pesquisa' | 'dados'>('pesquisa');
+  beneficiosVinculosTab = signal<'pesquisa' | 'dados'>('pesquisa');
   colaboradoresTab = signal<'pesquisa' | 'dados'>('pesquisa');
-  empresaLogada = signal<Empresa | null>(JSON.parse(localStorage.getItem('uniflow.empresa') ?? 'null') as Empresa | null);
+  planosTab = signal<'pesquisa' | 'dados'>('pesquisa');
+  contratacoesTab = signal<'pesquisa' | 'dados'>('pesquisa');
+  cobrancasTab = signal<'pesquisa' | 'dados'>('pesquisa');
+  recrutamentoCadastro = signal<'vagas' | 'candidatos' | 'curriculos'>('vagas');
+  recrutamentoTab = signal<'pesquisa' | 'dados'>('pesquisa');
+  empresaLogada = signal<Empresa | null>(JSON.parse(sessionStorage.getItem('uniflow.empresa') ?? 'null') as Empresa | null);
   profilePhotoUrl = signal(localStorage.getItem('uniflow.profilePhoto') ?? '');
 
-  loginForm = { login: 'admin', senha: 'Admin@123' };
+  loginForm = { login: '', senha: '' };
   bootstrapForm = {
     nome: 'Administrador do Sistema',
     login: 'admin',
@@ -150,7 +199,9 @@ export class App {
   passwordForm = { senhaAtual: '', novaSenha: '', confirmarSenha: '' };
 
   empresaForm: Empresa = this.novaEmpresa();
+  planoForm: Plano = this.novoPlano();
   contratoForm: Contrato = this.novoContrato();
+  cobrancaForm: Cobranca = this.novaCobranca();
   usuarioForm: UsuarioCreate = this.novoUsuario();
   filialForm: any = this.novaFilial();
   departamentoForm: any = this.novoDepartamento();
@@ -164,14 +215,22 @@ export class App {
   treinamentoForm: any = this.novoTreinamento();
   treinamentoColaboradorForm: any = this.novoTreinamentoColaborador();
   admissaoForm: any = this.novaAdmissao();
+  admissaoSelecionada: any = null;
+  admissaoEtapaSelecionada = signal<{ processoId: number; etapaNome: string } | null>(null);
+  admissaoDocumentosAnexados = signal<Record<number, any[]>>({});
   demissaoForm: any = this.novaDemissao();
+  demissaoEtapaSelecionada = signal<{ processoId: number; etapaNome: string } | null>(null);
   feriasForm: any = this.novaFerias();
   pontoForm: any = this.novoPonto();
   documentoForm: any = this.novoDocumento();
   beneficioColaboradorForm: any = this.novoBeneficioColaborador();
 
   empresas = signal<Empresa[]>([]);
+  planos = signal<Plano[]>([]);
   contratos = signal<Contrato[]>([]);
+  cobrancas = signal<Cobranca[]>([]);
+  contratoAtivoEmpresa = signal<Contrato | null>(null);
+  cobrancasEmpresa = signal<Cobranca[]>([]);
   usuarios = signal<UsuarioInfo[]>([]);
   filiais = signal<any[]>([]);
   departamentos = signal<any[]>([]);
@@ -235,18 +294,13 @@ export class App {
   modules = computed<ModuleItem[]>(() =>
     this.isSistemaAdmin()
       ? [
-          { id: 'contratos', label: 'Contratos', icon: '◷', description: 'Planos, vencimentos e situação financeira.' },
           { id: 'dashboard', label: 'Dashboard SaaS', icon: '◈', description: 'Contratos, pagamentos e saúde da carteira.' },
           { id: 'empresas', label: 'Empresas', icon: '▣', description: 'Cadastro e manutenção das empresas contratantes.' },
           { id: 'usuarios', label: 'Usuários', icon: '◎', description: 'Acessos administrativos das empresas.' },
         ]
       : [
           { id: 'dashboard', label: 'Visão geral', icon: '✦', description: 'Indicadores rápidos do RH.' },
-          { id: 'beneficios', label: 'Benefícios', icon: '◆', description: 'Benefícios e vínculos com colaboradores.' },
           { id: 'documentos', label: 'Documentos', icon: '▧', description: 'Documentos e validações dos colaboradores.' },
-          { id: 'estrutura', label: 'Filiais', icon: '▤', description: 'Unidades e filiais da empresa.' },
-          { id: 'ferias', label: 'Férias', icon: '☼', description: 'Programação e controle de férias.' },
-          { id: 'ponto', label: 'Ponto', icon: '◔', description: 'Registros de ponto por colaborador.' },
           { id: 'recrutamento', label: 'Recrutamento', icon: '◇', description: 'Vagas, candidatos e pipeline.' },
           { id: 'treinamentos', label: 'Treinamentos', icon: '◎', description: 'Portal de treinamentos, colaboradores e presença.' },
           { id: 'usuarios', label: 'Usuários', icon: '◎', description: 'Contas e perfis de acesso.' },
@@ -254,18 +308,53 @@ export class App {
   );
 
   cadastroModules = computed<ModuleItem[]>(() => [
-    { id: 'cargos', label: 'Cargos', icon: '◧', description: 'Cadastro de funções, níveis e salários base.' },
-    { id: 'colaboradores', label: 'Colaboradores', icon: '◉', description: 'Cadastro completo dos colaboradores.' },
-    { id: 'departamentos', label: 'Departamentos', icon: '▦', description: 'Cadastro de áreas e gestores.' },
+    ...(this.isSistemaAdmin()
+      ? [
+          { id: 'planos', label: 'Planos', icon: '◧', description: 'Catálogo de planos, prazos e valores.' },
+          { id: 'contratacoes', label: 'Contratações', icon: '◷', description: 'Contratos firmados com empresas contratantes.' },
+          { id: 'cobrancas', label: 'Cobranças', icon: '▤', description: 'Cobranças geradas e status financeiro.' },
+        ]
+      : [
+          { id: 'cargos', label: 'Cargos', icon: '◧', description: 'Cadastro de funções, níveis e salários base.' },
+          { id: 'colaboradores', label: 'Colaboradores', icon: '◉', description: 'Cadastro completo dos colaboradores.' },
+          { id: 'departamentos', label: 'Departamentos', icon: '▦', description: 'Cadastro de áreas e gestores.' },
+          { id: 'estrutura', label: 'Filiais', icon: '▤', description: 'Unidades e filiais da empresa.' },
+        ]),
   ]);
 
   peopleModules = computed<ModuleItem[]>(() => [
     { id: 'admissao', label: 'Admissão', icon: '＋', description: 'Fluxo admissional e documentos institucionais.' },
     { id: 'demissao', label: 'Demissão', icon: '−', description: 'Fluxo demissional e encerramento de vínculo.' },
+    { id: 'beneficios', label: 'Benefícios', icon: '◆', description: 'Benefícios e vínculos com colaboradores.' },
+    { id: 'ferias', label: 'Férias', icon: '☼', description: 'Programação e controle de férias.' },
+    { id: 'ponto', label: 'Ponto', icon: '◔', description: 'Registros de ponto por colaborador.' },
   ]);
 
   filteredEmpresas = computed(() => this.filterByTerm(this.empresas(), ['nomeFantasia', 'razaoSocial', 'cnpj']));
-  filteredContratos = computed(() => this.filterByTerm(this.contratos(), ['plano', 'status']));
+  filteredContratos = computed(() => {
+    const term = this.contratoSearch().trim().toLowerCase() || this.search().trim().toLowerCase();
+    const items = this.contratos();
+    if (!term) return items;
+    return items.filter((item) =>
+      [item.plano, item.status, this.nomeEmpresa(item.empresaId)].some((value) => String(value ?? '').toLowerCase().includes(term)),
+    );
+  });
+  filteredPlanos = computed(() => {
+    const term = this.planoSearch().trim().toLowerCase() || this.search().trim().toLowerCase();
+    const items = this.planos();
+    if (!term) return items;
+    return items.filter((item) => [item.nome, item.status].some((value) => String(value ?? '').toLowerCase().includes(term)));
+  });
+  filteredCobrancas = computed(() => {
+    const term = this.cobrancaSearch().trim().toLowerCase() || this.search().trim().toLowerCase();
+    const items = this.cobrancas();
+    if (!term) return items;
+    return items.filter((item) =>
+      [item.descricao, item.status, this.nomeEmpresa(item.empresaId), item.valor].some((value) =>
+        String(value ?? '').toLowerCase().includes(term),
+      ),
+    );
+  });
   filteredUsuarios = computed(() => this.filterByTerm(this.usuarios(), ['nome', 'login', 'email', 'role']));
   filteredColaboradores = computed(() => this.filterByTerm(this.colaboradores(), ['nome', 'cpf', 'email', 'status']));
   filteredColaboradoresCadastro = computed(() => {
@@ -291,9 +380,31 @@ export class App {
       ['nome', 'telefone', 'email'].some((field) => String(item[field] ?? '').toLowerCase().includes(term)),
     );
   });
+  filteredAdmissoes = computed(() => {
+    const term = this.admissaoSearch().trim().toLowerCase();
+    const items = this.admissoes();
+    if (!term) return items;
+
+    return items.filter((item) =>
+      [item.nomeCandidato, item.email, item.telefone, item.cargoPretendido, this.statusAdmissao(item)].some((value) =>
+        String(value ?? '').toLowerCase().includes(term),
+      ),
+    );
+  });
+  admissaoTotalPages = computed(() => Math.max(1, Math.ceil(this.filteredAdmissoes().length / 10)));
+  admissaoCurrentPage = computed(() => Math.min(this.admissaoPage(), this.admissaoTotalPages()));
+  pagedAdmissoes = computed(() => {
+    const page = this.admissaoCurrentPage();
+    const start = (page - 1) * 10;
+    return this.filteredAdmissoes().slice(start, start + 10);
+  });
 
   constructor() {
+    this.limparSessaoPersistenteAntiga();
+    this.registrarMonitorInatividade();
+    this.verificarAdminInicial();
     if (this.isLogged()) {
+      this.reiniciarTimerInatividade();
       this.carregarDados();
       this.prepararPerfil();
     }
@@ -316,20 +427,29 @@ export class App {
       .post<AuthResponse>(`${this.api}/auth/bootstrap-system-admin`, this.bootstrapForm)
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (response) => this.aplicarLogin(response),
+        next: (response) => {
+          this.systemAdminExists.set(true);
+          this.aplicarLogin(response);
+        },
         error: () => this.notificar('Admin já criado ou backend indisponível.', 'error'),
       });
   }
 
   logout() {
+    this.pararTimerInatividade();
     localStorage.removeItem('uniflow.token');
     localStorage.removeItem('uniflow.usuario');
+    localStorage.removeItem('uniflow.empresa');
+    sessionStorage.removeItem('uniflow.token');
+    sessionStorage.removeItem('uniflow.usuario');
+    sessionStorage.removeItem('uniflow.empresa');
     this.token.set('');
     this.usuario.set(null);
     this.empresaLogada.set(null);
     this.userMenuOpen.set(false);
+    this.cadastroMenuOpen.set(false);
+    this.peopleMenuOpen.set(false);
     this.activeModule.set('dashboard');
-    localStorage.removeItem('uniflow.empresa');
   }
 
   abrirPerfil() {
@@ -348,7 +468,7 @@ export class App {
     this.http.put<UsuarioInfo>(`${this.api}/auth/me`, this.profileForm).subscribe({
       next: (usuario) => {
         this.usuario.set(usuario);
-        localStorage.setItem('uniflow.usuario', JSON.stringify(usuario));
+        sessionStorage.setItem('uniflow.usuario', JSON.stringify(usuario));
         this.profileModalOpen.set(false);
         this.notificar('Perfil atualizado com sucesso.', 'success');
       },
@@ -382,19 +502,23 @@ export class App {
 
     if (this.isSistemaAdmin()) {
       this.empresaLogada.set(null);
-      localStorage.removeItem('uniflow.empresa');
+      sessionStorage.removeItem('uniflow.empresa');
       this.http.get<any>(`${this.api}/contratos/dashboard`).subscribe((x) => this.metricas.set(x));
       this.http.get<Empresa[]>(`${this.api}/empresas`).subscribe((x) => this.empresas.set(x ?? []));
+      this.http.get<Plano[]>(`${this.api}/contratos/planos`).subscribe((x) => this.planos.set(x ?? []));
       this.http.get<Contrato[]>(`${this.api}/contratos`).subscribe({
         next: (x) => this.contratos.set(x ?? []),
         error: () => this.notificar('Não foi possível carregar contratos.', 'error'),
       });
+      this.http.get<Cobranca[]>(`${this.api}/contratos/cobrancas`).subscribe((x) => this.cobrancas.set(x ?? []));
       this.carregarUsuarios();
       this.loading.set(false);
       return;
     }
 
     this.carregarEmpresaLogada();
+    this.http.get<Contrato | null>(`${this.api}/contratos/minha`).subscribe((x) => this.contratoAtivoEmpresa.set(x ?? null));
+    this.http.get<Cobranca[]>(`${this.api}/contratos/cobrancas/minhas`).subscribe((x) => this.cobrancasEmpresa.set(x ?? []));
     this.http.get<any[]>(`${this.api}/filiais`).subscribe((x) => this.filiais.set(x ?? []));
     this.http.get<any[]>(`${this.api}/departamentos`).subscribe((x) => this.departamentos.set(x ?? []));
     this.http.get<any[]>(`${this.api}/cargos`).subscribe((x) => this.cargos.set(x ?? []));
@@ -405,7 +529,11 @@ export class App {
     this.http.get<any[]>(`${this.api}/curriculos`).subscribe((x) => this.curriculos.set(x ?? []));
     this.http.get<any[]>(`${this.api}/treinamentos`).subscribe((x) => this.treinamentos.set(x ?? []));
     this.http.get<any[]>(`${this.api}/treinamentosColaboradores`).subscribe((x) => this.treinamentosColaboradores.set(x ?? []));
-    this.http.get<any[]>(`${this.api}/admissoes`).subscribe((x) => this.admissoes.set(x ?? []));
+    this.http.get<any[]>(`${this.api}/admissoes`).subscribe((x) => {
+      const admissoes = x ?? [];
+      this.admissoes.set(admissoes);
+      this.sincronizarDocumentosAnexadosAdmissao(admissoes);
+    });
     this.http.get<any[]>(`${this.api}/demissoes`).subscribe((x) => this.demissoes.set(x ?? []));
     this.http.get<any[]>(`${this.api}/documentosInstitucionais`).subscribe((x) => this.documentosInstitucionais.set(x ?? []));
     this.http.get<any[]>(`${this.api}/ferias`).subscribe((x) => this.ferias.set(x ?? []));
@@ -432,11 +560,11 @@ export class App {
     this.http.get<Empresa>(`${this.api}/empresas/minha`).subscribe({
       next: (empresa) => {
         this.empresaLogada.set(empresa);
-        localStorage.setItem('uniflow.empresa', JSON.stringify(empresa));
+        sessionStorage.setItem('uniflow.empresa', JSON.stringify(empresa));
       },
       error: () => {
         this.empresaLogada.set(null);
-        localStorage.removeItem('uniflow.empresa');
+        sessionStorage.removeItem('uniflow.empresa');
       },
     });
   }
@@ -483,7 +611,34 @@ export class App {
 
   editarEmpresa(item: Empresa) {
     this.empresaForm = { ...item };
+    this.empresasTab.set('dados');
     this.scrollTop();
+  }
+
+  salvarPlano() {
+    this.salvarCrud<Plano>('contratos/planos', this.planoForm, () => (this.planoForm = this.novoPlano()));
+  }
+
+  editarPlano(item: Plano) {
+    this.planoForm = { ...item };
+    this.activeModule.set('planos');
+    this.planosTab.set('dados');
+    this.scrollTop();
+  }
+
+  aplicarPlanoContrato(planoId?: number | null) {
+    this.contratoForm.planoId = planoId ?? null;
+    const plano = this.planos().find((x) => x.id === this.contratoForm.planoId);
+    if (!plano) return;
+
+    this.contratoForm.plano = plano.nome;
+    this.contratoForm.limiteColaboradores = plano.limiteColaboradores;
+    this.contratoForm.valorMensal = plano.valorCobranca;
+    if (this.contratoForm.dataInicio) {
+      const fim = new Date(this.contratoForm.dataInicio);
+      fim.setDate(fim.getDate() + plano.prazoDias);
+      this.contratoForm.dataFim = fim.toISOString().slice(0, 10);
+    }
   }
 
   salvarContrato() {
@@ -492,21 +647,60 @@ export class App {
 
   editarContrato(item: Contrato) {
     this.contratoForm = { ...item, dataFim: this.toDateInput(item.dataFim), dataInicio: this.toDateInput(item.dataInicio) };
-    this.activeModule.set('contratos');
+    this.activeModule.set('contratacoes');
+    this.contratacoesTab.set('dados');
+    this.scrollTop();
+  }
+
+  salvarCobranca() {
+    this.normalizeDateTime(this.cobrancaForm, ['dataGeracao', 'dataVencimento']);
+    this.salvarCrud<Cobranca>('contratos/cobrancas', this.cobrancaForm, () => (this.cobrancaForm = this.novaCobranca()));
+  }
+
+  editarCobranca(item: Cobranca) {
+    this.cobrancaForm = {
+      ...item,
+      dataGeracao: this.toDateInput(item.dataGeracao),
+      dataVencimento: this.toDateInput(item.dataVencimento),
+    };
+    this.activeModule.set('cobrancas');
+    this.cobrancasTab.set('dados');
     this.scrollTop();
   }
 
   salvarUsuario() {
     if (!this.isSistemaAdmin()) this.usuarioForm.empresaId = this.usuario()?.empresaId ?? undefined;
 
-    this.http.post<UsuarioInfo>(`${this.api}/usuarios`, this.usuarioForm).subscribe({
+    const editando = !!this.usuarioForm.id;
+    const payload = this.normalizePayload(this.usuarioForm);
+    const request = editando
+      ? this.http.put(`${this.api}/usuarios/${this.usuarioForm.id}`, payload)
+      : this.http.post<UsuarioInfo>(`${this.api}/usuarios`, payload);
+
+    request.subscribe({
       next: () => {
         this.usuarioForm = this.novoUsuario();
         this.carregarDados();
-        this.notificar('Usuário criado com sucesso.', 'success');
+        this.notificar(editando ? 'Usuário atualizado com sucesso.' : 'Usuário criado com sucesso.', 'success');
       },
       error: () => this.notificar('Erro ao salvar usuário.', 'error'),
     });
+  }
+
+  editarUsuario(item: UsuarioInfo) {
+    this.usuarioForm = {
+      id: item.id,
+      empresaId: item.empresaId ?? undefined,
+      colaboradorId: item.colaboradorId ?? undefined,
+      nome: item.nome,
+      login: item.login,
+      email: item.email,
+      senha: '',
+      role: item.role,
+      ativo: true,
+    };
+    this.usuariosTab.set('dados');
+    this.scrollTop();
   }
 
   salvarFilial() {
@@ -547,12 +741,15 @@ export class App {
   }
 
   abrirModalColaboradorAdmissao(item?: any) {
+    this.admissaoSelecionada = item ?? null;
+    const vaga = this.vagaDaAdmissao(item);
     this.colaboradorForm = {
       ...this.novoColaborador(),
       nome: item?.nomeCandidato ?? '',
       telefone: item?.telefone ?? '',
       email: item?.email ?? '',
-      cargoId: item?.cargoId,
+      departamentoId: vaga?.departamentoId,
+      cargoId: vaga?.cargoId,
       dataAdmissao: this.toDateInput(item?.dataPrevistaAdmissao) || new Date().toISOString().slice(0, 10),
       observacoes: item?.cargoPretendido ? `Cargo pretendido: ${item.cargoPretendido}` : '',
     };
@@ -560,13 +757,13 @@ export class App {
   }
 
   salvarColaboradorAdmissao() {
+    const admissao = this.admissaoSelecionada;
     this.prepararStatusColaborador();
     this.http.post<any>(`${this.api}/colaboradores`, this.normalizePayload(this.colaboradorForm)).subscribe({
-      next: () => {
+      next: (colaborador) => {
         this.colaboradorForm = this.novoColaborador();
         this.admissaoColaboradorModalOpen.set(false);
-        this.carregarDados();
-        this.notificar('Colaborador cadastrado pela admissão.', 'success');
+        this.concluirAdmissaoComColaborador(colaborador, admissao);
       },
       error: () => this.notificar('Erro ao cadastrar colaborador pela admissão.', 'error'),
     });
@@ -593,11 +790,64 @@ export class App {
 
   editarVaga(item: any) {
     this.vagaForm = { ...item, dataEncerramento: this.toDateInput(item.dataEncerramento) };
+    this.recrutamentoCadastro.set('vagas');
+    this.recrutamentoTab.set('dados');
+    this.scrollTop();
+  }
+
+  novaVagaRecrutamento() {
+    this.vagaForm = this.novaVaga();
+    this.recrutamentoCadastro.set('vagas');
+    this.recrutamentoTab.set('dados');
+    this.scrollTop();
+  }
+
+  editarCandidato(item: any) {
+    this.candidatoForm = { ...item };
+    this.recrutamentoCadastro.set('candidatos');
+    this.recrutamentoTab.set('dados');
+    this.scrollTop();
+  }
+
+  novoCandidatoRecrutamento() {
+    this.candidatoForm = this.novoCandidato();
+    this.recrutamentoCadastro.set('candidatos');
+    this.recrutamentoTab.set('dados');
+    this.scrollTop();
+  }
+
+  novoCurriculoRecrutamento() {
+    this.curriculoForm = this.novoCurriculo();
+    this.curriculoArquivo = null;
+    this.recrutamentoCadastro.set('curriculos');
+    this.recrutamentoTab.set('dados');
     this.scrollTop();
   }
 
   salvarCandidato() {
-    this.salvarCrud('candidatos', this.candidatoForm, () => (this.candidatoForm = this.novoCandidato()));
+    const editando = !!this.candidatoForm.id;
+    const payload = this.normalizePayload(this.candidatoForm);
+    const request = editando
+      ? this.http.put(`${this.api}/candidatos/${this.candidatoForm.id}`, payload)
+      : this.http.post<any>(`${this.api}/candidatos`, payload);
+
+    request.subscribe({
+      next: (candidato) => {
+        const candidatoCriado = editando ? this.candidatoForm : candidato;
+        this.candidatoForm = this.novoCandidato();
+        if (editando) {
+          this.carregarDados();
+          this.recrutamentoTab.set('pesquisa');
+          this.notificar('Candidato atualizado com sucesso.', 'success');
+          return;
+        }
+
+        this.carregarDados();
+        this.recrutamentoTab.set('pesquisa');
+        this.notificar('Candidato cadastrado com sucesso.', 'success');
+      },
+      error: () => this.notificar('Erro ao salvar candidatos.', 'error'),
+    });
   }
 
   selecionarCurriculoArquivo(event: Event) {
@@ -651,18 +901,93 @@ export class App {
       });
   }
 
+  abrirNovoProcessoAdmissao() {
+    this.admissaoSelecionada = null;
+    this.admissaoForm = this.novaAdmissao();
+    this.admissaoProcessoModalOpen.set(true);
+  }
+
+  abrirModalProcessoAdmissao(item: any) {
+    this.admissaoSelecionada = item;
+    const vaga = this.vagaDaAdmissao(item);
+    const candidato = this.candidatos().find(
+      (x) =>
+        x.vagaId === vaga?.id &&
+        (String(x.email ?? '').toLowerCase() === String(item.email ?? '').toLowerCase() || x.nome === item.nomeCandidato),
+    );
+    this.admissaoForm = {
+      ...item,
+      vagaId: vaga?.id,
+      candidatoId: candidato?.id,
+      dataPrevistaAdmissao: this.toDateInput(item.dataPrevistaAdmissao),
+    };
+    this.admissaoProcessoModalOpen.set(true);
+  }
+
+  fecharModalProcessoAdmissao() {
+    this.admissaoProcessoModalOpen.set(false);
+    this.admissaoSelecionada = null;
+    this.admissaoForm = this.novaAdmissao();
+  }
+
   salvarAdmissao() {
+    if (!this.admissaoForm.id && !this.admissaoForm.candidatoId) {
+      this.notificar('Selecione uma vaga aberta e um candidato para criar o processo admissional.', 'error');
+      return;
+    }
+
     this.normalizeDateTime(this.admissaoForm, ['dataPrevistaAdmissao']);
-    this.salvarCrud('admissoes', this.admissaoForm, () => (this.admissaoForm = this.novaAdmissao()));
+    const editando = !!this.admissaoForm.id;
+    const { vagaId: _vagaId, candidatoId: _candidatoId, ...processo } = this.admissaoForm;
+    const payload = this.normalizePayload(processo);
+    const request = editando
+      ? this.http.put(`${this.api}/admissoes/${this.admissaoForm.id}`, payload)
+      : this.http.post<any>(`${this.api}/admissoes`, payload);
+
+    request.subscribe({
+      next: () => {
+        this.fecharModalProcessoAdmissao();
+        this.carregarDados();
+        this.notificar(editando ? 'Processo atualizado com sucesso.' : 'Processo criado com sucesso.', 'success');
+      },
+      error: () => this.notificar('Erro ao salvar processo de admissao.', 'error'),
+    });
   }
 
   admitirColaborador(item: any) {
-    this.http.post(`${this.api}/admissoes/${item.id}/admitir`, {}).subscribe({
+    if (!this.podeAdmitir(item)) {
+      this.notificar('Conclua todas as etapas antes de efetuar a admissao.', 'error');
+      return;
+    }
+
+    this.abrirModalColaboradorAdmissao(item);
+    this.notificar('Complete o cadastro para concluir a admissão.', 'info');
+  }
+
+  abrirModalDocumentacaoAdmissao(item: any) {
+    this.admissaoSelecionada = item;
+    this.admissaoDocumentosModalOpen.set(true);
+  }
+
+  fecharModalDocumentacaoAdmissao() {
+    this.admissaoDocumentosModalOpen.set(false);
+    this.admissaoSelecionada = null;
+  }
+
+  documentosDaAdmissao(item: any) {
+    return this.documentosInstitucionais().filter((x) => x.admissaoProcessoId === item?.id);
+  }
+
+  gerarDocumentosAdmissao() {
+    const item = this.admissaoSelecionada;
+    if (!item?.id) return;
+
+    this.http.post(`${this.api}/admissoes/${item.id}/documentos`, {}).subscribe({
       next: () => {
         this.carregarDados();
-        this.notificar('Colaborador admitido e documentos institucionais gerados.', 'success');
+        this.notificar('Documentacao institucional gerada com sucesso.', 'success');
       },
-      error: () => this.notificar('Erro ao concluir admissão.', 'error'),
+      error: () => this.notificar('Erro ao gerar documentacao institucional.', 'error'),
     });
   }
 
@@ -671,9 +996,23 @@ export class App {
     this.salvarCrud('demissoes', this.demissaoForm, () => (this.demissaoForm = this.novaDemissao()));
   }
 
+  editarDemissao(item: any) {
+    this.demissaoForm = {
+      ...item,
+      dataSolicitacao: this.toDateInput(item.dataSolicitacao),
+      dataDesligamento: this.toDateInput(item.dataDesligamento),
+    };
+  }
+
   concluirDemissao(item: any) {
+    if (!this.podeConcluirDemissao(item)) {
+      this.notificar('Conclua todas as etapas antes de efetivar a demissao.', 'error');
+      return;
+    }
+
     this.http.post(`${this.api}/demissoes/${item.id}/concluir`, {}).subscribe({
       next: () => {
+        this.demissaoEtapaSelecionada.set(null);
         this.carregarDados();
         this.notificar('Fluxo demissional concluído e colaborador inativado.', 'success');
       },
@@ -709,11 +1048,17 @@ export class App {
   }
 
   salvarBeneficioColaborador() {
-    this.http.post(`${this.api}/beneficiosColaboradores`, this.normalizePayload(this.beneficioColaboradorForm)).subscribe({
+    const editando = !!this.beneficioColaboradorForm.id;
+    const payload = this.normalizePayload(this.beneficioColaboradorForm);
+    const request = editando
+      ? this.http.put(`${this.api}/beneficiosColaboradores/${this.beneficioColaboradorForm.id}`, payload)
+      : this.http.post(`${this.api}/beneficiosColaboradores`, payload);
+
+    request.subscribe({
       next: () => {
         this.beneficioColaboradorForm = this.novoBeneficioColaborador();
         this.carregarDados();
-        this.notificar('Benefício vinculado ao colaborador.', 'success');
+        this.notificar(editando ? 'Vínculo atualizado.' : 'Benefício vinculado ao colaborador.', 'success');
       },
       error: () => this.notificar('Erro ao vincular benefício.', 'error'),
     });
@@ -747,6 +1092,67 @@ export class App {
     return this.empresas().find((x) => x.id === id)?.nomeFantasia ?? id ?? '-';
   }
 
+  ultimaCobrancaEmpresa() {
+    return this.cobrancasEmpresa()[0] ?? null;
+  }
+
+  clientesEmDia() {
+    const atrasadas = new Set(this.cobrancasAtrasadas().map((x) => x.empresaId));
+    return new Set(this.contratos().filter((x) => x.status === 'Ativo' && !atrasadas.has(x.empresaId)).map((x) => x.empresaId)).size;
+  }
+
+  clientesEmAtraso() {
+    return new Set(this.cobrancasAtrasadas().map((x) => x.empresaId)).size;
+  }
+
+  cobrancasEmAberto() {
+    return this.cobrancasAbertasLista().length;
+  }
+
+  cobrancasAbertasLista() {
+    return this.cobrancas().filter((x) => x.status === 'Pendente');
+  }
+
+  contratosAVencerLista() {
+    const hoje = new Date();
+    const limite = new Date();
+    limite.setDate(limite.getDate() + 30);
+    return this.contratos().filter((x) => {
+      if (!x.dataFim || x.status !== 'Ativo') return false;
+      const vencimento = new Date(x.dataFim);
+      return vencimento >= hoje && vencimento <= limite;
+    });
+  }
+
+  private cobrancasAtrasadas() {
+    const hoje = new Date();
+    return this.cobrancas().filter((x) => x.status === 'Pendente' && new Date(x.dataVencimento) < hoje);
+  }
+
+  planosMaisUsados() {
+    const total = Math.max(1, this.contratos().length);
+    const porPlano = this.contratos().reduce<Record<string, number>>((acc, contrato) => {
+      const plano = contrato.plano || 'Sem plano';
+      acc[plano] = (acc[plano] ?? 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(porPlano)
+      .map(([nome, quantidade]) => ({ nome, quantidade, percentual: Math.round((quantidade / total) * 100) }))
+      .sort((a, b) => b.quantidade - a.quantidade)
+      .slice(0, 5);
+  }
+
+  percentualClientesEmDia() {
+    const total = Math.max(1, this.clientesEmDia() + this.clientesEmAtraso());
+    return Math.round((this.clientesEmDia() / total) * 100);
+  }
+
+  percentualClientesEmAtraso() {
+    const total = Math.max(1, this.clientesEmDia() + this.clientesEmAtraso());
+    return Math.round((this.clientesEmAtraso() / total) * 100);
+  }
+
   nomeColaborador(id?: number) {
     return this.colaboradores().find((x) => x.id === id)?.nome ?? id ?? '-';
   }
@@ -755,8 +1161,384 @@ export class App {
     return this.cargos().find((x) => x.id === id)?.nome ?? id ?? '-';
   }
 
+  nomeDepartamento(id?: number) {
+    return this.departamentos().find((x) => x.id === id)?.nome ?? id ?? '-';
+  }
+
   nomeVaga(id?: number) {
     return this.vagas().find((x) => x.id === id)?.titulo ?? id ?? '-';
+  }
+
+  vagasAbertas() {
+    return this.vagas().filter((x) => x.status === 'Aberta');
+  }
+
+  candidatosDaVaga(vagaId?: number) {
+    return this.candidatos().filter((x) => x.vagaId === vagaId);
+  }
+
+  candidatosDaVagaAdmissao() {
+    return this.candidatosDaVaga(this.admissaoForm.vagaId);
+  }
+
+  selecionarVagaAdmissao(vagaId: number | undefined) {
+    const vaga = this.vagas().find((x) => x.id === vagaId);
+    this.admissaoForm = {
+      ...this.admissaoForm,
+      vagaId,
+      candidatoId: undefined,
+      nomeCandidato: '',
+      email: '',
+      telefone: '',
+      cargoPretendido: vaga?.titulo ?? '',
+    };
+  }
+
+  selecionarCandidatoAdmissao(candidatoId: number | undefined) {
+    const candidato = this.candidatos().find((x) => x.id === candidatoId);
+    const vaga = this.vagas().find((x) => x.id === (candidato?.vagaId ?? this.admissaoForm.vagaId));
+    this.admissaoForm = {
+      ...this.admissaoForm,
+      candidatoId,
+      vagaId: candidato?.vagaId ?? this.admissaoForm.vagaId,
+      nomeCandidato: candidato?.nome ?? '',
+      email: candidato?.email ?? '',
+      telefone: candidato?.telefone ?? '',
+      cargoPretendido: vaga?.titulo ?? '',
+    };
+  }
+
+  admissaoDoCandidato(candidato: any) {
+    return this.admissoes().find(
+      (x) =>
+        String(x.email ?? '').toLowerCase() === String(candidato.email ?? '').toLowerCase() ||
+        (x.nomeCandidato === candidato.nome && x.cargoPretendido === this.nomeVaga(candidato.vagaId)),
+    );
+  }
+
+  etapasAdmissao(item: any) {
+    const nomes = [
+      'Candidato cadastrado',
+      'Entrevista com RH',
+      'Entrevista com gestor',
+      'Avaliacao psicologica',
+      'Anexar documentos',
+    ];
+    const etapas = Array.isArray(item?.etapas) ? item.etapas : [];
+
+    return nomes.map((nome, index) => {
+      const etapa = etapas.find((x: any) => x.nome === nome);
+      return etapa ?? { id: 0, nome, status: index === 0 ? 'Concluida' : 'Bloqueada' };
+    });
+  }
+
+  etapaLiberada(item: any, etapa: any) {
+    if (this.processoFinalizado(item)) return false;
+    const etapas = this.etapasAdmissao(item);
+    const index = etapas.findIndex((x: any) => x.nome === etapa.nome);
+    if (index <= 0) return true;
+    return etapas.slice(0, index).every((x: any) => x.status === 'Concluida');
+  }
+
+  podeAdmitir(item: any) {
+    return !this.processoFinalizado(item) && this.etapasAdmissao(item).every((x: any) => x.status === 'Concluida');
+  }
+
+  statusAdmissao(item: any) {
+    if (item?.status === 'Admitido') return 'Admitido';
+    if (item?.status === 'Cancelado') return 'Cancelado';
+    return this.proximaEtapaAdmissao(item)?.nome ?? 'Pronto para admissao';
+  }
+
+  proximaEtapaAdmissao(item: any) {
+    return this.etapasAdmissao(item).find((etapa: any) => etapa.status !== 'Concluida' && this.etapaLiberada(item, etapa));
+  }
+
+  avancarProximaEtapaAdmissao(item: any) {
+    const etapa = this.proximaEtapaAdmissao(item);
+    if (!etapa) {
+      this.notificar('Nao ha etapa liberada para avancar.', 'info');
+      return;
+    }
+
+    this.concluirEtapaAdmissao(item, etapa);
+  }
+
+  processoAdmitido(item: any) {
+    return item?.status === 'Admitido';
+  }
+
+  processoFinalizado(item: any) {
+    return item?.status === 'Admitido' || item?.status === 'Cancelado';
+  }
+
+  processoCancelado(item: any) {
+    return item?.status === 'Cancelado';
+  }
+
+  selecionarEtapaAdmissao(item: any, etapa: any) {
+    if (this.processoFinalizado(item)) return;
+    this.admissaoEtapaSelecionada.set({ processoId: item.id, etapaNome: etapa.nome });
+  }
+
+  limparEtapaAdmissaoSelecionada() {
+    this.admissaoEtapaSelecionada.set(null);
+  }
+
+  etapaSelecionada(item: any, etapa: any) {
+    const selecionada = this.admissaoEtapaSelecionada();
+    return selecionada?.processoId === item?.id && selecionada?.etapaNome === etapa?.nome;
+  }
+
+  etapaSelecionadaDoProcesso(item: any) {
+    const selecionada = this.admissaoEtapaSelecionada();
+    if (!selecionada || selecionada.processoId !== item?.id) return null;
+    const etapaNome = selecionada.etapaNome;
+    return this.etapasAdmissao(item).find((etapa: any) => etapa.nome === etapaNome) ?? null;
+  }
+
+  podeAvancarEtapa(item: any) {
+    const etapa = this.etapaSelecionadaDoProcesso(item);
+    if (!etapa || etapa.status === 'Concluida' || !this.etapaLiberada(item, etapa)) return false;
+    if (this.etapaAnexarDocumentos(etapa)) return this.documentosAnexadosAdmissao(item).length > 0;
+    return true;
+  }
+
+  podeVoltarEtapa(item: any) {
+    const etapa = this.etapaSelecionadaDoProcesso(item);
+    if (!etapa || this.processoFinalizado(item)) return false;
+
+    const etapas = this.etapasAdmissao(item);
+    const index = etapas.findIndex((x: any) => x.nome === etapa.nome);
+    return index > 0 && (etapa.status === 'Concluida' || etapas[index - 1]?.status === 'Concluida');
+  }
+
+  avancarEtapaSelecionada(item: any) {
+    const etapa = this.etapaSelecionadaDoProcesso(item);
+    if (!etapa) return;
+    if (this.etapaAnexarDocumentos(etapa) && !this.documentosAnexadosAdmissao(item).length) {
+      this.notificar('Anexe um documento antes de avancar esta etapa.', 'error');
+      return;
+    }
+    this.concluirEtapaAdmissao(item, etapa);
+  }
+
+  etapaAnexarDocumentos(etapa: any) {
+    return etapa?.nome === 'Anexar documentos';
+  }
+
+  documentosAnexadosAdmissao(item: any) {
+    return this.admissaoDocumentosAnexados()[item?.id] ?? [];
+  }
+
+  documentoAnexadoEhImagem(doc: any) {
+    return String(doc?.tipoArquivo ?? doc?.tipo ?? '').startsWith('image/');
+  }
+
+  extensaoDocumentoAdmissao(doc: any) {
+    const nome = doc?.nomeArquivo ?? doc?.nome ?? '';
+    const extensao = nome.includes('.') ? nome.split('.').pop() : 'DOC';
+    return String(extensao || 'DOC').slice(0, 4).toUpperCase();
+  }
+
+  selecionarDocumentoAdmissao(event: Event, item: any) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || !item?.id) return;
+
+    const form = new FormData();
+    form.append('arquivo', file);
+
+    this.http.post<any>(`${this.api}/admissoes/${item.id}/documentos-anexados`, form).subscribe({
+      next: (documento) => {
+        this.admissaoDocumentosAnexados.update((documentos) => ({
+          ...documentos,
+          [item.id]: [documento, ...(documentos[item.id] ?? [])],
+        }));
+        item.documentosAnexados = [documento, ...(item.documentosAnexados ?? [])];
+        this.notificar('Documento anexado ao processo.', 'success');
+      },
+      error: () => this.notificar('Erro ao anexar documento ao processo.', 'error'),
+    });
+    input.value = '';
+  }
+
+  removerDocumentoAdmissao(item: any, doc: any) {
+    if (!item?.id || !doc?.id) return;
+    this.http.delete(`${this.api}/admissoes/${item.id}/documentos-anexados/${doc.id}`).subscribe({
+      next: () => {
+        this.admissaoDocumentosAnexados.update((documentos) => ({
+          ...documentos,
+          [item.id]: (documentos[item.id] ?? []).filter((documento) => documento.id !== doc.id),
+        }));
+        item.documentosAnexados = (item.documentosAnexados ?? []).filter((documento: any) => documento.id !== doc.id);
+        this.notificar('Documento removido do processo.', 'info');
+      },
+      error: () => this.notificar('Erro ao remover documento do processo.', 'error'),
+    });
+  }
+
+  setAdmissaoSearch(value: string) {
+    this.admissaoSearch.set(value);
+    this.admissaoPage.set(1);
+  }
+
+  setAdmissaoPage(page: number) {
+    const bounded = Math.min(Math.max(page, 1), this.admissaoTotalPages());
+    this.admissaoPage.set(bounded);
+  }
+
+  admissaoPageNumbers() {
+    return Array.from({ length: this.admissaoTotalPages() }, (_value, index) => index + 1);
+  }
+
+  voltarEtapaSelecionada(item: any) {
+    const etapa = this.etapaSelecionadaDoProcesso(item);
+    if (!etapa || !this.podeVoltarEtapa(item)) return;
+
+    const etapas = this.etapasAdmissao(item);
+    const index = etapas.findIndex((x: any) => x.nome === etapa.nome);
+    const etapaParaReabrir = etapa.status === 'Concluida' ? etapa : etapas[index - 1];
+    if (!etapaParaReabrir?.id) return;
+
+    this.atualizarEtapaAdmissao(item, etapaParaReabrir, 'Pendente', 'Etapa anterior reaberta.');
+  }
+
+  concluirEtapaAdmissao(item: any, etapa: any) {
+    if (!etapa.id || !this.etapaLiberada(item, etapa)) return;
+    this.atualizarEtapaAdmissao(item, etapa, 'Concluida', 'Etapa concluida.');
+  }
+
+  cancelarProcessoAdmissao(item: any) {
+    if (!item?.id || this.processoFinalizado(item)) return;
+
+    this.http.post(`${this.api}/admissoes/${item.id}/cancelar`, {}).subscribe({
+      next: () => {
+        item.status = 'Cancelado';
+        this.admissaoEtapaSelecionada.set(null);
+        this.carregarDados();
+        this.notificar('Processo de admissao cancelado.', 'success');
+      },
+      error: () => this.notificar('Erro ao cancelar processo de admissao.', 'error'),
+    });
+  }
+
+  etapasDemissao(item: any) {
+    const nomes = ['Aprovada pela direcao', 'Entrevista demissional', 'Exame demissional', 'Demissao efetivada'];
+    const etapas = Array.isArray(item?.etapas) ? item.etapas : [];
+
+    return nomes.map((nome) => etapas.find((x: any) => x.nome === nome) ?? { id: 0, nome, status: 'Pendente' });
+  }
+
+  etapaDemissaoLiberada(item: any, etapa: any) {
+    if (this.processoDemissaoFinalizado(item)) return false;
+    const etapas = this.etapasDemissao(item);
+    const index = etapas.findIndex((x: any) => x.nome === etapa.nome);
+    if (index <= 0) return true;
+    return etapas.slice(0, index).every((x: any) => x.status === 'Concluida');
+  }
+
+  statusDemissao(item: any) {
+    if (item?.status === 'Concluido') return 'Concluido';
+    if (item?.status === 'Cancelado') return 'Cancelado';
+    return this.etapasDemissao(item).find((etapa: any) => etapa.status !== 'Concluida')?.nome ?? 'Pronto para efetivar';
+  }
+
+  processoDemissaoFinalizado(item: any) {
+    return item?.status === 'Concluido' || item?.status === 'Cancelado';
+  }
+
+  podeConcluirDemissao(item: any) {
+    return !this.processoDemissaoFinalizado(item) && this.etapasDemissao(item).every((x: any) => x.status === 'Concluida');
+  }
+
+  selecionarEtapaDemissao(item: any, etapa: any) {
+    if (this.processoDemissaoFinalizado(item)) return;
+    this.demissaoEtapaSelecionada.set({ processoId: item.id, etapaNome: etapa.nome });
+  }
+
+  limparEtapaDemissaoSelecionada() {
+    this.demissaoEtapaSelecionada.set(null);
+  }
+
+  etapaDemissaoSelecionada(item: any, etapa: any) {
+    const selecionada = this.demissaoEtapaSelecionada();
+    return selecionada?.processoId === item?.id && selecionada?.etapaNome === etapa?.nome;
+  }
+
+  etapaDemissaoSelecionadaDoProcesso(item: any) {
+    const selecionada = this.demissaoEtapaSelecionada();
+    if (!selecionada || selecionada.processoId !== item?.id) return null;
+    return this.etapasDemissao(item).find((etapa: any) => etapa.nome === selecionada.etapaNome) ?? null;
+  }
+
+  podeAvancarEtapaDemissao(item: any) {
+    const etapa = this.etapaDemissaoSelecionadaDoProcesso(item);
+    return !!etapa && etapa.status !== 'Concluida' && this.etapaDemissaoLiberada(item, etapa);
+  }
+
+  podeVoltarEtapaDemissao(item: any) {
+    const etapa = this.etapaDemissaoSelecionadaDoProcesso(item);
+    if (!etapa || this.processoDemissaoFinalizado(item)) return false;
+
+    const etapas = this.etapasDemissao(item);
+    const index = etapas.findIndex((x: any) => x.nome === etapa.nome);
+    return index > 0 && (etapa.status === 'Concluida' || etapas[index - 1]?.status === 'Concluida');
+  }
+
+  avancarEtapaDemissaoSelecionada(item: any) {
+    const etapa = this.etapaDemissaoSelecionadaDoProcesso(item);
+    if (!etapa || !this.podeAvancarEtapaDemissao(item)) return;
+    this.atualizarEtapaDemissao(item, etapa, 'Concluida', 'Etapa demissional concluida.');
+  }
+
+  voltarEtapaDemissaoSelecionada(item: any) {
+    const etapa = this.etapaDemissaoSelecionadaDoProcesso(item);
+    if (!etapa || !this.podeVoltarEtapaDemissao(item)) return;
+
+    const etapas = this.etapasDemissao(item);
+    const index = etapas.findIndex((x: any) => x.nome === etapa.nome);
+    const etapaParaReabrir = etapa.status === 'Concluida' ? etapa : etapas[index - 1];
+    if (!etapaParaReabrir?.id) return;
+    this.atualizarEtapaDemissao(item, etapaParaReabrir, 'Pendente', 'Etapa demissional reaberta.');
+  }
+
+  private atualizarEtapaAdmissao(item: any, etapa: any, status: string, mensagem: string) {
+    const dataConclusao = status === 'Concluida' ? new Date().toISOString() : null;
+    this.http
+      .put(`${this.api}/admissoes/${item.id}/etapas/${etapa.id}`, { ...etapa, status, dataConclusao })
+      .subscribe({
+        next: () => {
+          etapa.status = status;
+          etapa.dataConclusao = dataConclusao;
+          item.status = this.statusAdmissao(item);
+          this.carregarDados();
+          this.notificar(mensagem, 'success');
+        },
+        error: () => this.notificar('Erro ao atualizar etapa.', 'error'),
+      });
+  }
+
+  private atualizarEtapaDemissao(item: any, etapa: any, status: string, mensagem: string) {
+    const dataConclusao = status === 'Concluida' ? new Date().toISOString() : null;
+    this.http
+      .put(`${this.api}/demissoes/${item.id}/etapas/${etapa.id}`, { ...etapa, status, dataConclusao })
+      .subscribe({
+        next: () => {
+          etapa.status = status;
+          etapa.dataConclusao = dataConclusao;
+          item.status = this.statusDemissao(item);
+          this.carregarDados();
+          this.notificar(mensagem, 'success');
+        },
+        error: () => this.notificar('Erro ao atualizar etapa demissional.', 'error'),
+      });
+  }
+
+  iniciarFluxoCandidato(candidato: any) {
+    this.abrirNovoProcessoAdmissao();
+    this.selecionarVagaAdmissao(candidato.vagaId);
+    this.selecionarCandidatoAdmissao(candidato.id);
   }
 
   nomeBeneficio(id?: number) {
@@ -770,7 +1552,7 @@ export class App {
   setModule(id: string) {
     this.activeModule.set(id);
     if (this.cadastroModules().some((module) => module.id === id)) this.cadastroMenuOpen.set(true);
-    if (id === 'admissao' || id === 'demissao') this.peopleMenuOpen.set(true);
+    if (this.peopleModules().some((module) => module.id === id)) this.peopleMenuOpen.set(true);
     this.search.set('');
     this.userMenuOpen.set(false);
   }
@@ -791,13 +1573,109 @@ export class App {
     });
   }
 
+  private sincronizarDocumentosAnexadosAdmissao(processos: any[]) {
+    const documentosPorProcesso = processos.reduce<Record<number, any[]>>((acc, processo) => {
+      if (processo?.id) acc[processo.id] = processo.documentosAnexados ?? [];
+      return acc;
+    }, {});
+    this.admissaoDocumentosAnexados.set(documentosPorProcesso);
+  }
+
+  private concluirAdmissaoComColaborador(colaborador: any, admissao: any) {
+    if (!admissao?.id || !colaborador?.id) {
+      this.registrarDocumentosAdmissaoNoColaborador(colaborador, admissao);
+      return;
+    }
+
+    this.http.post(`${this.api}/admissoes/${admissao.id}/admitir`, { colaboradorId: colaborador.id }).subscribe({
+      next: () => this.registrarDocumentosAdmissaoNoColaborador(colaborador, admissao),
+      error: () => {
+        this.admissaoSelecionada = null;
+        this.carregarDados();
+        this.notificar('Colaborador cadastrado, mas não foi possível concluir a admissão.', 'error');
+      },
+    });
+  }
+
+  private registrarDocumentosAdmissaoNoColaborador(colaborador: any, admissao: any) {
+    const documentos = this.documentosAnexadosAdmissao(admissao);
+    if (!colaborador?.id || !documentos.length) {
+      this.admissaoSelecionada = null;
+      this.carregarDados();
+      this.notificar('Colaborador cadastrado pela admissão.', 'success');
+      return;
+    }
+
+    const requests = documentos.map((doc) =>
+      this.http.post(`${this.api}/documentosColaboradores`, {
+        colaboradorId: colaborador.id,
+        tipoDocumento: 'Documento admissional',
+        nomeArquivo: doc.nomeArquivo,
+        urlArquivo: doc.urlArquivo,
+        obrigatorio: true,
+        validado: false,
+      }),
+    );
+
+    forkJoin(requests).subscribe({
+      next: () => {
+        this.admissaoSelecionada = null;
+        this.carregarDados();
+        this.notificar('Colaborador cadastrado e documentos vinculados.', 'success');
+      },
+      error: () => {
+        this.admissaoSelecionada = null;
+        this.carregarDados();
+        this.notificar('Colaborador cadastrado, mas não foi possível vincular todos os documentos.', 'error');
+      },
+    });
+  }
+
   private aplicarLogin(response: AuthResponse) {
-    localStorage.setItem('uniflow.token', response.token);
-    localStorage.setItem('uniflow.usuario', JSON.stringify(response.usuario));
+    sessionStorage.setItem('uniflow.token', response.token);
+    sessionStorage.setItem('uniflow.usuario', JSON.stringify(response.usuario));
     this.token.set(response.token);
     this.usuario.set(response.usuario);
+    this.cadastroMenuOpen.set(false);
+    this.peopleMenuOpen.set(false);
     this.prepararPerfil();
+    this.reiniciarTimerInatividade();
     this.carregarDados();
+  }
+
+  private limparSessaoPersistenteAntiga() {
+    localStorage.removeItem('uniflow.token');
+    localStorage.removeItem('uniflow.usuario');
+    localStorage.removeItem('uniflow.empresa');
+  }
+
+  private registrarMonitorInatividade() {
+    const events = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart'];
+    for (const event of events) {
+      window.addEventListener(event, () => this.reiniciarTimerInatividade(), { passive: true });
+    }
+  }
+
+  private reiniciarTimerInatividade() {
+    if (!this.isLogged()) return;
+    this.pararTimerInatividade();
+    this.inactivityTimeoutId = setTimeout(() => {
+      this.logout();
+      this.notificar('Sessao encerrada por inatividade.', 'info');
+    }, this.sessionTimeoutMs);
+  }
+
+  private pararTimerInatividade() {
+    if (!this.inactivityTimeoutId) return;
+    clearTimeout(this.inactivityTimeoutId);
+    this.inactivityTimeoutId = undefined;
+  }
+
+  private verificarAdminInicial() {
+    this.http.get<{ exists: boolean }>(`${this.api}/auth/system-admin-exists`).subscribe({
+      next: (response) => this.systemAdminExists.set(!!response.exists),
+      error: () => this.systemAdminExists.set(true),
+    });
   }
 
   private prepararPerfil() {
@@ -854,7 +1732,36 @@ export class App {
     }
   }
 
-  private novaEmpresa(): Empresa {
+  private criarAdmissaoParaCandidato(candidato: any) {
+    const vaga = this.vagas().find((x) => x.id === candidato.vagaId);
+    const admissao = {
+      colaboradorId: undefined,
+      nomeCandidato: candidato.nome,
+      email: candidato.email,
+      telefone: candidato.telefone,
+      cargoPretendido: vaga?.titulo ?? '',
+      dataPrevistaAdmissao: new Date().toISOString(),
+      status: 'Em andamento',
+    };
+
+    this.http.post(`${this.api}/admissoes`, this.normalizePayload(admissao)).subscribe({
+      next: () => {
+        this.carregarDados();
+        this.notificar('Candidato cadastrado e fluxo de admissao iniciado.', 'success');
+      },
+      error: () => {
+        this.carregarDados();
+        this.notificar('Candidato salvo, mas nao foi possivel iniciar a admissao.', 'error');
+      },
+    });
+  }
+
+  private vagaDaAdmissao(item?: any) {
+    if (!item) return undefined;
+    return this.vagas().find((x) => x.titulo === item.cargoPretendido);
+  }
+
+  novaEmpresa(): Empresa {
     return {
       razaoSocial: '',
       nomeFantasia: '',
@@ -869,9 +1776,10 @@ export class App {
     };
   }
 
-  private novoContrato(): Contrato {
+  novoContrato(): Contrato {
     return {
       empresaId: 0,
+      planoId: null,
       plano: 'Starter',
       status: 'Ativo',
       dataInicio: new Date().toISOString().slice(0, 10),
@@ -882,7 +1790,33 @@ export class App {
     };
   }
 
-  private novoUsuario(): UsuarioCreate {
+  novoPlano(): Plano {
+    return {
+      nome: '',
+      prazoDias: 30,
+      limiteColaboradores: 50,
+      valorCobranca: 0,
+      status: 'Ativo',
+      observacoes: '',
+    };
+  }
+
+  novaCobranca(): Cobranca {
+    const hoje = new Date();
+    const vencimento = new Date();
+    vencimento.setDate(vencimento.getDate() + 30);
+    return {
+      empresaId: 0,
+      contratoId: 0,
+      descricao: '',
+      valor: 0,
+      dataGeracao: hoje.toISOString().slice(0, 10),
+      dataVencimento: vencimento.toISOString().slice(0, 10),
+      status: 'Pendente',
+    };
+  }
+
+  novoUsuario(): UsuarioCreate {
     return {
       empresaId: undefined,
       colaboradorId: undefined,
@@ -895,15 +1829,15 @@ export class App {
     };
   }
 
-  private novaFilial() {
+  novaFilial() {
     return { nome: '', cnpj: '', endereco: '', cidade: '', estado: '', telefone: '', ativa: true };
   }
 
-  private novoDepartamento() {
+  novoDepartamento() {
     return { nome: '', descricao: '', gestorId: undefined, ativo: true };
   }
 
-  private novoCargo() {
+  novoCargo() {
     return { nome: '', descricao: '', nivel: '', salarioBase: 0, ativo: true };
   }
 
@@ -940,24 +1874,24 @@ export class App {
     };
   }
 
-  private novoBeneficio() {
+  novoBeneficio() {
     return { nome: '', descricao: '', valorPadrao: 0, ativo: true };
   }
 
-  private novaVaga() {
+  novaVaga() {
     return {
       departamentoId: undefined,
       cargoId: undefined,
       titulo: '',
       descricao: '',
-      quantidade: 1,
-      salario: 0,
+      quantidade: undefined,
+      salario: undefined,
       status: 'Aberta',
       dataEncerramento: '',
     };
   }
 
-  private novoCandidato() {
+  novoCandidato() {
     return {
       vagaId: undefined,
       nome: '',
@@ -971,7 +1905,7 @@ export class App {
     };
   }
 
-  private novoCurriculo() {
+  novoCurriculo() {
     return {
       nome: '',
       telefone: '',
@@ -1004,6 +1938,8 @@ export class App {
 
   private novaAdmissao() {
     return {
+      vagaId: undefined,
+      candidatoId: undefined,
       colaboradorId: undefined,
       nomeCandidato: '',
       email: '',
@@ -1063,7 +1999,7 @@ export class App {
     };
   }
 
-  private novoBeneficioColaborador() {
+  novoBeneficioColaborador() {
     return {
       colaboradorId: undefined,
       beneficioId: undefined,

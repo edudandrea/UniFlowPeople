@@ -15,6 +15,27 @@ public class DemissoesController(AppDbContext db, ITenantContext tenant) : BaseT
 {
     protected override DbSet<DemissaoProcesso> Set => db.Demissoes;
 
+    [HttpGet]
+    public override async Task<ActionResult<IEnumerable<DemissaoProcesso>>> GetAll()
+    {
+        if (tenant.EmpresaId is null) return Forbid();
+        var processos = await db.Demissoes
+            .Include(x => x.Colaborador)
+            .Include(x => x.Etapas)
+            .Where(x => x.EmpresaId == tenant.EmpresaId.Value)
+            .OrderByDescending(x => x.DataSolicitacao)
+            .ToListAsync();
+
+        foreach (var processo in processos)
+        {
+            SincronizarEtapasPadrao(processo);
+            AtualizarStatusProcesso(processo);
+        }
+
+        await db.SaveChangesAsync();
+        return processos;
+    }
+
     [HttpPost]
     [Authorize(Roles = Roles.AdminOrRh)]
     public override async Task<ActionResult<DemissaoProcesso>> Create(DemissaoProcesso entity)
@@ -29,6 +50,7 @@ public class DemissoesController(AppDbContext db, ITenantContext tenant) : BaseT
             entity.Etapas = EtapasPadrao().Select(nome => new DemissaoEtapa { Nome = nome }).ToList();
         }
 
+        AtualizarStatusProcesso(entity);
         db.Demissoes.Add(entity);
         await db.SaveChangesAsync();
         return CreatedAtAction(nameof(GetById), new { id = entity.Id }, entity);
@@ -43,6 +65,12 @@ public class DemissoesController(AppDbContext db, ITenantContext tenant) : BaseT
             .Include(x => x.Colaborador)
             .Include(x => x.Etapas)
             .FirstOrDefaultAsync(x => x.Id == id && x.EmpresaId == tenant.EmpresaId.Value);
+
+        if (processo is not null)
+        {
+            SincronizarEtapasPadrao(processo);
+            AtualizarStatusProcesso(processo);
+        }
 
         return processo is null ? NotFound() : processo;
     }
@@ -60,7 +88,27 @@ public class DemissoesController(AppDbContext db, ITenantContext tenant) : BaseT
         etapa.Status = request.Status;
         etapa.Responsavel = request.Responsavel;
         etapa.Observacoes = request.Observacoes;
-        etapa.DataConclusao = request.Status == "Concluida" ? DateTime.UtcNow : null;
+        etapa.DataConclusao = request.Status == "Concluida" ? request.DataConclusao ?? DateTime.UtcNow : null;
+
+        var processo = await db.Demissoes
+            .Include(x => x.Etapas)
+            .FirstOrDefaultAsync(x => x.Id == id && x.EmpresaId == tenant.EmpresaId.Value);
+        if (processo is not null)
+        {
+            if (request.Status != "Concluida")
+            {
+                var nomes = EtapasPadrao().ToList();
+                var indice = nomes.FindIndex(nome => nome == etapa.Nome);
+                foreach (var posterior in processo.Etapas.Where(x => nomes.IndexOf(x.Nome) > indice))
+                {
+                    posterior.Status = "Pendente";
+                    posterior.DataConclusao = null;
+                }
+            }
+
+            AtualizarStatusProcesso(processo);
+        }
+
         await db.SaveChangesAsync();
         return NoContent();
     }
@@ -72,8 +120,15 @@ public class DemissoesController(AppDbContext db, ITenantContext tenant) : BaseT
         if (tenant.EmpresaId is null) return Forbid();
         var processo = await db.Demissoes
             .Include(x => x.Colaborador)
+            .Include(x => x.Etapas)
             .FirstOrDefaultAsync(x => x.Id == id && x.EmpresaId == tenant.EmpresaId.Value);
         if (processo is null) return NotFound();
+        SincronizarEtapasPadrao(processo);
+
+        if (EtapasPadrao().Any(nome => processo.Etapas.FirstOrDefault(x => x.Nome == nome)?.Status != "Concluida"))
+        {
+            return BadRequest("Conclua todas as etapas antes de efetivar a demissao.");
+        }
 
         processo.Status = "Concluido";
         processo.Colaborador.Status = "Demitido";
@@ -85,11 +140,34 @@ public class DemissoesController(AppDbContext db, ITenantContext tenant) : BaseT
 
     private static string[] EtapasPadrao() =>
     [
-        "Comunicado de desligamento",
-        "Calculo rescisorio",
-        "Baixa de acessos",
-        "Devolucao de equipamentos",
+        "Aprovada pela direcao",
+        "Entrevista demissional",
         "Exame demissional",
-        "Homologacao e arquivamento"
+        "Demissao efetivada"
     ];
+
+    private static void SincronizarEtapasPadrao(DemissaoProcesso processo)
+    {
+        var existentes = processo.Etapas.Select(x => x.Nome).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var nome in EtapasPadrao().Where(nome => !existentes.Contains(nome)))
+        {
+            processo.Etapas.Add(new DemissaoEtapa
+            {
+                DemissaoProcessoId = processo.Id,
+                Nome = nome,
+                Status = "Pendente"
+            });
+        }
+    }
+
+    private static void AtualizarStatusProcesso(DemissaoProcesso processo)
+    {
+        if (processo.Status is "Concluido" or "Cancelado") return;
+
+        var etapaAtual = EtapasPadrao()
+            .Select(nome => processo.Etapas.FirstOrDefault(x => x.Nome == nome))
+            .FirstOrDefault(etapa => etapa is not null && etapa.Status != "Concluida");
+
+        processo.Status = etapaAtual?.Nome ?? "Pronto para efetivar";
+    }
 }

@@ -4,6 +4,7 @@ namespace UniFlowPeople.Api.Models
     {
         public int Id { get; set; }
         public int EmpresaId { get; set; }
+        public int? PlanoId { get; set; }
         public string Plano { get; set; } = "Starter";
         public string Status { get; set; } = "Ativo";
         public DateTime DataInicio { get; set; } = DateTime.UtcNow;
@@ -13,5 +14,7 @@ namespace UniFlowPeople.Api.Models
         public string? Observacoes { get; set; }
 
         public Empresa Empresa { get; set; } = null!;
+        public Plano? PlanoCadastro { get; set; }
+        public ICollection<Cobranca> Cobrancas { get; set; } = new List<Cobranca>();
     }
 }

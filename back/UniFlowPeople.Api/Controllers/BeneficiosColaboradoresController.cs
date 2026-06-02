@@ -35,6 +35,22 @@ public class BeneficiosColaboradoresController(AppDbContext db, ITenantContext t
         return CreatedAtAction(nameof(GetAll), new { id = vinculo.Id }, vinculo);
     }
 
+    [HttpPut("{id:int}")]
+    [Authorize(Roles = Roles.AdminOrRh)]
+    public async Task<IActionResult> Update(int id, BeneficioColaborador vinculo)
+    {
+        var current = await db.BeneficiosColaboradores.Include(x => x.Colaborador).FirstOrDefaultAsync(x => x.Id == id);
+        if (current is null) return NotFound();
+        if (current.Colaborador.EmpresaId != tenant.EmpresaId) return Forbid();
+        if (!await ColaboradorPertenceEmpresa(vinculo.ColaboradorId) || !await BeneficioPertenceEmpresa(vinculo.BeneficioId))
+            return Forbid();
+
+        db.Entry(current).CurrentValues.SetValues(vinculo);
+        current.Id = id;
+        await db.SaveChangesAsync();
+        return NoContent();
+    }
+
     [HttpDelete("{id:int}")]
     [Authorize(Roles = Roles.AdminOrRh)]
     public async Task<IActionResult> Delete(int id)

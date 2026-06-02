@@ -27,12 +27,15 @@ namespace UniFlowPeople.Api.Data
         public DbSet<DocumentoColaborador> DocumentosColaboradores { get; set; }
         public DbSet<Vaga> Vagas { get; set; }
         public DbSet<Candidato> Candidatos { get; set; }
+        public DbSet<Plano> Planos { get; set; }
         public DbSet<Contrato> Contratos { get; set; }
+        public DbSet<Cobranca> Cobrancas { get; set; }
         public DbSet<Curriculo> Curriculos { get; set; }
         public DbSet<Treinamento> Treinamentos { get; set; }
         public DbSet<TreinamentoColaborador> TreinamentosColaboradores { get; set; }
         public DbSet<AdmissaoProcesso> Admissoes { get; set; }
         public DbSet<AdmissaoEtapa> AdmissaoEtapas { get; set; }
+        public DbSet<AdmissaoDocumento> AdmissaoDocumentos { get; set; }
         public DbSet<DocumentoInstitucional> DocumentosInstitucionais { get; set; }
         public DbSet<DemissaoProcesso> Demissoes { get; set; }
         public DbSet<DemissaoEtapa> DemissaoEtapas { get; set; }
@@ -101,6 +104,32 @@ namespace UniFlowPeople.Api.Data
                 .Property(x => x.ValorMensal)
                 .HasPrecision(18, 2);
 
+            modelBuilder.Entity<Plano>()
+                .Property(x => x.ValorCobranca)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Cobranca>()
+                .Property(x => x.Valor)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Contrato>()
+                .HasOne(x => x.PlanoCadastro)
+                .WithMany(x => x.Contratos)
+                .HasForeignKey(x => x.PlanoId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Cobranca>()
+                .HasOne(x => x.Empresa)
+                .WithMany(x => x.Cobrancas)
+                .HasForeignKey(x => x.EmpresaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Cobranca>()
+                .HasOne(x => x.Contrato)
+                .WithMany(x => x.Cobrancas)
+                .HasForeignKey(x => x.ContratoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             modelBuilder.Entity<Curriculo>()
                 .HasIndex(x => new { x.EmpresaId, x.Email });
 
@@ -129,6 +158,12 @@ namespace UniFlowPeople.Api.Data
             modelBuilder.Entity<AdmissaoEtapa>()
                 .HasOne(x => x.AdmissaoProcesso)
                 .WithMany(x => x.Etapas)
+                .HasForeignKey(x => x.AdmissaoProcessoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<AdmissaoDocumento>()
+                .HasOne(x => x.AdmissaoProcesso)
+                .WithMany(x => x.DocumentosAnexados)
                 .HasForeignKey(x => x.AdmissaoProcessoId)
                 .OnDelete(DeleteBehavior.Cascade);
 

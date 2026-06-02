@@ -1,9 +1,10 @@
-<section class="panel fade-in">
+<section class="panel fade-in" (click)="vm.limparEtapaDemissaoSelecionada()">
   <div class="panel-title">
-    <div><h2>Fluxo demissional</h2><p>Controle desligamento, etapas, prazos e conclusão.</p></div>
+    <div><h2>Fluxo demissional</h2><p>Controle desligamento, motivo, etapas e efetivacao.</p></div>
     <span>{{ vm.demissoes().length }} processos</span>
   </div>
-  <form class="form-grid cols-6" (ngSubmit)="vm.salvarDemissao()">
+
+  <form class="form-grid cols-6" (ngSubmit)="vm.salvarDemissao()" (click)="$event.stopPropagation()">
     <select name="demColaborador" [(ngModel)]="vm.demissaoForm.colaboradorId" required>
       <option [ngValue]="undefined">Colaborador</option>
       <option *ngFor="let colab of vm.colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option>
@@ -11,8 +12,8 @@
     <select name="demTipo" [(ngModel)]="vm.demissaoForm.tipoDemissao">
       <option>Sem justa causa</option>
       <option>Com justa causa</option>
-      <option>Pedido de demissão</option>
-      <option>Término de contrato</option>
+      <option>Pedido de demissao</option>
+      <option>Termino de contrato</option>
     </select>
     <input name="demDesligamento" [(ngModel)]="vm.demissaoForm.dataDesligamento" type="date" />
     <select name="demStatus" [(ngModel)]="vm.demissaoForm.status">
@@ -20,19 +21,84 @@
       <option>Concluido</option>
       <option>Cancelado</option>
     </select>
-    <input name="demMotivo" [(ngModel)]="vm.demissaoForm.motivo" placeholder="Motivo" />
-    <button type="submit">{{ vm.demissaoForm.id ? 'Atualizar' : 'Criar demissão' }}</button>
+    <input name="demMotivo" [(ngModel)]="vm.demissaoForm.motivo" placeholder="Motivo da demissao" />
+    <button type="submit">{{ vm.demissaoForm.id ? 'Atualizar' : 'Criar demissao' }}</button>
   </form>
-  <div class="cards">
-    <article *ngFor="let item of vm.demissoes()">
-      <div class="card-head"><strong>{{ vm.nomeColaborador(item.colaboradorId) }}</strong><span class="status">{{ item.status }}</span></div>
-      <span>{{ item.tipoDemissao }}</span>
-      <small>Desligamento: {{ item.dataDesligamento | date: 'dd/MM/yyyy' }}</small>
-      <p>{{ item.motivo }}</p>
-      <div class="row-actions">
-        <button class="soft" type="button" (click)="vm.editarGenerico('demissaoForm', item)">Editar</button>
-        <button type="button" (click)="vm.concluirDemissao(item)">Concluir</button>
-      </div>
-    </article>
+
+  <div class="table-wrap excel-wrap">
+    <table class="excel-table admission-table">
+      <thead>
+        <tr>
+          <th>Colaborador</th>
+          <th>Tipo</th>
+          <th>Desligamento</th>
+          <th>Status</th>
+          <th>Motivo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let item of vm.demissoes()">
+          <tr class="admission-summary-row" (click)="vm.limparEtapaDemissaoSelecionada()">
+            <td><strong>{{ vm.nomeColaborador(item.colaboradorId) }}</strong><small>{{ item.colaborador?.email || item.colaborador?.telefone || '-' }}</small></td>
+            <td>{{ item.tipoDemissao }}</td>
+            <td>{{ item.dataDesligamento | date: 'dd/MM/yyyy' }}</td>
+            <td><span class="status">{{ vm.statusDemissao(item) }}</span></td>
+            <td>{{ item.motivo || '-' }}</td>
+          </tr>
+          <tr class="admission-detail-row">
+            <td colspan="5" (click)="$event.stopPropagation()">
+              <div class="admission-detail-grid">
+                <div>
+                  <div class="admission-flow table-flow demission-flow">
+                    <div
+                      class="admission-step"
+                      *ngFor="let etapa of vm.etapasDemissao(item); let i = index"
+                      [class.done]="etapa.status === 'Concluida'"
+                      [class.locked]="!vm.etapaDemissaoLiberada(item, etapa)"
+                      [class.selected]="vm.etapaDemissaoSelecionada(item, etapa)"
+                    >
+                      <button
+                        type="button"
+                        [disabled]="vm.processoDemissaoFinalizado(item)"
+                        (click)="vm.selecionarEtapaDemissao(item, etapa)"
+                        [title]="etapa.nome"
+                      >
+                        {{ i + 1 }}
+                      </button>
+                      <strong>{{ etapa.nome }}</strong>
+                      <small>{{ etapa.status }}</small>
+                      <small *ngIf="etapa.dataConclusao">Avancada em {{ etapa.dataConclusao | date: 'dd/MM/yyyy HH:mm' }}</small>
+                    </div>
+                  </div>
+
+                  <div class="stage-actions" *ngIf="vm.etapaDemissaoSelecionadaDoProcesso(item)">
+                    <div class="stage-action-buttons">
+                      <button class="soft" type="button" [disabled]="!vm.podeAvancarEtapaDemissao(item)" (click)="vm.avancarEtapaDemissaoSelecionada(item)">
+                        Avancar
+                      </button>
+                      <button class="soft" type="button" [disabled]="!vm.podeVoltarEtapaDemissao(item)" (click)="vm.voltarEtapaDemissaoSelecionada(item)">
+                        Voltar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="admission-detail-actions">
+                  <div class="row-actions">
+                    <button class="soft" type="button" (click)="vm.editarDemissao(item)">Editar</button>
+                    <button type="button" [disabled]="!vm.podeConcluirDemissao(item)" (click)="vm.concluirDemissao(item)">
+                      Efetivar demissao
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+        <tr *ngIf="!vm.demissoes().length">
+          <td colspan="5" class="empty-cell">Nenhum processo demissional cadastrado.</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </section>

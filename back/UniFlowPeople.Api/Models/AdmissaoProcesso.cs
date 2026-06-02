@@ -16,6 +16,7 @@ namespace UniFlowPeople.Api.Models
         public Empresa Empresa { get; set; } = null!;
         public Colaborador? Colaborador { get; set; }
         public ICollection<AdmissaoEtapa> Etapas { get; set; } = new List<AdmissaoEtapa>();
+        public ICollection<AdmissaoDocumento> DocumentosAnexados { get; set; } = new List<AdmissaoDocumento>();
         public ICollection<DocumentoInstitucional> DocumentosInstitucionais { get; set; } = new List<DocumentoInstitucional>();
     }
 }

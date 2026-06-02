@@ -25,5 +25,6 @@ namespace UniFlowPeople.Api.Models
         public ICollection<Cargo> Cargos { get; set; } = new List<Cargo>();
         public ICollection<Colaborador> Colaboradores { get; set; } = new List<Colaborador>();
         public ICollection<Contrato> Contratos { get; set; } = new List<Contrato>();
+        public ICollection<Cobranca> Cobrancas { get; set; } = new List<Cobranca>();
     }
 }

@@ -11,7 +11,42 @@
     <nav class="module-nav">
       <ng-container *ngIf="isSistemaAdmin(); else companyMenu">
         <button
-          *ngFor="let module of modules()"
+          *ngFor="let module of modules().slice(0, 1)"
+          type="button"
+          [class.active]="activeModule() === module.id"
+          (click)="setModule(module.id)"
+        >
+          <span class="nav-icon">{{ module.icon }}</span>
+          <span>{{ module.label }}</span>
+        </button>
+
+        <div class="nav-group">
+          <button
+            class="nav-group-toggle"
+            type="button"
+            [class.active]="activeModule() === 'planos' || activeModule() === 'contratacoes' || activeModule() === 'cobrancas'"
+            (click)="cadastroMenuOpen.set(!cadastroMenuOpen())"
+          >
+            <span class="nav-icon">▦</span>
+            <span>Cadastros</span>
+            <b>{{ cadastroMenuOpen() ? '⌃' : '⌄' }}</b>
+          </button>
+
+          <div class="nav-submenu" *ngIf="cadastroMenuOpen()">
+            <button
+              *ngFor="let module of cadastroModules()"
+              type="button"
+              [class.active]="activeModule() === module.id"
+              (click)="setModule(module.id)"
+            >
+              <span class="nav-icon">{{ module.icon }}</span>
+              <span>{{ module.label }}</span>
+            </button>
+          </div>
+        </div>
+
+        <button
+          *ngFor="let module of modules().slice(1)"
           type="button"
           [class.active]="activeModule() === module.id"
           (click)="setModule(module.id)"
@@ -36,7 +71,7 @@
           <button
             class="nav-group-toggle"
             type="button"
-            [class.active]="activeModule() === 'cargos' || activeModule() === 'colaboradores' || activeModule() === 'departamentos'"
+            [class.active]="activeModule() === 'cargos' || activeModule() === 'colaboradores' || activeModule() === 'departamentos' || activeModule() === 'estrutura'"
             (click)="cadastroMenuOpen.set(!cadastroMenuOpen())"
           >
             <span class="nav-icon">▦</span>
@@ -71,7 +106,7 @@
         <button
           class="nav-group-toggle"
           type="button"
-          [class.active]="activeModule() === 'admissao' || activeModule() === 'demissao'"
+          [class.active]="activeModule() === 'admissao' || activeModule() === 'demissao' || activeModule() === 'beneficios' || activeModule() === 'ferias' || activeModule() === 'ponto'"
           (click)="peopleMenuOpen.set(!peopleMenuOpen())"
         >
           <span class="nav-icon">☷</span>
@@ -120,16 +155,6 @@
       </div>
 
       <div class="top-actions">
-        <div class="search-box">
-          <span>⌕</span>
-          <input
-            [ngModel]="search()"
-            (ngModelChange)="search.set($event)"
-            name="search"
-            placeholder="Pesquisar nesta página"
-          />
-        </div>
-
         <button class="icon-button" type="button" (click)="carregarDados()" title="Atualizar">↻</button>
 
         <div class="user-menu">
@@ -171,7 +196,7 @@
 
     <app-dashboard-page *ngIf="activeModule() === 'dashboard'" [vm]="vm"></app-dashboard-page>
     <app-empresas-page *ngIf="isSistemaAdmin() && activeModule() === 'empresas'" [vm]="vm"></app-empresas-page>
-    <app-contratos-page *ngIf="isSistemaAdmin() && activeModule() === 'contratos'" [vm]="vm"></app-contratos-page>
+    <app-contratos-page *ngIf="isSistemaAdmin() && (activeModule() === 'planos' || activeModule() === 'contratacoes' || activeModule() === 'cobrancas')" [vm]="vm"></app-contratos-page>
     <app-colaboradores-page *ngIf="!isSistemaAdmin() && activeModule() === 'colaboradores'" [vm]="vm"></app-colaboradores-page>
     <app-departamentos-page *ngIf="!isSistemaAdmin() && activeModule() === 'departamentos'" [vm]="vm"></app-departamentos-page>
     <app-cargos-page *ngIf="!isSistemaAdmin() && activeModule() === 'cargos'" [vm]="vm"></app-cargos-page>
@@ -219,6 +244,88 @@
   </form>
 </section>
 
+<section class="modal-backdrop" *ngIf="admissaoProcessoModalOpen()">
+  <form class="modal-card modal-card-xxl pop" (ngSubmit)="salvarAdmissao()">
+    <div class="modal-head">
+      <div>
+        <h2>Novo processo de admissão</h2>
+        <p>Cadastre o processo para iniciar o fluxo admissional.</p>
+      </div>
+      <button type="button" (click)="fecharModalProcessoAdmissao()">×</button>
+    </div>
+
+    <div class="form-grid cols-2 no-margin">
+      <label>
+        Vaga aberta
+        <select
+          name="admProcVaga"
+          [ngModel]="admissaoForm.vagaId"
+          (ngModelChange)="selecionarVagaAdmissao($event)"
+          [disabled]="!!admissaoForm.id"
+          required
+        >
+          <option [ngValue]="undefined">Selecione a vaga</option>
+          <option *ngFor="let vaga of vagasAbertas()" [ngValue]="vaga.id">{{ vaga.titulo }}</option>
+        </select>
+      </label>
+      <label>
+        Candidato
+        <select
+          name="admProcCandidato"
+          [ngModel]="admissaoForm.candidatoId"
+          (ngModelChange)="selecionarCandidatoAdmissao($event)"
+          [disabled]="!!admissaoForm.id || !admissaoForm.vagaId"
+          required
+        >
+          <option [ngValue]="undefined">Selecione o candidato</option>
+          <option *ngFor="let candidato of candidatosDaVagaAdmissao()" [ngValue]="candidato.id">{{ candidato.nome }}</option>
+        </select>
+      </label>
+      <label>Nome do candidato<input name="admProcNome" [(ngModel)]="admissaoForm.nomeCandidato" readonly required /></label>
+      <label>Cargo pretendido<input name="admProcCargo" [(ngModel)]="admissaoForm.cargoPretendido" readonly /></label>
+      <label>E-mail<input name="admProcEmail" [(ngModel)]="admissaoForm.email" type="email" readonly /></label>
+      <label>Telefone<input name="admProcTelefone" [(ngModel)]="admissaoForm.telefone" readonly /></label>
+      <label>Data prevista<input name="admProcData" [(ngModel)]="admissaoForm.dataPrevistaAdmissao" type="date" /></label>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="soft" (click)="fecharModalProcessoAdmissao()">Cancelar</button>
+      <button type="submit">Salvar processo</button>
+    </div>
+  </form>
+</section>
+
+<section class="modal-backdrop" *ngIf="admissaoDocumentosModalOpen() && admissaoSelecionada">
+  <div class="modal-card modal-card-wide pop">
+    <div class="modal-head">
+      <div>
+        <h2>Documentação institucional</h2>
+        <p>{{ admissaoSelecionada.nomeCandidato }} · {{ admissaoSelecionada.cargoPretendido }}</p>
+      </div>
+      <button type="button" (click)="fecharModalDocumentacaoAdmissao()">×</button>
+    </div>
+
+    <div class="cards compact">
+      <article *ngFor="let item of documentosDaAdmissao(admissaoSelecionada)">
+        <strong>{{ item.titulo }}</strong>
+        <span>{{ item.tipoDocumento }}</span>
+        <small>{{ item.dataGeracao | date: 'dd/MM/yyyy HH:mm' }}</small>
+        <p>{{ item.conteudo }}</p>
+      </article>
+    </div>
+
+    <div class="empty-state" *ngIf="!documentosDaAdmissao(admissaoSelecionada).length">
+      <strong>Nenhum documento gerado</strong>
+      <span>Gere os arquivos institucionais após a admissão concluída.</span>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="soft" (click)="fecharModalDocumentacaoAdmissao()">Fechar</button>
+      <button type="button" (click)="gerarDocumentosAdmissao()">Gerar arquivos</button>
+    </div>
+  </div>
+</section>
+
 <section class="modal-backdrop" *ngIf="admissaoColaboradorModalOpen()">
   <form class="modal-card modal-card-wide pop" (ngSubmit)="salvarColaboradorAdmissao()">
     <div class="modal-head">
@@ -230,10 +337,32 @@
     </div>
 
     <div class="form-grid cols-2 no-margin">
+      <label class="span-all">Foto
+        <input name="admColabFoto" type="file" accept="image/*" (change)="selecionarFotoColaborador($event)" />
+      </label>
       <label>Nome<input name="admColabNome" [(ngModel)]="colaboradorForm.nome" required /></label>
       <label>CPF<input name="admColabCpf" [(ngModel)]="colaboradorForm.cpf" /></label>
+      <label>RG<input name="admColabRg" [(ngModel)]="colaboradorForm.rg" /></label>
       <label>E-mail<input name="admColabEmail" [(ngModel)]="colaboradorForm.email" type="email" /></label>
       <label>Telefone<input name="admColabTelefone" [(ngModel)]="colaboradorForm.telefone" /></label>
+      <label>Data de nascimento<input name="admColabNascimento" [(ngModel)]="colaboradorForm.dataNascimento" type="date" /></label>
+      <label>Sexo
+        <select name="admColabSexo" [(ngModel)]="colaboradorForm.sexo">
+          <option value="">Selecione</option>
+          <option>Feminino</option>
+          <option>Masculino</option>
+          <option>Outro</option>
+        </select>
+      </label>
+      <label>Estado civil
+        <select name="admColabEstadoCivil" [(ngModel)]="colaboradorForm.estadoCivil">
+          <option value="">Selecione</option>
+          <option>Solteiro(a)</option>
+          <option>Casado(a)</option>
+          <option>Divorciado(a)</option>
+          <option>Viuvo(a)</option>
+        </select>
+      </label>
       <label>Data de admissão<input name="admColabData" [(ngModel)]="colaboradorForm.dataAdmissao" type="date" /></label>
       <label>Tipo de contrato
         <select name="admColabContrato" [(ngModel)]="colaboradorForm.tipoContrato">
@@ -255,7 +384,17 @@
           <option *ngFor="let cargo of cargos()" [ngValue]="cargo.id">{{ cargo.nome }}</option>
         </select>
       </label>
+      <label>Filial
+        <select name="admColabFilial" [(ngModel)]="colaboradorForm.filialId">
+          <option [ngValue]="undefined">Selecione</option>
+          <option *ngFor="let filial of filiais()" [ngValue]="filial.id">{{ filial.nome }}</option>
+        </select>
+      </label>
       <label>Salário<input name="admColabSalario" [(ngModel)]="colaboradorForm.salario" type="number" min="0" step="0.01" /></label>
+      <label>Carga horaria semanal<input name="admColabCarga" [(ngModel)]="colaboradorForm.cargaHorariaSemanal" type="number" min="0" /></label>
+      <label>Matricula<input name="admColabMatricula" [(ngModel)]="colaboradorForm.matricula" /></label>
+      <label>PIS<input name="admColabPis" [(ngModel)]="colaboradorForm.pis" /></label>
+      <label>CTPS<input name="admColabCtps" [(ngModel)]="colaboradorForm.ctps" /></label>
       <label>Status
         <select name="admColabStatus" [(ngModel)]="colaboradorForm.status">
           <option>Ativo</option>
@@ -263,12 +402,17 @@
           <option>Inativo</option>
         </select>
       </label>
+      <label class="span-all">Endereco<input name="admColabEndereco" [(ngModel)]="colaboradorForm.endereco" /></label>
+      <label>Bairro<input name="admColabBairro" [(ngModel)]="colaboradorForm.bairro" /></label>
+      <label>Cidade<input name="admColabCidade" [(ngModel)]="colaboradorForm.cidade" /></label>
+      <label>Estado<input name="admColabEstado" [(ngModel)]="colaboradorForm.estado" /></label>
+      <label>CEP<input name="admColabCep" [(ngModel)]="colaboradorForm.cep" /></label>
       <label class="span-all">Observações<textarea name="admColabObs" [(ngModel)]="colaboradorForm.observacoes"></textarea></label>
     </div>
 
     <div class="modal-actions">
       <button type="button" class="soft" (click)="admissaoColaboradorModalOpen.set(false)">Cancelar</button>
-      <button type="submit">Cadastrar colaborador</button>
+      <button type="submit">Concluir cadastro</button>
     </div>
   </form>
 </section>
@@ -307,7 +451,7 @@
         <input name="senha" [(ngModel)]="loginForm.senha" type="password" placeholder="Senha" required />
         <button type="submit" [disabled]="loading()">{{ loading() ? 'Entrando...' : 'Entrar' }}</button>
       </form>
-      <button class="ghost wide" type="button" (click)="bootstrapAdmin()">Criar admin inicial</button>
+      <button class="ghost wide" type="button" *ngIf="!systemAdminExists()" (click)="bootstrapAdmin()">Criar admin inicial</button>
       <p class="toast error" *ngIf="mensagem()">{{ mensagem() }}</p>
     </section>
   </main>

@@ -57,6 +57,14 @@ public class AuthController(
         return CreatedAtAction(nameof(Me), ToResponse(usuario, token, expiresAt));
     }
 
+    [HttpGet("system-admin-exists")]
+    [AllowAnonymous]
+    public async Task<ActionResult<object>> SystemAdminExists()
+    {
+        var exists = await db.Usuarios.AsNoTracking().AnyAsync(x => x.Role == Roles.SistemaAdmin);
+        return Ok(new { exists });
+    }
+
     [HttpGet("me")]
     [Authorize]
     public async Task<ActionResult<UsuarioInfo>> Me()

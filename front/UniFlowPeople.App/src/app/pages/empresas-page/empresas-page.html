@@ -2,34 +2,62 @@
   <div class="panel-title">
     <div>
       <h2>Empresas contratantes</h2>
-      <p>Cadastre empresas clientes e mantenha os dados comerciais atualizados.</p>
+      <p>Pesquisa, cadastro e manutenção das empresas clientes.</p>
     </div>
     <span>{{ vm.filteredEmpresas().length }} registros</span>
   </div>
 
-  <form class="form-grid cols-4" (ngSubmit)="vm.salvarEmpresa()">
-    <input name="razaoSocial" [(ngModel)]="vm.empresaForm.razaoSocial" placeholder="Razão social" required />
-    <input name="nomeFantasia" [(ngModel)]="vm.empresaForm.nomeFantasia" placeholder="Nome fantasia" required />
-    <input name="cnpj" [(ngModel)]="vm.empresaForm.cnpj" placeholder="CNPJ" required />
-    <input name="telefone" [(ngModel)]="vm.empresaForm.telefone" placeholder="Telefone" />
-    <input name="email" [(ngModel)]="vm.empresaForm.email" placeholder="E-mail" />
-    <input name="cidade" [(ngModel)]="vm.empresaForm.cidade" placeholder="Cidade" />
-    <input name="estado" [(ngModel)]="vm.empresaForm.estado" placeholder="UF" />
-    <button type="submit">{{ vm.empresaForm.id ? 'Atualizar' : 'Criar empresa' }}</button>
-  </form>
+  <div class="tabs">
+    <button type="button" [class.active]="vm.empresasTab() === 'pesquisa'" (click)="vm.empresasTab.set('pesquisa')">Pesquisa</button>
+    <button type="button" [class.active]="vm.empresasTab() === 'dados'" (click)="vm.empresasTab.set('dados')">Dados da empresa</button>
+  </div>
 
-  <div class="cards company-cards">
-    <article *ngFor="let empresa of vm.filteredEmpresas()">
-      <div class="card-head">
-        <strong>{{ empresa.nomeFantasia }}</strong>
-        <span class="status" [class.off]="!empresa.ativo">{{ empresa.ativo ? 'Ativa' : 'Inativa' }}</span>
+  <div class="tab-panel" *ngIf="vm.empresasTab() === 'pesquisa'">
+    <div class="table-wrap excel-wrap">
+      <table class="excel-table">
+        <thead><tr><th>Nome fantasia</th><th>Razão social</th><th>CNPJ</th><th>Cidade</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          <tr *ngFor="let empresa of vm.filteredEmpresas()">
+            <td>{{ empresa.nomeFantasia }}</td>
+            <td>{{ empresa.razaoSocial }}</td>
+            <td>{{ empresa.cnpj }}</td>
+            <td>{{ empresa.cidade || '-' }} {{ empresa.estado || '' }}</td>
+            <td><span class="status" [class.off]="!empresa.ativo">{{ empresa.ativo ? 'Ativa' : 'Inativa' }}</span></td>
+            <td class="actions"><button type="button" class="soft" (click)="vm.editarEmpresa(empresa)">Editar</button></td>
+          </tr>
+          <tr *ngIf="!vm.filteredEmpresas().length"><td colspan="6" class="empty-cell">Nenhuma empresa encontrada.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-panel" *ngIf="vm.empresasTab() === 'dados'">
+    <form class="colaborador-form" (ngSubmit)="vm.salvarEmpresa()">
+      <section class="form-section">
+        <div class="section-title"><span>01</span><div><strong>Dados cadastrais</strong><small>Identificação e contato da empresa.</small></div></div>
+        <div class="form-grid cols-4 no-margin">
+          <label class="span-2">Razão social<input name="razaoSocial" [(ngModel)]="vm.empresaForm.razaoSocial" required /></label>
+          <label>Nome fantasia<input name="nomeFantasia" [(ngModel)]="vm.empresaForm.nomeFantasia" required /></label>
+          <label>CNPJ<input name="cnpj" [(ngModel)]="vm.empresaForm.cnpj" required /></label>
+          <label>Telefone<input name="telefone" [(ngModel)]="vm.empresaForm.telefone" /></label>
+          <label>E-mail<input name="email" [(ngModel)]="vm.empresaForm.email" type="email" /></label>
+          <label>Cidade<input name="cidade" [(ngModel)]="vm.empresaForm.cidade" /></label>
+          <label>UF<input name="estado" [(ngModel)]="vm.empresaForm.estado" maxlength="2" /></label>
+          <label class="span-2">Endereço<input name="endereco" [(ngModel)]="vm.empresaForm.endereco" /></label>
+          <label>CEP<input name="cep" [(ngModel)]="vm.empresaForm.cep" /></label>
+          <label>Status
+            <select name="empresaAtiva" [(ngModel)]="vm.empresaForm.ativo">
+              <option [ngValue]="true">Ativa</option>
+              <option [ngValue]="false">Inativa</option>
+            </select>
+          </label>
+        </div>
+      </section>
+      <div class="form-actions">
+        <button type="submit">{{ vm.empresaForm.id ? 'Atualizar empresa' : 'Cadastrar empresa' }}</button>
+        <button type="button" class="soft" (click)="vm.empresaForm = vm.novaEmpresa()">Limpar</button>
+        <button type="button" class="danger-soft" *ngIf="vm.empresaForm.id" (click)="vm.pedirExclusao('empresas', vm.empresaForm.id, vm.empresaForm.nomeFantasia)">Excluir</button>
       </div>
-      <p>{{ empresa.razaoSocial }}</p>
-      <small>{{ empresa.cnpj }} · {{ empresa.cidade }} {{ empresa.estado }}</small>
-      <div class="row-actions">
-        <button type="button" class="soft" (click)="vm.editarEmpresa(empresa)">Editar</button>
-        <button type="button" class="danger-soft" (click)="vm.pedirExclusao('empresas', empresa.id, empresa.nomeFantasia)">Excluir</button>
-      </div>
-    </article>
+    </form>
   </div>
 </section>

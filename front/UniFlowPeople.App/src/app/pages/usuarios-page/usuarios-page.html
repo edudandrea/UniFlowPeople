@@ -1,41 +1,75 @@
 <section class="panel fade-in">
   <div class="panel-title">
-    <div><h2>Usuários e perfis</h2><p>Crie acessos com permissões adequadas para cada área.</p></div>
+    <div><h2>Usuários e perfis</h2><p>Pesquisa, cadastro e manutenção dos acessos.</p></div>
     <span>{{ vm.filteredUsuarios().length }} acessos</span>
   </div>
-  <form class="form-grid cols-6" (ngSubmit)="vm.salvarUsuario()">
-    <select *ngIf="vm.isSistemaAdmin()" name="usuarioEmpresa" [(ngModel)]="vm.usuarioForm.empresaId" required>
-      <option [ngValue]="undefined">Empresa</option>
-      <option *ngFor="let empresa of vm.empresas()" [ngValue]="empresa.id">{{ empresa.nomeFantasia }}</option>
-    </select>
-    <select *ngIf="!vm.isSistemaAdmin()" name="usuarioColaborador" [(ngModel)]="vm.usuarioForm.colaboradorId">
-      <option [ngValue]="undefined">Colaborador vinculado</option>
-      <option *ngFor="let colab of vm.colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option>
-    </select>
-    <input name="usuarioNome" [(ngModel)]="vm.usuarioForm.nome" placeholder="Nome" required />
-    <input name="usuarioLogin" [(ngModel)]="vm.usuarioForm.login" placeholder="Login" required />
-    <input name="usuarioEmail" [(ngModel)]="vm.usuarioForm.email" placeholder="E-mail" required />
-    <input name="usuarioSenha" [(ngModel)]="vm.usuarioForm.senha" type="password" placeholder="Senha" required />
-    <select name="usuarioPerfil" [(ngModel)]="vm.usuarioForm.role">
-      <option>EmpresaAdmin</option>
-      <option>RH</option>
-      <option>Gestor</option>
-      <option>Colaborador</option>
-    </select>
-    <button type="submit">Criar usuário</button>
-  </form>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Nome</th><th>Login</th><th>E-mail</th><th>Perfil</th><th>Empresa</th></tr></thead>
-      <tbody>
-        <tr *ngFor="let item of vm.filteredUsuarios()">
-          <td>{{ item.nome }}</td>
-          <td>{{ item.login }}</td>
-          <td>{{ item.email }}</td>
-          <td><span class="status">{{ item.role }}</span></td>
-          <td>{{ vm.nomeEmpresa(item.empresaId || undefined) }}</td>
-        </tr>
-      </tbody>
-    </table>
+
+  <div class="tabs">
+    <button type="button" [class.active]="vm.usuariosTab() === 'pesquisa'" (click)="vm.usuariosTab.set('pesquisa')">Pesquisa</button>
+    <button type="button" [class.active]="vm.usuariosTab() === 'dados'" (click)="vm.usuariosTab.set('dados')">Dados do usuário</button>
+  </div>
+
+  <div class="tab-panel" *ngIf="vm.usuariosTab() === 'pesquisa'">
+    <div class="table-wrap excel-wrap">
+      <table class="excel-table">
+        <thead><tr><th>Nome</th><th>Login</th><th>E-mail</th><th>Perfil</th><th>Empresa</th><th></th></tr></thead>
+        <tbody>
+          <tr *ngFor="let item of vm.filteredUsuarios()">
+            <td>{{ item.nome }}</td>
+            <td>{{ item.login }}</td>
+            <td>{{ item.email }}</td>
+            <td><span class="status">{{ item.role }}</span></td>
+            <td>{{ vm.nomeEmpresa(item.empresaId || undefined) }}</td>
+            <td class="actions"><button type="button" class="soft" (click)="vm.editarUsuario(item)">Editar</button></td>
+          </tr>
+          <tr *ngIf="!vm.filteredUsuarios().length"><td colspan="6" class="empty-cell">Nenhum usuário encontrado.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-panel" *ngIf="vm.usuariosTab() === 'dados'">
+    <form class="colaborador-form" (ngSubmit)="vm.salvarUsuario()">
+      <section class="form-section">
+        <div class="section-title"><span>01</span><div><strong>Dados de acesso</strong><small>Identidade, vínculo e permissões.</small></div></div>
+        <div class="form-grid cols-4 no-margin">
+          <label *ngIf="vm.isSistemaAdmin()">Empresa
+            <select name="usuarioEmpresa" [(ngModel)]="vm.usuarioForm.empresaId" required>
+              <option [ngValue]="undefined">Selecione</option>
+              <option *ngFor="let empresa of vm.empresas()" [ngValue]="empresa.id">{{ empresa.nomeFantasia }}</option>
+            </select>
+          </label>
+          <label *ngIf="!vm.isSistemaAdmin()">Colaborador vinculado
+            <select name="usuarioColaborador" [(ngModel)]="vm.usuarioForm.colaboradorId">
+              <option [ngValue]="undefined">Selecione</option>
+              <option *ngFor="let colab of vm.colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option>
+            </select>
+          </label>
+          <label>Nome<input name="usuarioNome" [(ngModel)]="vm.usuarioForm.nome" required /></label>
+          <label>Login<input name="usuarioLogin" [(ngModel)]="vm.usuarioForm.login" [disabled]="!!vm.usuarioForm.id" required /></label>
+          <label>E-mail<input name="usuarioEmail" [(ngModel)]="vm.usuarioForm.email" type="email" required /></label>
+          <label>Senha<input name="usuarioSenha" [(ngModel)]="vm.usuarioForm.senha" type="password" [required]="!vm.usuarioForm.id" placeholder="{{ vm.usuarioForm.id ? 'Preencha apenas para alterar' : '' }}" /></label>
+          <label>Perfil
+            <select name="usuarioPerfil" [(ngModel)]="vm.usuarioForm.role">
+              <option>EmpresaAdmin</option>
+              <option>RH</option>
+              <option>Gestor</option>
+              <option>Colaborador</option>
+            </select>
+          </label>
+          <label>Status
+            <select name="usuarioAtivo" [(ngModel)]="vm.usuarioForm.ativo">
+              <option [ngValue]="true">Ativo</option>
+              <option [ngValue]="false">Inativo</option>
+            </select>
+          </label>
+        </div>
+      </section>
+      <div class="form-actions">
+        <button type="submit">{{ vm.usuarioForm.id ? 'Atualizar usuário' : 'Criar usuário' }}</button>
+        <button type="button" class="soft" (click)="vm.usuarioForm = vm.novoUsuario()">Limpar</button>
+        <button type="button" class="danger-soft" *ngIf="vm.usuarioForm.id" (click)="vm.pedirExclusao('usuarios', vm.usuarioForm.id, vm.usuarioForm.nome)">Excluir</button>
+      </div>
+    </form>
   </div>
 </section>
