@@ -67,6 +67,31 @@
           <span>{{ module.label }}</span>
         </button>
 
+        <div class="nav-group nav-group-featured">
+          <button
+            class="nav-group-toggle"
+            type="button"
+            [class.active]="activeModule() === 'financeiro'"
+            (click)="financeiroMenuOpen.set(!financeiroMenuOpen())"
+          >
+            <span class="nav-icon">▥</span>
+            <span>Financeiro</span>
+            <b>{{ financeiroMenuOpen() ? '⌃' : '⌄' }}</b>
+          </button>
+
+          <div class="nav-submenu" *ngIf="financeiroMenuOpen()">
+            <button
+              *ngFor="let module of financeiroModules()"
+              type="button"
+              [class.active]="activeModule() === module.id"
+              (click)="setModule(module.id)"
+            >
+              <span class="nav-icon">{{ module.icon }}</span>
+              <span>{{ module.label }}</span>
+            </button>
+          </div>
+        </div>
+
         <div class="nav-group">
           <button
             class="nav-group-toggle"
@@ -197,6 +222,7 @@
     <app-dashboard-page *ngIf="activeModule() === 'dashboard'" [vm]="vm"></app-dashboard-page>
     <app-empresas-page *ngIf="isSistemaAdmin() && activeModule() === 'empresas'" [vm]="vm"></app-empresas-page>
     <app-contratos-page *ngIf="isSistemaAdmin() && (activeModule() === 'planos' || activeModule() === 'contratacoes' || activeModule() === 'cobrancas')" [vm]="vm"></app-contratos-page>
+    <app-financeiro-page *ngIf="!isSistemaAdmin() && activeModule() === 'financeiro'" [vm]="vm"></app-financeiro-page>
     <app-colaboradores-page *ngIf="!isSistemaAdmin() && activeModule() === 'colaboradores'" [vm]="vm"></app-colaboradores-page>
     <app-departamentos-page *ngIf="!isSistemaAdmin() && activeModule() === 'departamentos'" [vm]="vm"></app-departamentos-page>
     <app-cargos-page *ngIf="!isSistemaAdmin() && activeModule() === 'cargos'" [vm]="vm"></app-cargos-page>
@@ -205,6 +231,7 @@
     <app-ferias-page *ngIf="!isSistemaAdmin() && activeModule() === 'ferias'" [vm]="vm"></app-ferias-page>
     <app-beneficios-page *ngIf="!isSistemaAdmin() && activeModule() === 'beneficios'" [vm]="vm"></app-beneficios-page>
     <app-documentos-page *ngIf="!isSistemaAdmin() && activeModule() === 'documentos'" [vm]="vm"></app-documentos-page>
+    <app-solicitacoes-page *ngIf="!isSistemaAdmin() && activeModule() === 'solicitacoes'" [vm]="vm"></app-solicitacoes-page>
     <app-recrutamento-page *ngIf="!isSistemaAdmin() && activeModule() === 'recrutamento'" [vm]="vm"></app-recrutamento-page>
     <app-treinamentos-page *ngIf="!isSistemaAdmin() && activeModule() === 'treinamentos'" [vm]="vm"></app-treinamentos-page>
     <app-admissao-page *ngIf="!isSistemaAdmin() && activeModule() === 'admissao'" [vm]="vm"></app-admissao-page>

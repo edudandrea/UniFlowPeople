@@ -39,6 +39,7 @@ namespace UniFlowPeople.Api.Data
         public DbSet<DocumentoInstitucional> DocumentosInstitucionais { get; set; }
         public DbSet<DemissaoProcesso> Demissoes { get; set; }
         public DbSet<DemissaoEtapa> DemissaoEtapas { get; set; }
+        public DbSet<SolicitacaoRh> SolicitacoesRh { get; set; }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
@@ -184,6 +185,12 @@ namespace UniFlowPeople.Api.Data
                 .WithMany(x => x.Etapas)
                 .HasForeignKey(x => x.DemissaoProcessoId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<SolicitacaoRh>()
+                .HasOne(x => x.Colaborador)
+                .WithMany()
+                .HasForeignKey(x => x.ColaboradorId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
 
         private void NormalizarDatasUtc()

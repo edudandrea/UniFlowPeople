@@ -15,8 +15,10 @@ import { DocumentosPage } from './pages/documentos-page/documentos-page';
 import { EmpresasPage } from './pages/empresas-page/empresas-page';
 import { EstruturaPage } from './pages/estrutura-page/estrutura-page';
 import { FeriasPage } from './pages/ferias-page/ferias-page';
+import { FinanceiroPage } from './pages/financeiro-page/financeiro-page';
 import { PontoPage } from './pages/ponto-page/ponto-page';
 import { RecrutamentoPage } from './pages/recrutamento-page/recrutamento-page';
+import { SolicitacoesPage } from './pages/solicitacoes-page/solicitacoes-page';
 import { TreinamentosPage } from './pages/treinamentos-page/treinamentos-page';
 import { UsuariosPage } from './pages/usuarios-page/usuarios-page';
 
@@ -128,8 +130,10 @@ interface ModuleItem {
     EmpresasPage,
     EstruturaPage,
     FeriasPage,
+    FinanceiroPage,
     PontoPage,
     RecrutamentoPage,
+    SolicitacoesPage,
     TreinamentosPage,
     UsuariosPage,
   ],
@@ -156,6 +160,7 @@ export class App {
   userMenuOpen = signal(false);
   cadastroMenuOpen = signal(false);
   peopleMenuOpen = signal(false);
+  financeiroMenuOpen = signal(false);
   profileModalOpen = signal(false);
   passwordModalOpen = signal(false);
   admissaoProcessoModalOpen = signal(false);
@@ -224,6 +229,7 @@ export class App {
   pontoForm: any = this.novoPonto();
   documentoForm: any = this.novoDocumento();
   beneficioColaboradorForm: any = this.novoBeneficioColaborador();
+  solicitacaoForm: any = this.novaSolicitacao();
 
   empresas = signal<Empresa[]>([]);
   planos = signal<Plano[]>([]);
@@ -249,6 +255,7 @@ export class App {
   pontos = signal<any[]>([]);
   documentos = signal<any[]>([]);
   beneficiosColaboradores = signal<any[]>([]);
+  solicitacoes = signal<any[]>([]);
 
   metricas = signal({
     empresasContratantes: 0,
@@ -280,6 +287,7 @@ export class App {
     () =>
       this.modules().find((x) => x.id === this.activeModule())?.label ??
       this.cadastroModules().find((x) => x.id === this.activeModule())?.label ??
+      this.financeiroModules().find((x) => x.id === this.activeModule())?.label ??
       this.peopleModules().find((x) => x.id === this.activeModule())?.label ??
       'Dashboard',
   );
@@ -287,6 +295,7 @@ export class App {
     () =>
       this.modules().find((x) => x.id === this.activeModule())?.description ??
       this.cadastroModules().find((x) => x.id === this.activeModule())?.description ??
+      this.financeiroModules().find((x) => x.id === this.activeModule())?.description ??
       this.peopleModules().find((x) => x.id === this.activeModule())?.description ??
       'Gestão inteligente de pessoas.',
   );
@@ -301,6 +310,7 @@ export class App {
       : [
           { id: 'dashboard', label: 'Visão geral', icon: '✦', description: 'Indicadores rápidos do RH.' },
           { id: 'documentos', label: 'Documentos', icon: '▧', description: 'Documentos e validações dos colaboradores.' },
+          { id: 'solicitacoes', label: 'Solicitações', icon: '▢', description: 'Pedidos enviados ao setor de RH.' },
           { id: 'recrutamento', label: 'Recrutamento', icon: '◇', description: 'Vagas, candidatos e pipeline.' },
           { id: 'treinamentos', label: 'Treinamentos', icon: '◎', description: 'Portal de treinamentos, colaboradores e presença.' },
           { id: 'usuarios', label: 'Usuários', icon: '◎', description: 'Contas e perfis de acesso.' },
@@ -329,6 +339,14 @@ export class App {
     { id: 'ferias', label: 'Férias', icon: '☼', description: 'Programação e controle de férias.' },
     { id: 'ponto', label: 'Ponto', icon: '◔', description: 'Registros de ponto por colaborador.' },
   ]);
+
+  financeiroModules = computed<ModuleItem[]>(() =>
+    this.isSistemaAdmin()
+      ? []
+      : [
+          { id: 'financeiro', label: 'Contrato e cobranças', icon: '▥', description: 'Plano ativo, cobranças geradas e histórico financeiro.' },
+        ],
+  );
 
   filteredEmpresas = computed(() => this.filterByTerm(this.empresas(), ['nomeFantasia', 'razaoSocial', 'cnpj']));
   filteredContratos = computed(() => {
@@ -391,6 +409,9 @@ export class App {
       ),
     );
   });
+  filteredSolicitacoes = computed(() =>
+    this.filterByTerm(this.solicitacoes(), ['tipo', 'titulo', 'descricao', 'prioridade', 'status', 'respostaRh']),
+  );
   admissaoTotalPages = computed(() => Math.max(1, Math.ceil(this.filteredAdmissoes().length / 10)));
   admissaoCurrentPage = computed(() => Math.min(this.admissaoPage(), this.admissaoTotalPages()));
   pagedAdmissoes = computed(() => {
@@ -449,6 +470,7 @@ export class App {
     this.userMenuOpen.set(false);
     this.cadastroMenuOpen.set(false);
     this.peopleMenuOpen.set(false);
+    this.financeiroMenuOpen.set(false);
     this.activeModule.set('dashboard');
   }
 
@@ -539,6 +561,7 @@ export class App {
     this.http.get<any[]>(`${this.api}/ferias`).subscribe((x) => this.ferias.set(x ?? []));
     this.http.get<any[]>(`${this.api}/registrosPonto`).subscribe((x) => this.pontos.set(x ?? []));
     this.http.get<any[]>(`${this.api}/documentosColaboradores`).subscribe((x) => this.documentos.set(x ?? []));
+    this.http.get<any[]>(`${this.api}/solicitacoes`).subscribe((x) => this.solicitacoes.set(x ?? []));
     this.http.get<any[]>(`${this.api}/beneficiosColaboradores`).subscribe({
       next: (x) => {
         this.beneficiosColaboradores.set(x ?? []);
@@ -1047,6 +1070,43 @@ export class App {
     });
   }
 
+  salvarSolicitacao() {
+    if (!this.podeGerenciarSolicitacoes()) {
+      this.solicitacaoForm.status = 'Enviada';
+      this.solicitacaoForm.respostaRh = null;
+      this.solicitacaoForm.colaboradorId = this.usuario()?.colaboradorId ?? this.solicitacaoForm.colaboradorId;
+    }
+
+    const editando = !!this.solicitacaoForm.id;
+    const payload = this.normalizePayload(this.solicitacaoForm);
+    const request = editando
+      ? this.http.put(`${this.api}/solicitacoes/${this.solicitacaoForm.id}`, payload)
+      : this.http.post(`${this.api}/solicitacoes`, payload);
+
+    request.subscribe({
+      next: () => {
+        this.solicitacaoForm = this.novaSolicitacao();
+        this.carregarDados();
+        this.notificar(editando ? 'Solicitação atualizada.' : 'Solicitação enviada ao RH.', 'success');
+      },
+      error: () => this.notificar('Erro ao salvar solicitação.', 'error'),
+    });
+  }
+
+  editarSolicitacao(item: any) {
+    this.solicitacaoForm = { ...item };
+    this.scrollTop();
+  }
+
+  limparSolicitacao() {
+    this.solicitacaoForm = this.novaSolicitacao();
+  }
+
+  podeGerenciarSolicitacoes() {
+    const role = this.usuario()?.role;
+    return role === 'EmpresaAdmin' || role === 'RH';
+  }
+
   salvarBeneficioColaborador() {
     const editando = !!this.beneficioColaboradorForm.id;
     const payload = this.normalizePayload(this.beneficioColaboradorForm);
@@ -1151,6 +1211,85 @@ export class App {
   percentualClientesEmAtraso() {
     const total = Math.max(1, this.clientesEmDia() + this.clientesEmAtraso());
     return Math.round((this.clientesEmAtraso() / total) * 100);
+  }
+
+  movimentacaoPessoasDashboard() {
+    const meses = this.ultimosMeses(6);
+    return meses.map((mes) => {
+      const admissoes = this.admissoes().filter((item) => this.mesDaData(item.dataPrevistaAdmissao) === mes.key).length;
+      const demissoes = this.demissoes().filter((item) => this.mesDaData(item.dataDesligamento || item.dataSolicitacao) === mes.key).length;
+      const maior = Math.max(1, admissoes, demissoes);
+
+      return {
+        ...mes,
+        admissoes,
+        demissoes,
+        admissoesPercentual: Math.max(8, Math.round((admissoes / maior) * 100)),
+        demissoesPercentual: Math.max(8, Math.round((demissoes / maior) * 100)),
+      };
+    });
+  }
+
+  beneficiosMaisUsadosEmpresa() {
+    const total = Math.max(1, this.beneficiosColaboradores().length);
+    const porBeneficio = this.beneficiosColaboradores().reduce<Record<string, { nome: string; quantidade: number }>>((acc, item) => {
+      const key = String(item.beneficioId ?? 'sem-beneficio');
+      const nome = this.nomeBeneficio(item.beneficioId);
+      acc[key] = acc[key] ?? { nome: String(nome), quantidade: 0 };
+      acc[key].quantidade += 1;
+      return acc;
+    }, {});
+
+    return Object.values(porBeneficio)
+      .map((item) => ({ ...item, percentual: Math.round((item.quantidade / total) * 100) }))
+      .sort((a, b) => b.quantidade - a.quantidade)
+      .slice(0, 5);
+  }
+
+  crescimentoColaboradoresDashboard() {
+    const meses = this.ultimosMeses(6);
+    const totais = meses.map((mes) => {
+      const fimDoMes = new Date(mes.ano, mes.mes + 1, 0, 23, 59, 59);
+      const quantidade = this.colaboradores().filter((colaborador) => {
+        const admissao = colaborador.dataAdmissao ? new Date(colaborador.dataAdmissao) : null;
+        const demissao = colaborador.dataDemissao ? new Date(colaborador.dataDemissao) : null;
+        return !!admissao && admissao <= fimDoMes && (!demissao || demissao > fimDoMes);
+      }).length;
+
+      return { ...mes, quantidade };
+    });
+    const maior = Math.max(1, ...totais.map((item) => item.quantidade));
+    return totais.map((item) => ({ ...item, percentual: Math.max(10, Math.round((item.quantidade / maior) * 100)) }));
+  }
+
+  feriasProximasDashboard() {
+    const hoje = new Date();
+    const limite = new Date();
+    limite.setDate(limite.getDate() + 30);
+
+    return this.ferias()
+      .filter((item) => {
+        if (!item.dataInicio || item.status === 'Cancelada') return false;
+        const inicio = new Date(item.dataInicio);
+        return inicio >= hoje && inicio <= limite;
+      })
+      .sort((a, b) => new Date(a.dataInicio).getTime() - new Date(b.dataInicio).getTime())
+      .slice(0, 6);
+  }
+
+  feriasAVencerDashboard() {
+    const hoje = new Date();
+    const limite = new Date();
+    limite.setDate(limite.getDate() + 60);
+
+    return this.ferias()
+      .filter((item) => {
+        if (!item.periodoAquisitivoFim || item.status === 'Concluída' || item.status === 'Cancelada') return false;
+        const vencimento = new Date(item.periodoAquisitivoFim);
+        return vencimento >= hoje && vencimento <= limite;
+      })
+      .sort((a, b) => new Date(a.periodoAquisitivoFim).getTime() - new Date(b.periodoAquisitivoFim).getTime())
+      .slice(0, 6);
   }
 
   nomeColaborador(id?: number) {
@@ -1552,6 +1691,7 @@ export class App {
   setModule(id: string) {
     this.activeModule.set(id);
     if (this.cadastroModules().some((module) => module.id === id)) this.cadastroMenuOpen.set(true);
+    if (this.financeiroModules().some((module) => module.id === id)) this.financeiroMenuOpen.set(true);
     if (this.peopleModules().some((module) => module.id === id)) this.peopleMenuOpen.set(true);
     this.search.set('');
     this.userMenuOpen.set(false);
@@ -1638,6 +1778,7 @@ export class App {
     this.usuario.set(response.usuario);
     this.cadastroMenuOpen.set(false);
     this.peopleMenuOpen.set(false);
+    this.financeiroMenuOpen.set(false);
     this.prepararPerfil();
     this.reiniciarTimerInatividade();
     this.carregarDados();
@@ -1720,6 +1861,30 @@ export class App {
     for (const field of fields) {
       if (payload[field]) payload[field] = new Date(payload[field]).toISOString();
     }
+  }
+
+  private ultimosMeses(quantidade: number) {
+    const formatter = new Intl.DateTimeFormat('pt-BR', { month: 'short' });
+    const hoje = new Date();
+
+    return Array.from({ length: quantidade }, (_value, index) => {
+      const data = new Date(hoje.getFullYear(), hoje.getMonth() - (quantidade - 1 - index), 1);
+      const label = formatter.format(data).replace('.', '');
+
+      return {
+        key: `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}`,
+        label: label.charAt(0).toUpperCase() + label.slice(1),
+        ano: data.getFullYear(),
+        mes: data.getMonth(),
+      };
+    });
+  }
+
+  private mesDaData(value: any) {
+    if (!value) return '';
+    const data = new Date(value);
+    if (Number.isNaN(data.getTime())) return '';
+    return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}`;
   }
 
   private prepararStatusColaborador() {
@@ -1996,6 +2161,18 @@ export class App {
       urlArquivo: '',
       obrigatorio: false,
       validado: false,
+    };
+  }
+
+  private novaSolicitacao() {
+    return {
+      colaboradorId: this.usuario()?.colaboradorId ?? undefined,
+      tipo: '',
+      titulo: '',
+      descricao: '',
+      prioridade: 'Normal',
+      status: 'Enviada',
+      respostaRh: '',
     };
   }
 

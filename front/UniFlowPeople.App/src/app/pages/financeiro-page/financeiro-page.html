@@ -1,0 +1,109 @@
+<section class="finance-hero panel fade-in">
+  <div>
+    <span class="eyebrow">Financeiro</span>
+    <h2>Contrato, cobrança e previsibilidade em uma visão executiva.</h2>
+    <p>Acompanhe o plano ativo, vencimentos e status financeiro da empresa contratante.</p>
+  </div>
+  <div class="finance-hero-total" *ngIf="vm.ultimaCobrancaEmpresa() as cobranca">
+    <span>Última cobrança</span>
+    <strong>{{ cobranca.valor | currency: 'BRL' }}</strong>
+    <small>{{ cobranca.status }} · vence em {{ cobranca.dataVencimento | date: 'dd/MM/yyyy' }}</small>
+  </div>
+</section>
+
+<section class="grid metrics finance-metrics fade-in">
+  <article>
+    <span>Status do contrato</span>
+    <strong>{{ vm.contratoAtivoEmpresa()?.status || 'Sem contrato' }}</strong>
+    <small>{{ vm.contratoAtivoEmpresa()?.plano || 'Nenhum plano ativo' }}</small>
+  </article>
+  <article>
+    <span>Valor mensal</span>
+    <strong>{{ (vm.contratoAtivoEmpresa()?.valorMensal || 0) | currency: 'BRL' }}</strong>
+    <small>Plano contratado</small>
+  </article>
+  <article>
+    <span>Cobranças</span>
+    <strong>{{ vm.cobrancasEmpresa().length }}</strong>
+    <small>Histórico financeiro</small>
+  </article>
+  <article>
+    <span>Próximo vencimento</span>
+    <strong>{{ vm.ultimaCobrancaEmpresa()?.dataVencimento ? (vm.ultimaCobrancaEmpresa()?.dataVencimento | date: 'dd/MM') : '-' }}</strong>
+    <small>{{ vm.ultimaCobrancaEmpresa()?.status || 'Sem cobrança' }}</small>
+  </article>
+</section>
+
+<section class="grid two fade-in">
+  <article class="panel finance-card">
+    <div class="panel-title">
+      <div>
+        <h2>Contrato ativo</h2>
+        <p>Plano contratado pela empresa.</p>
+      </div>
+      <span>{{ vm.contratoAtivoEmpresa()?.status || 'Sem contrato' }}</span>
+    </div>
+
+    <div class="detail-list elevated" *ngIf="vm.contratoAtivoEmpresa() as contrato; else semContrato">
+      <article><span>Plano</span><strong>{{ contrato.plano }}</strong></article>
+      <article><span>Valor</span><strong>{{ contrato.valorMensal | currency: 'BRL' }}</strong></article>
+      <article><span>Vigência</span><strong>{{ contrato.dataInicio | date: 'dd/MM/yyyy' }} - {{ contrato.dataFim | date: 'dd/MM/yyyy' }}</strong></article>
+      <article><span>Limite de pessoas</span><strong>{{ contrato.limiteColaboradores }}</strong></article>
+      <article><span>Observações</span><strong>{{ contrato.observacoes || 'Sem observações' }}</strong></article>
+    </div>
+    <ng-template #semContrato>
+      <div class="empty-state"><strong>Nenhum contrato ativo</strong><span>Quando uma contratação for efetivada, ela aparecerá aqui.</span></div>
+    </ng-template>
+  </article>
+
+  <article class="panel finance-card">
+    <div class="panel-title">
+      <div>
+        <h2>Cobrança gerada</h2>
+        <p>Última cobrança vinculada ao contrato.</p>
+      </div>
+      <span>{{ vm.ultimaCobrancaEmpresa()?.status || 'Sem cobrança' }}</span>
+    </div>
+
+    <div class="detail-list elevated" *ngIf="vm.ultimaCobrancaEmpresa() as cobranca; else semCobranca">
+      <article><span>Descrição</span><strong>{{ cobranca.descricao }}</strong></article>
+      <article><span>Valor</span><strong>{{ cobranca.valor | currency: 'BRL' }}</strong></article>
+      <article><span>Gerada em</span><strong>{{ cobranca.dataGeracao | date: 'dd/MM/yyyy HH:mm' }}</strong></article>
+      <article><span>Vencimento</span><strong>{{ cobranca.dataVencimento | date: 'dd/MM/yyyy' }}</strong></article>
+    </div>
+    <ng-template #semCobranca>
+      <div class="empty-state"><strong>Nenhuma cobrança gerada</strong><span>A cobrança aparecerá após a contratação do plano.</span></div>
+    </ng-template>
+  </article>
+</section>
+
+<section class="panel fade-in">
+  <div class="panel-title">
+    <div>
+      <h2>Histórico de cobranças</h2>
+      <p>Últimos lançamentos financeiros vinculados à empresa.</p>
+    </div>
+    <span>{{ vm.cobrancasEmpresa().length }} registros</span>
+  </div>
+
+  <div class="table-wrap excel-wrap" *ngIf="vm.cobrancasEmpresa().length; else semHistorico">
+    <table class="excel-table finance-table">
+      <thead>
+        <tr><th>Descrição</th><th>Valor</th><th>Geração</th><th>Vencimento</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let cobranca of vm.cobrancasEmpresa()">
+          <td>{{ cobranca.descricao }}</td>
+          <td>{{ cobranca.valor | currency: 'BRL' }}</td>
+          <td>{{ cobranca.dataGeracao | date: 'dd/MM/yyyy HH:mm' }}</td>
+          <td>{{ cobranca.dataVencimento | date: 'dd/MM/yyyy' }}</td>
+          <td><span class="status">{{ cobranca.status }}</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <ng-template #semHistorico>
+    <div class="empty-state"><strong>Nenhum lançamento financeiro</strong><span>As cobranças geradas serão listadas neste painel.</span></div>
+  </ng-template>
+</section>

@@ -1,0 +1,95 @@
+<section class="panel fade-in">
+  <div class="panel-title">
+    <div>
+      <h2>Solicitações</h2>
+      <p>Envie pedidos ao RH e acompanhe o andamento.</p>
+    </div>
+    <span>{{ vm.solicitacoes().length }}</span>
+  </div>
+
+  <form class="form-grid cols-4" (ngSubmit)="vm.salvarSolicitacao()">
+    <select
+      name="solicitacaoColaborador"
+      [(ngModel)]="vm.solicitacaoForm.colaboradorId"
+      [disabled]="!vm.podeGerenciarSolicitacoes()"
+    >
+      <option [ngValue]="undefined">Solicitante</option>
+      <option *ngFor="let colab of vm.colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option>
+    </select>
+
+    <select name="solicitacaoTipo" [(ngModel)]="vm.solicitacaoForm.tipo" required>
+      <option value="">Tipo de solicitação</option>
+      <option>Declaração</option>
+      <option>Atualização cadastral</option>
+      <option>Benefícios</option>
+      <option>Férias</option>
+      <option>Folha de pagamento</option>
+      <option>Documentos</option>
+      <option>Outros</option>
+    </select>
+
+    <select name="solicitacaoPrioridade" [(ngModel)]="vm.solicitacaoForm.prioridade">
+      <option>Baixa</option>
+      <option>Normal</option>
+      <option>Alta</option>
+      <option>Urgente</option>
+    </select>
+
+    <select
+      name="solicitacaoStatus"
+      [(ngModel)]="vm.solicitacaoForm.status"
+      [disabled]="!vm.podeGerenciarSolicitacoes()"
+    >
+      <option>Enviada</option>
+      <option>Em análise</option>
+      <option>Aguardando informações</option>
+      <option>Concluida</option>
+      <option>Cancelada</option>
+    </select>
+
+    <input class="span-all" name="solicitacaoTitulo" [(ngModel)]="vm.solicitacaoForm.titulo" placeholder="Título" required />
+    <textarea class="span-all" name="solicitacaoDescricao" [(ngModel)]="vm.solicitacaoForm.descricao" placeholder="Descreva sua solicitação ao RH" required></textarea>
+    <textarea
+      class="span-all"
+      name="solicitacaoResposta"
+      [(ngModel)]="vm.solicitacaoForm.respostaRh"
+      placeholder="Resposta do RH"
+      *ngIf="vm.podeGerenciarSolicitacoes() || vm.solicitacaoForm.respostaRh"
+      [disabled]="!vm.podeGerenciarSolicitacoes()"
+    ></textarea>
+
+    <button type="submit">{{ vm.solicitacaoForm.id ? 'Atualizar solicitação' : 'Enviar ao RH' }}</button>
+    <button class="soft" type="button" (click)="vm.limparSolicitacao()">Limpar</button>
+  </form>
+</section>
+
+<section class="panel fade-in">
+  <div class="panel-title">
+    <div>
+      <h2>Acompanhamento</h2>
+      <p>Histórico das solicitações enviadas ao setor de RH.</p>
+    </div>
+  </div>
+
+  <div class="empty-state" *ngIf="!vm.filteredSolicitacoes().length">
+    <strong>Nenhuma solicitação encontrada</strong>
+    <span>Crie uma nova solicitação para iniciar o atendimento do RH.</span>
+  </div>
+
+  <div class="cards" *ngIf="vm.filteredSolicitacoes().length">
+    <article *ngFor="let item of vm.filteredSolicitacoes()">
+      <div class="card-head">
+        <strong>{{ item.titulo }}</strong>
+        <span class="status" [class.off]="item.status === 'Cancelada'">{{ item.status }}</span>
+      </div>
+      <span>{{ item.tipo }} · {{ item.prioridade }}</span>
+      <small>{{ vm.nomeColaborador(item.colaboradorId) }} · {{ item.dataSolicitacao | date: 'dd/MM/yyyy HH:mm' }}</small>
+      <p>{{ item.descricao }}</p>
+      <p *ngIf="item.respostaRh"><strong>RH:</strong> {{ item.respostaRh }}</p>
+      <div class="row-actions">
+        <button class="soft" type="button" *ngIf="vm.podeGerenciarSolicitacoes()" (click)="vm.editarSolicitacao(item)">Responder</button>
+        <button class="danger-soft" type="button" *ngIf="vm.podeGerenciarSolicitacoes()" (click)="vm.pedirExclusao('solicitacoes', item.id, item.titulo)">Excluir</button>
+      </div>
+    </article>
+  </div>
+</section>

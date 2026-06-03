@@ -150,54 +150,135 @@
     </article>
   </section>
 
-  <section class="grid two fade-in">
-    <article class="panel">
-      <div class="panel-title">
-        <div>
-          <h2>Contrato ativo</h2>
-          <p>Plano contratado pela empresa.</p>
-        </div>
-        <span>{{ vm.contratoAtivoEmpresa()?.status || 'Sem contrato' }}</span>
-      </div>
-
-      <div class="detail-list" *ngIf="vm.contratoAtivoEmpresa() as contrato; else semContrato">
-        <article><span>Plano</span><strong>{{ contrato.plano }}</strong></article>
-        <article><span>Valor</span><strong>{{ contrato.valorMensal | currency: 'BRL' }}</strong></article>
-        <article><span>Vigência</span><strong>{{ contrato.dataInicio | date: 'dd/MM/yyyy' }} - {{ contrato.dataFim | date: 'dd/MM/yyyy' }}</strong></article>
-        <article><span>Limite de pessoas</span><strong>{{ contrato.limiteColaboradores }}</strong></article>
-      </div>
-      <ng-template #semContrato>
-        <div class="empty-state"><strong>Nenhum contrato ativo</strong><span>Quando uma contratação for efetivada, ela aparecerá aqui.</span></div>
-      </ng-template>
-    </article>
-
-    <article class="panel">
-      <div class="panel-title">
-        <div>
-          <h2>Cobrança gerada</h2>
-          <p>Última cobrança vinculada ao contrato.</p>
-        </div>
-        <span>{{ vm.ultimaCobrancaEmpresa()?.status || 'Sem cobrança' }}</span>
-      </div>
-
-      <div class="detail-list" *ngIf="vm.ultimaCobrancaEmpresa() as cobranca; else semCobranca">
-        <article><span>Descrição</span><strong>{{ cobranca.descricao }}</strong></article>
-        <article><span>Valor</span><strong>{{ cobranca.valor | currency: 'BRL' }}</strong></article>
-        <article><span>Gerada em</span><strong>{{ cobranca.dataGeracao | date: 'dd/MM/yyyy HH:mm' }}</strong></article>
-        <article><span>Vencimento</span><strong>{{ cobranca.dataVencimento | date: 'dd/MM/yyyy' }}</strong></article>
-      </div>
-      <ng-template #semCobranca>
-        <div class="empty-state"><strong>Nenhuma cobrança gerada</strong><span>A cobrança aparecerá após a contratação do plano.</span></div>
-      </ng-template>
-    </article>
-  </section>
-
-  <section class="panel hero-panel fade-in">
+  <section class="panel hero-panel dashboard-hero fade-in">
     <div>
       <span class="eyebrow">UniFlow People</span>
       <h2>Operação completa de RH em um só lugar</h2>
       <p>Cadastre pessoas, acompanhe ponto, férias, benefícios, documentos e recrutamento com segurança multiempresa.</p>
     </div>
     <button type="button" (click)="vm.setModule('colaboradores')">Começar agora</button>
+  </section>
+
+  <section class="grid two fade-in">
+    <article class="panel dashboard-card chart-panel">
+      <div class="panel-title">
+        <div>
+          <h2>Admissões x demissões</h2>
+          <p>Movimentação de pessoas nos últimos meses.</p>
+        </div>
+        <span>{{ vm.admissoes().length + vm.demissoes().length }} fluxos</span>
+      </div>
+
+      <div class="people-flow-chart">
+        <div class="flow-month" *ngFor="let item of vm.movimentacaoPessoasDashboard()">
+          <div class="flow-bars">
+            <span class="admission" [style.height.%]="item.admissoesPercentual"></span>
+            <span class="demission" [style.height.%]="item.demissoesPercentual"></span>
+          </div>
+          <strong>{{ item.label }}</strong>
+          <small>{{ item.admissoes }} adm · {{ item.demissoes }} dem</small>
+        </div>
+      </div>
+
+      <div class="chart-legend">
+        <span><i class="ok"></i>Admissões</span>
+        <span><i class="late"></i>Demissões</span>
+      </div>
+    </article>
+
+    <article class="panel dashboard-card chart-panel">
+      <div class="panel-title">
+        <div>
+          <h2>Crescimento de colaboradores</h2>
+          <p>Evolução acumulada do quadro ativo.</p>
+        </div>
+        <span>{{ vm.colaboradores().length }} atuais</span>
+      </div>
+
+      <div class="growth-chart">
+        <div class="growth-column" *ngFor="let item of vm.crescimentoColaboradoresDashboard()">
+          <span [style.height.%]="item.percentual"></span>
+          <strong>{{ item.quantidade }}</strong>
+          <small>{{ item.label }}</small>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="grid two fade-in">
+    <article class="panel dashboard-card">
+      <div class="panel-title">
+        <div>
+          <h2>Benefícios mais usados</h2>
+          <p>Ranking por vínculos ativos com colaboradores.</p>
+        </div>
+        <span>{{ vm.beneficiosColaboradores().length }} vínculos</span>
+      </div>
+
+      <div class="bar-chart benefit-chart" *ngIf="vm.beneficiosMaisUsadosEmpresa().length; else semBeneficios">
+        <div class="bar-row" *ngFor="let item of vm.beneficiosMaisUsadosEmpresa()">
+          <div>
+            <strong>{{ item.nome }}</strong>
+            <span>{{ item.quantidade }} colaborador{{ item.quantidade === 1 ? '' : 'es' }}</span>
+          </div>
+          <div class="bar-track">
+            <span [style.width.%]="item.percentual"></span>
+          </div>
+          <b>{{ item.percentual }}%</b>
+        </div>
+      </div>
+
+      <ng-template #semBeneficios>
+        <div class="empty-state"><strong>Nenhum benefício vinculado</strong><span>Os benefícios mais usados aparecerão quando houver vínculos.</span></div>
+      </ng-template>
+    </article>
+
+    <article class="panel dashboard-card">
+      <div class="panel-title">
+        <div>
+          <h2>Férias próximas</h2>
+          <p>Colaboradores com férias iniciando nos próximos 30 dias.</p>
+        </div>
+        <span>{{ vm.feriasProximasDashboard().length }} próximas</span>
+      </div>
+
+      <div class="vacation-list" *ngIf="vm.feriasProximasDashboard().length; else semFeriasProximas">
+        <article *ngFor="let item of vm.feriasProximasDashboard()">
+          <div>
+            <strong>{{ vm.nomeColaborador(item.colaboradorId) }}</strong>
+            <span>{{ item.status }} · {{ item.dias }} dias</span>
+          </div>
+          <b>{{ item.dataInicio | date: 'dd/MM' }}</b>
+        </article>
+      </div>
+
+      <ng-template #semFeriasProximas>
+        <div class="empty-state"><strong>Nenhuma férias próxima</strong><span>Não há férias programadas para os próximos 30 dias.</span></div>
+      </ng-template>
+    </article>
+  </section>
+
+  <section class="panel fade-in">
+    <div class="panel-title">
+      <div>
+        <h2>Férias a vencer</h2>
+        <p>Períodos aquisitivos que exigem atenção nos próximos 60 dias.</p>
+      </div>
+      <span>{{ vm.feriasAVencerDashboard().length }} vencimentos</span>
+    </div>
+
+    <div class="vacation-list vacation-grid" *ngIf="vm.feriasAVencerDashboard().length; else semFeriasAVencer">
+      <article *ngFor="let item of vm.feriasAVencerDashboard()">
+        <div>
+          <strong>{{ vm.nomeColaborador(item.colaboradorId) }}</strong>
+          <span>Período vence em {{ item.periodoAquisitivoFim | date: 'dd/MM/yyyy' }}</span>
+        </div>
+        <b>{{ item.status }}</b>
+      </article>
+    </div>
+
+    <ng-template #semFeriasAVencer>
+      <div class="empty-state"><strong>Nenhuma férias a vencer</strong><span>Os períodos críticos aparecerão quando estiverem próximos do vencimento.</span></div>
+    </ng-template>
   </section>
 </ng-template>
