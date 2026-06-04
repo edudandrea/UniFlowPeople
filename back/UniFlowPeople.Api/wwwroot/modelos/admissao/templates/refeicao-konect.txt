@@ -1,0 +1,15 @@
+﻿DECLARAÇÃO
+
+Eu {{NOME}}, inscrita no CPF sob nº: {{CPF}}, funcionário da empresa Konect Ind. De Componentes Ltda, inscrita no CNPJ sob o nº 01.368.169/0001-61, estou ciente de que a empresa não está obrigada a disponibilizar refeitório conforme a NR 24, item 24.3.1, por possuir menos de 300 empregados.
+
+Declaro estar ciente também, de que a empresa fornece a refeição aos colaboradores por meio do convênio CAJU Refeição, ficando custeada parte da refeição pela empresa.
+
+Caxias do Sul, {{DATA}}
+
+_________________________________________________
+
+{{NOME}}
+
+__________________________________________________
+
+KONECT INDÚSTRIA DE COMPONENTES LTDA

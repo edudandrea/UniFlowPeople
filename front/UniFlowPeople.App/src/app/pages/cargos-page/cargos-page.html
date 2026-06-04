@@ -19,7 +19,7 @@
             <td>{{ item.nivel || '-' }}</td>
             <td>{{ item.salarioBase | currency: 'BRL' }}</td>
             <td>{{ item.descricao || '-' }}</td>
-            <td class="actions"><button class="soft" type="button" (click)="vm.editarGenerico('cargoForm', item); vm.cargosTab.set('dados')">Editar</button></td>
+            <td class="actions"><button class="soft" type="button" (click)="vm.editarGenerico('cargoForm', item)">Editar</button></td>
           </tr>
           <tr *ngIf="!vm.cargos().length"><td colspan="5" class="empty-cell">Nenhum cargo encontrado.</td></tr>
         </tbody>

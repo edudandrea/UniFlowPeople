@@ -1,38 +1,31 @@
 <section class="grid two fade-in">
   <article class="panel">
     <div class="panel-title">
-      <div><h2>Portal de treinamentos</h2><p>Cadastre treinamentos e acompanhe participação.</p></div>
-      <span>{{ vm.treinamentos().length }} treinamentos</span>
+      <div><h2>Plano Anual de Treinamento</h2><p>Descrição, participantes, carga horária, realização e avaliação de eficácia.</p></div>
+      <div class="panel-title-actions">
+        <span>{{ vm.treinamentos().length }} planos</span>
+        <button type="button" (click)="vm.abrirNovoTreinamentoModal()">Novo plano</button>
+      </div>
     </div>
-    <form class="form-grid cols-2" (ngSubmit)="vm.salvarTreinamento()">
-      <input name="treTitulo" [(ngModel)]="vm.treinamentoForm.titulo" placeholder="Título" required />
-      <input name="treInstrutor" [(ngModel)]="vm.treinamentoForm.instrutor" placeholder="Instrutor" />
-      <input name="treInicio" [(ngModel)]="vm.treinamentoForm.dataInicio" type="datetime-local" />
-      <input name="treFim" [(ngModel)]="vm.treinamentoForm.dataFim" type="datetime-local" />
-      <input name="treCarga" [(ngModel)]="vm.treinamentoForm.cargaHoraria" type="number" placeholder="Carga horária" />
-      <select name="treStatus" [(ngModel)]="vm.treinamentoForm.status">
-        <option>Planejado</option>
-        <option>Em andamento</option>
-        <option>Concluído</option>
-        <option>Cancelado</option>
-      </select>
-      <textarea class="span-2" name="treDesc" [(ngModel)]="vm.treinamentoForm.descricao" placeholder="Descrição"></textarea>
-      <label class="check"><input name="treObrigatorio" [(ngModel)]="vm.treinamentoForm.obrigatorio" type="checkbox" /> Obrigatório</label>
-      <button type="submit">{{ vm.treinamentoForm.id ? 'Atualizar' : 'Salvar treinamento' }}</button>
-    </form>
+
     <div class="cards compact">
       <article *ngFor="let item of vm.treinamentos()">
         <div class="card-head"><strong>{{ item.titulo }}</strong><span class="status">{{ item.status }}</span></div>
         <span>{{ item.instrutor }} · {{ item.cargaHoraria }}h</span>
         <small>{{ item.dataInicio | date: 'dd/MM/yyyy HH:mm' }}</small>
-        <div class="row-actions"><button class="soft" type="button" (click)="vm.editarGenerico('treinamentoForm', item)">Editar</button></div>
+        <small>Avaliação: {{ item.metodoAvaliacaoEficacia || '-' }}</small>
+        <small>Eficaz: {{ item.eficaz ? 'Sim' : 'Não' }}</small>
+        <div class="row-actions">
+          <button class="soft" type="button" (click)="vm.editarTreinamento(item)">Editar</button>
+          <button type="button" (click)="vm.imprimirListaPresenca(item)">Lista de presença</button>
+        </div>
       </article>
     </div>
   </article>
 
   <article class="panel">
     <div class="panel-title">
-      <div><h2>Colaboradores e presença</h2><p>Vincule participantes e marque presença.</p></div>
+      <div><h2>Participantes e presenças</h2><p>Vincule colaboradores ao plano e marque presença.</p></div>
       <span>{{ vm.treinamentosColaboradores().length }} vínculos</span>
     </div>
     <form class="form-grid cols-2" (ngSubmit)="vm.vincularTreinamentoColaborador()">
@@ -65,4 +58,39 @@
       </article>
     </div>
   </article>
+</section>
+
+<section class="modal-backdrop" *ngIf="vm.treinamentoModalOpen()">
+  <form class="modal-card modal-card-wide pop" (ngSubmit)="vm.salvarTreinamento()">
+    <div class="modal-head">
+      <div>
+        <h2>{{ vm.treinamentoForm.id ? 'Editar plano anual' : 'Novo plano anual' }}</h2>
+        <p>Cadastre o treinamento planejado e seus critérios de eficácia.</p>
+      </div>
+      <button type="button" (click)="vm.treinamentoModalOpen.set(false)">×</button>
+    </div>
+    <div class="form-grid cols-2 no-margin">
+      <label>Título<input name="treTitulo" [(ngModel)]="vm.treinamentoForm.titulo" required /></label>
+      <label>Instrutor<input name="treInstrutor" [(ngModel)]="vm.treinamentoForm.instrutor" /></label>
+      <label>Data de realização<input name="treInicio" [(ngModel)]="vm.treinamentoForm.dataInicio" type="datetime-local" /></label>
+      <label>Data fim<input name="treFim" [(ngModel)]="vm.treinamentoForm.dataFim" type="datetime-local" /></label>
+      <label>Carga horária<input name="treCarga" [(ngModel)]="vm.treinamentoForm.cargaHoraria" type="number" min="1" /></label>
+      <label>Status
+        <select name="treStatus" [(ngModel)]="vm.treinamentoForm.status">
+          <option>Planejado</option>
+          <option>Em andamento</option>
+          <option>Concluído</option>
+          <option>Cancelado</option>
+        </select>
+      </label>
+      <label class="span-2">Descrição<textarea name="treDesc" [(ngModel)]="vm.treinamentoForm.descricao"></textarea></label>
+      <label class="span-2">Método de avaliação de eficácia<textarea name="treMetodo" [(ngModel)]="vm.treinamentoForm.metodoAvaliacaoEficacia"></textarea></label>
+      <label class="check"><input name="treObrigatorio" [(ngModel)]="vm.treinamentoForm.obrigatorio" type="checkbox" /> Obrigatório</label>
+      <label class="check"><input name="treEficaz" [(ngModel)]="vm.treinamentoForm.eficaz" type="checkbox" /> Foi eficaz</label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="soft" (click)="vm.treinamentoModalOpen.set(false)">Cancelar</button>
+      <button type="submit">Salvar plano</button>
+    </div>
+  </form>
 </section>

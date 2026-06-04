@@ -53,6 +53,33 @@ public class BeneficiosController : BaseTenantCrudController<Beneficio>
 
 [ApiController]
 [Route("api/[controller]")]
+public class EpisController : BaseTenantCrudController<Epi>
+{
+    private readonly AppDbContext _db;
+    public EpisController(AppDbContext db, ITenantContext tenant) : base(db, tenant) => _db = db;
+    protected override DbSet<Epi> Set => _db.Epis;
+}
+
+[ApiController]
+[Route("api/[controller]")]
+public class FerramentasAcessoController : BaseTenantCrudController<FerramentaAcesso>
+{
+    private readonly AppDbContext _db;
+    public FerramentasAcessoController(AppDbContext db, ITenantContext tenant) : base(db, tenant) => _db = db;
+    protected override DbSet<FerramentaAcesso> Set => _db.FerramentasAcesso;
+}
+
+[ApiController]
+[Route("api/[controller]")]
+public class EtapasProcessosConfigController : BaseTenantCrudController<EtapaProcessoConfig>
+{
+    private readonly AppDbContext _db;
+    public EtapasProcessosConfigController(AppDbContext db, ITenantContext tenant) : base(db, tenant) => _db = db;
+    protected override DbSet<EtapaProcessoConfig> Set => _db.EtapasProcessosConfig;
+}
+
+[ApiController]
+[Route("api/[controller]")]
 public class VagasController : BaseTenantCrudController<Vaga>
 {
     private readonly AppDbContext _db;

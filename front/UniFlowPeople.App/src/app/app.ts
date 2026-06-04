@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize, forkJoin } from 'rxjs';
+import { ToastrService } from 'ngx-toastr';
 import { AdmissaoPage } from './pages/admissao-page/admissao-page';
 import { BeneficiosPage } from './pages/beneficios-page/beneficios-page';
 import { CargosPage } from './pages/cargos-page/cargos-page';
@@ -14,6 +15,8 @@ import { DepartamentosPage } from './pages/departamentos-page/departamentos-page
 import { DocumentosPage } from './pages/documentos-page/documentos-page';
 import { EmpresasPage } from './pages/empresas-page/empresas-page';
 import { EstruturaPage } from './pages/estrutura-page/estrutura-page';
+import { EpisAcessosPage } from './pages/epis-acessos-page/epis-acessos-page';
+import { EtapasProcessosPage } from './pages/etapas-processos-page/etapas-processos-page';
 import { FeriasPage } from './pages/ferias-page/ferias-page';
 import { FinanceiroPage } from './pages/financeiro-page/financeiro-page';
 import { PontoPage } from './pages/ponto-page/ponto-page';
@@ -129,6 +132,8 @@ interface ModuleItem {
     DocumentosPage,
     EmpresasPage,
     EstruturaPage,
+    EpisAcessosPage,
+    EtapasProcessosPage,
     FeriasPage,
     FinanceiroPage,
     PontoPage,
@@ -143,6 +148,7 @@ interface ModuleItem {
 export class App {
   vm = this;
   private readonly http = inject(HttpClient);
+  private readonly toastr = inject(ToastrService);
   private readonly api = 'http://localhost:5036/api';
   private readonly sessionTimeoutMs = 30 * 60 * 1000;
   private inactivityTimeoutId?: ReturnType<typeof setTimeout>;
@@ -161,13 +167,25 @@ export class App {
   cadastroMenuOpen = signal(false);
   peopleMenuOpen = signal(false);
   financeiroMenuOpen = signal(false);
+  recrutamentoMenuOpen = signal(false);
   profileModalOpen = signal(false);
   passwordModalOpen = signal(false);
   admissaoProcessoModalOpen = signal(false);
   admissaoDocumentosModalOpen = signal(false);
   admissaoColaboradorModalOpen = signal(false);
   colaboradorModalOpen = signal(false);
+  treinamentoModalOpen = signal(false);
+  epiModalOpen = signal(false);
+  cargoEpiModalOpen = signal(false);
+  colaboradorEpiModalOpen = signal(false);
+  ferramentaAcessoModalOpen = signal(false);
+  colaboradorFerramentaAcessoModalOpen = signal(false);
+  etapaProcessoModalOpen = signal(false);
+  vagaModalOpen = signal(false);
+  candidatoModalOpen = signal(false);
+  genericEditModal = signal<{ form: string; title: string } | null>(null);
   confirmDelete = signal<{ endpoint: string; id: number; label: string } | null>(null);
+  cpfColaboradorDuplicado = signal(false);
   search = signal('');
   curriculoSearch = signal('');
   colaboradorSearch = signal('');
@@ -219,6 +237,12 @@ export class App {
   curriculoArquivo: File | null = null;
   treinamentoForm: any = this.novoTreinamento();
   treinamentoColaboradorForm: any = this.novoTreinamentoColaborador();
+  epiForm: any = this.novoEpi();
+  cargoEpiForm: any = this.novoCargoEpi();
+  colaboradorEpiForm: any = this.novoColaboradorEpi();
+  ferramentaAcessoForm: any = this.novaFerramentaAcesso();
+  colaboradorFerramentaAcessoForm: any = this.novoColaboradorFerramentaAcesso();
+  etapaProcessoForm: any = this.novaEtapaProcesso();
   admissaoForm: any = this.novaAdmissao();
   admissaoSelecionada: any = null;
   admissaoEtapaSelecionada = signal<{ processoId: number; etapaNome: string } | null>(null);
@@ -248,6 +272,12 @@ export class App {
   curriculos = signal<any[]>([]);
   treinamentos = signal<any[]>([]);
   treinamentosColaboradores = signal<any[]>([]);
+  epis = signal<any[]>([]);
+  cargosEpis = signal<any[]>([]);
+  colaboradoresEpis = signal<any[]>([]);
+  ferramentasAcesso = signal<any[]>([]);
+  colaboradoresFerramentasAcesso = signal<any[]>([]);
+  etapasProcessosConfig = signal<any[]>([]);
   admissoes = signal<any[]>([]);
   demissoes = signal<any[]>([]);
   documentosInstitucionais = signal<any[]>([]);
@@ -256,6 +286,45 @@ export class App {
   documentos = signal<any[]>([]);
   beneficiosColaboradores = signal<any[]>([]);
   solicitacoes = signal<any[]>([]);
+
+  modelosDocumentosAdmissao = [
+    {
+      titulo: 'Pausas para café',
+      arquivo: 'TERMO DE CIÊNCIA, CONCORDÂNCIA E ADESÃO À POLÍTICA INTERNA DE PAUSAS PARA CAFÉ.docx',
+      tipo: 'DOCX',
+      template: 'pausas-cafe.txt',
+    },
+    {
+      titulo: 'Chaves e senhas de alarmes',
+      arquivo: 'Termo de Responsabilidade de Chaves e Senhas de Alarmes kONECT.doc',
+      tipo: 'DOC',
+      template: 'chaves-senhas-alarmes.txt',
+    },
+    {
+      titulo: 'Refeição KONECT',
+      arquivo: 'Termo ciência REFEICAO KONECT.docx',
+      tipo: 'DOCX',
+      template: 'refeicao-konect.txt',
+    },
+    {
+      titulo: 'Alelo Alimentação e absenteísmo',
+      arquivo: 'Alelo Alimentação - Termo Recebimento + Absenteismo KONECT (Reparado).doc',
+      tipo: 'DOC',
+      template: 'alelo-alimentacao-absenteismo.txt',
+    },
+    {
+      titulo: 'Celulares',
+      arquivo: 'TERMO CELULARES.docx',
+      tipo: 'DOCX',
+      template: 'celulares.txt',
+    },
+    {
+      titulo: 'Imagem e LGPD',
+      arquivo: 'ADITIVO CONTRATO DE TRABALHO - KONECT- IMAGEM LGPD (1) (1).docx',
+      tipo: 'DOCX',
+      template: 'imagem-lgpd.txt',
+    },
+  ];
 
   metricas = signal({
     empresasContratantes: 0,
@@ -289,6 +358,7 @@ export class App {
       this.cadastroModules().find((x) => x.id === this.activeModule())?.label ??
       this.financeiroModules().find((x) => x.id === this.activeModule())?.label ??
       this.peopleModules().find((x) => x.id === this.activeModule())?.label ??
+      this.recrutamentoModules().find((x) => x.id === this.activeModule())?.label ??
       'Dashboard',
   );
   pageDescription = computed(
@@ -297,6 +367,7 @@ export class App {
       this.cadastroModules().find((x) => x.id === this.activeModule())?.description ??
       this.financeiroModules().find((x) => x.id === this.activeModule())?.description ??
       this.peopleModules().find((x) => x.id === this.activeModule())?.description ??
+      this.recrutamentoModules().find((x) => x.id === this.activeModule())?.description ??
       'Gestão inteligente de pessoas.',
   );
 
@@ -311,7 +382,6 @@ export class App {
           { id: 'dashboard', label: 'Visão geral', icon: '✦', description: 'Indicadores rápidos do RH.' },
           { id: 'documentos', label: 'Documentos', icon: '▧', description: 'Documentos e validações dos colaboradores.' },
           { id: 'solicitacoes', label: 'Solicitações', icon: '▢', description: 'Pedidos enviados ao setor de RH.' },
-          { id: 'recrutamento', label: 'Recrutamento', icon: '◇', description: 'Vagas, candidatos e pipeline.' },
           { id: 'treinamentos', label: 'Treinamentos', icon: '◎', description: 'Portal de treinamentos, colaboradores e presença.' },
           { id: 'usuarios', label: 'Usuários', icon: '◎', description: 'Contas e perfis de acesso.' },
         ],
@@ -327,6 +397,8 @@ export class App {
       : [
           { id: 'cargos', label: 'Cargos', icon: '◧', description: 'Cadastro de funções, níveis e salários base.' },
           { id: 'colaboradores', label: 'Colaboradores', icon: '◉', description: 'Cadastro completo dos colaboradores.' },
+          { id: 'epis-acessos', label: 'EPIs e Acessos', icon: '▨', description: 'EPIs por cargo, fichas de retirada e ferramentas de acesso.' },
+          { id: 'etapas-processos', label: 'Etapas', icon: '▱', description: 'Etapas personalizadas para admissão e demissão.' },
           { id: 'departamentos', label: 'Departamentos', icon: '▦', description: 'Cadastro de áreas e gestores.' },
           { id: 'estrutura', label: 'Filiais', icon: '▤', description: 'Unidades e filiais da empresa.' },
         ]),
@@ -338,6 +410,12 @@ export class App {
     { id: 'beneficios', label: 'Benefícios', icon: '◆', description: 'Benefícios e vínculos com colaboradores.' },
     { id: 'ferias', label: 'Férias', icon: '☼', description: 'Programação e controle de férias.' },
     { id: 'ponto', label: 'Ponto', icon: '◔', description: 'Registros de ponto por colaborador.' },
+  ]);
+
+  recrutamentoModules = computed<ModuleItem[]>(() => [
+    { id: 'recrutamento-vagas', label: 'Vagas', icon: '◇', description: 'Cadastro, publicação e acompanhamento de vagas.' },
+    { id: 'recrutamento-candidatos', label: 'Candidatos', icon: '◌', description: 'Pipeline de candidatos vinculados às vagas.' },
+    { id: 'recrutamento-curriculos', label: 'Banco de currículos', icon: '▧', description: 'Currículos recebidos e disponíveis para triagem.' },
   ]);
 
   financeiroModules = computed<ModuleItem[]>(() =>
@@ -551,6 +629,14 @@ export class App {
     this.http.get<any[]>(`${this.api}/curriculos`).subscribe((x) => this.curriculos.set(x ?? []));
     this.http.get<any[]>(`${this.api}/treinamentos`).subscribe((x) => this.treinamentos.set(x ?? []));
     this.http.get<any[]>(`${this.api}/treinamentosColaboradores`).subscribe((x) => this.treinamentosColaboradores.set(x ?? []));
+    this.http.get<any[]>(`${this.api}/epis`).subscribe((x) => this.epis.set(x ?? []));
+    this.http.get<any[]>(`${this.api}/cargosEpis`).subscribe((x) => this.cargosEpis.set(x ?? []));
+    this.http.get<any[]>(`${this.api}/colaboradoresEpis`).subscribe((x) => this.colaboradoresEpis.set(x ?? []));
+    this.http.get<any[]>(`${this.api}/ferramentasAcesso`).subscribe((x) => this.ferramentasAcesso.set(x ?? []));
+    this.http
+      .get<any[]>(`${this.api}/colaboradoresFerramentasAcesso`)
+      .subscribe((x) => this.colaboradoresFerramentasAcesso.set(x ?? []));
+    this.http.get<any[]>(`${this.api}/etapasProcessosConfig`).subscribe((x) => this.etapasProcessosConfig.set(x ?? []));
     this.http.get<any[]>(`${this.api}/admissoes`).subscribe((x) => {
       const admissoes = x ?? [];
       this.admissoes.set(admissoes);
@@ -740,6 +826,10 @@ export class App {
 
   salvarColaborador() {
     this.prepararStatusColaborador();
+    if (this.cpfColaboradorJaExiste()) {
+      this.marcarCpfDuplicado();
+      return;
+    }
     const editando = !!this.colaboradorForm.id;
     const payload = this.normalizePayload(this.colaboradorForm);
     const request = editando
@@ -748,13 +838,14 @@ export class App {
 
     request.subscribe({
       next: () => {
+        this.cpfColaboradorDuplicado.set(false);
         this.colaboradorForm = this.novoColaborador();
         this.colaboradorModalOpen.set(false);
         this.colaboradoresTab.set('pesquisa');
         this.carregarDados();
         this.notificar(editando ? 'Colaborador atualizado com sucesso.' : 'Colaborador cadastrado com sucesso.', 'success');
       },
-      error: () => this.notificar('Erro ao salvar colaborador.', 'error'),
+      error: (error) => this.tratarErroSalvarColaborador(error),
     });
   }
 
@@ -782,13 +873,18 @@ export class App {
   salvarColaboradorAdmissao() {
     const admissao = this.admissaoSelecionada;
     this.prepararStatusColaborador();
+    if (this.cpfColaboradorJaExiste()) {
+      this.marcarCpfDuplicado();
+      return;
+    }
     this.http.post<any>(`${this.api}/colaboradores`, this.normalizePayload(this.colaboradorForm)).subscribe({
       next: (colaborador) => {
+        this.cpfColaboradorDuplicado.set(false);
         this.colaboradorForm = this.novoColaborador();
         this.admissaoColaboradorModalOpen.set(false);
         this.concluirAdmissaoComColaborador(colaborador, admissao);
       },
-      error: () => this.notificar('Erro ao cadastrar colaborador pela admissão.', 'error'),
+      error: (error) => this.tratarErroSalvarColaborador(error, 'Erro ao cadastrar colaborador pela admissão.'),
     });
   }
 
@@ -799,8 +895,7 @@ export class App {
       dataAdmissao: this.toDateInput(item.dataAdmissao),
       dataDemissao: this.toDateInput(item.dataDemissao),
     };
-    this.colaboradoresTab.set('dados');
-    this.scrollTop();
+    this.colaboradorModalOpen.set(true);
   }
 
   salvarBeneficio() {
@@ -808,35 +903,34 @@ export class App {
   }
 
   salvarVaga() {
-    this.salvarCrud('vagas', this.vagaForm, () => (this.vagaForm = this.novaVaga()));
+    this.salvarCrud('vagas', this.vagaForm, () => {
+      this.vagaForm = this.novaVaga();
+      this.vagaModalOpen.set(false);
+    });
   }
 
   editarVaga(item: any) {
     this.vagaForm = { ...item, dataEncerramento: this.toDateInput(item.dataEncerramento) };
     this.recrutamentoCadastro.set('vagas');
-    this.recrutamentoTab.set('dados');
-    this.scrollTop();
+    this.vagaModalOpen.set(true);
   }
 
   novaVagaRecrutamento() {
     this.vagaForm = this.novaVaga();
     this.recrutamentoCadastro.set('vagas');
-    this.recrutamentoTab.set('dados');
-    this.scrollTop();
+    this.vagaModalOpen.set(true);
   }
 
   editarCandidato(item: any) {
     this.candidatoForm = { ...item };
     this.recrutamentoCadastro.set('candidatos');
-    this.recrutamentoTab.set('dados');
-    this.scrollTop();
+    this.candidatoModalOpen.set(true);
   }
 
   novoCandidatoRecrutamento() {
     this.candidatoForm = this.novoCandidato();
     this.recrutamentoCadastro.set('candidatos');
-    this.recrutamentoTab.set('dados');
-    this.scrollTop();
+    this.candidatoModalOpen.set(true);
   }
 
   novoCurriculoRecrutamento() {
@@ -858,6 +952,7 @@ export class App {
       next: (candidato) => {
         const candidatoCriado = editando ? this.candidatoForm : candidato;
         this.candidatoForm = this.novoCandidato();
+        this.candidatoModalOpen.set(false);
         if (editando) {
           this.carregarDados();
           this.recrutamentoTab.set('pesquisa');
@@ -898,7 +993,24 @@ export class App {
 
   salvarTreinamento() {
     this.normalizeDateTime(this.treinamentoForm, ['dataInicio', 'dataFim']);
-    this.salvarCrud('treinamentos', this.treinamentoForm, () => (this.treinamentoForm = this.novoTreinamento()));
+    this.salvarCrud('treinamentos', this.treinamentoForm, () => {
+      this.treinamentoForm = this.novoTreinamento();
+      this.treinamentoModalOpen.set(false);
+    });
+  }
+
+  abrirNovoTreinamentoModal() {
+    this.treinamentoForm = this.novoTreinamento();
+    this.treinamentoModalOpen.set(true);
+  }
+
+  editarTreinamento(item: any) {
+    this.treinamentoForm = {
+      ...item,
+      dataInicio: this.toDateTimeInput(item.dataInicio),
+      dataFim: this.toDateTimeInput(item.dataFim),
+    };
+    this.treinamentoModalOpen.set(true);
   }
 
   vincularTreinamentoColaborador() {
@@ -922,6 +1034,127 @@ export class App {
         },
         error: () => this.notificar('Erro ao atualizar presença.', 'error'),
       });
+  }
+
+  salvarEpi() {
+    this.salvarCrud('epis', this.epiForm, () => {
+      this.epiForm = this.novoEpi();
+      this.epiModalOpen.set(false);
+    });
+  }
+
+  abrirNovoEpiModal() {
+    this.epiForm = this.novoEpi();
+    this.epiModalOpen.set(true);
+  }
+
+  editarEpi(item: any) {
+    this.epiForm = { ...item };
+    this.epiModalOpen.set(true);
+  }
+
+  salvarCargoEpi() {
+    this.salvarCrud('cargosEpis', this.cargoEpiForm, () => {
+      this.cargoEpiForm = this.novoCargoEpi();
+      this.cargoEpiModalOpen.set(false);
+    });
+  }
+
+  abrirNovoCargoEpiModal(cargoId?: number) {
+    this.cargoEpiForm = { ...this.novoCargoEpi(), cargoId };
+    this.cargoEpiModalOpen.set(true);
+  }
+
+  editarCargoEpi(item: any) {
+    this.cargoEpiForm = { ...item };
+    this.cargoEpiModalOpen.set(true);
+  }
+
+  salvarColaboradorEpi() {
+    const form = this.colaboradorEpiForm;
+    this.normalizeDateTime(form, ['dataRetirada', 'dataPrevistaTroca', 'dataDevolucao']);
+    this.salvarCrud('colaboradoresEpis', form, () => {
+      this.colaboradorEpiForm = this.novoColaboradorEpi();
+      this.colaboradorEpiModalOpen.set(false);
+    });
+  }
+
+  abrirNovoColaboradorEpiModal(colaboradorId?: number, epiId?: number) {
+    this.colaboradorEpiForm = { ...this.novoColaboradorEpi(), colaboradorId, epiId };
+    this.colaboradorEpiModalOpen.set(true);
+  }
+
+  editarColaboradorEpi(item: any) {
+    this.colaboradorEpiForm = {
+      ...item,
+      dataRetirada: this.toDateInput(item.dataRetirada),
+      dataPrevistaTroca: this.toDateInput(item.dataPrevistaTroca),
+      dataDevolucao: this.toDateInput(item.dataDevolucao),
+    };
+    this.colaboradorEpiModalOpen.set(true);
+  }
+
+  salvarFerramentaAcesso() {
+    this.salvarCrud('ferramentasAcesso', this.ferramentaAcessoForm, () => {
+      this.ferramentaAcessoForm = this.novaFerramentaAcesso();
+      this.ferramentaAcessoModalOpen.set(false);
+    });
+  }
+
+  abrirNovaFerramentaAcessoModal() {
+    this.ferramentaAcessoForm = this.novaFerramentaAcesso();
+    this.ferramentaAcessoModalOpen.set(true);
+  }
+
+  editarFerramentaAcesso(item: any) {
+    this.ferramentaAcessoForm = { ...item };
+    this.ferramentaAcessoModalOpen.set(true);
+  }
+
+  salvarColaboradorFerramentaAcesso() {
+    const form = this.colaboradorFerramentaAcessoForm;
+    this.normalizeDateTime(form, ['dataEntrega', 'dataDevolucao']);
+    this.salvarCrud('colaboradoresFerramentasAcesso', form, () => {
+      this.colaboradorFerramentaAcessoForm = this.novoColaboradorFerramentaAcesso();
+      this.colaboradorFerramentaAcessoModalOpen.set(false);
+    });
+  }
+
+  abrirNovoColaboradorFerramentaAcessoModal(colaboradorId?: number) {
+    this.colaboradorFerramentaAcessoForm = { ...this.novoColaboradorFerramentaAcesso(), colaboradorId };
+    this.colaboradorFerramentaAcessoModalOpen.set(true);
+  }
+
+  editarColaboradorFerramentaAcesso(item: any) {
+    this.colaboradorFerramentaAcessoForm = {
+      ...item,
+      dataEntrega: this.toDateInput(item.dataEntrega),
+      dataDevolucao: this.toDateInput(item.dataDevolucao),
+    };
+    this.colaboradorFerramentaAcessoModalOpen.set(true);
+  }
+
+  salvarEtapaProcesso() {
+    this.salvarCrud('etapasProcessosConfig', this.etapaProcessoForm, () => {
+      this.etapaProcessoForm = this.novaEtapaProcesso();
+      this.etapaProcessoModalOpen.set(false);
+    });
+  }
+
+  abrirNovaEtapaProcessoModal() {
+    this.etapaProcessoForm = this.novaEtapaProcesso();
+    this.etapaProcessoModalOpen.set(true);
+  }
+
+  editarEtapaProcesso(item: any) {
+    this.etapaProcessoForm = { ...item };
+    this.etapaProcessoModalOpen.set(true);
+  }
+
+  etapasProcessosOrdenadas() {
+    return [...this.etapasProcessosConfig()].sort((a, b) =>
+      String(a.tipoProcesso).localeCompare(String(b.tipoProcesso)) || Number(a.ordem ?? 0) - Number(b.ordem ?? 0),
+    );
   }
 
   abrirNovoProcessoAdmissao() {
@@ -999,6 +1232,60 @@ export class App {
 
   documentosDaAdmissao(item: any) {
     return this.documentosInstitucionais().filter((x) => x.admissaoProcessoId === item?.id);
+  }
+
+  urlModeloDocumentoAdmissao(modelo: any) {
+    const apiOrigin = this.api.replace(/\/api\/?$/, '');
+    return `${apiOrigin}/modelos/admissao/${encodeURIComponent(modelo.arquivo)}`;
+  }
+
+  urlTemplateDocumentoAdmissao(modelo: any) {
+    const apiOrigin = this.api.replace(/\/api\/?$/, '');
+    return `${apiOrigin}/modelos/admissao/templates/${encodeURIComponent(modelo.template)}`;
+  }
+
+  colaboradorDaAdmissao(item: any) {
+    return this.colaboradores().find((x) => x.id === item?.colaboradorId) ?? null;
+  }
+
+  nomeDocumentoAdmissao(item: any) {
+    return this.colaboradorDaAdmissao(item)?.nome ?? item?.nomeCandidato ?? '';
+  }
+
+  cpfDocumentoAdmissao(item: any) {
+    return this.colaboradorDaAdmissao(item)?.cpf ?? item?.cpf ?? '';
+  }
+
+  imprimirModeloDocumentoAdmissao(modelo: any, item: any) {
+    this.http.get(this.urlTemplateDocumentoAdmissao(modelo), { responseType: 'text' }).subscribe({
+      next: (template) => this.imprimirHtml(this.renderizarModeloDocumentoAdmissao(template, item)),
+      error: () => this.notificar('Não foi possível carregar o texto do modelo para impressão.', 'error'),
+    });
+  }
+
+  private renderizarModeloDocumentoAdmissao(template: string, item: any) {
+    const nome = this.nomeDocumentoAdmissao(item) || '________________';
+    const cpf = this.cpfDocumentoAdmissao(item) || '________________';
+    const data = this.formatDatePrint(new Date());
+    const texto = template
+      .replace(/\{\{NOME\}\}/gi, nome)
+      .replace(/\{\{CPF\}\}/gi, cpf)
+      .replace(/\{\{DATA\}\}/gi, data);
+
+    return `
+      <section class="document-page document-template-page">
+        <div class="document-template-body">${this.textoParaHtmlDocumento(texto)}</div>
+      </section>
+    `;
+  }
+
+  private textoParaHtmlDocumento(texto: string) {
+    return this.escapeHtml(texto)
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .split(/\n{2,}/)
+      .map((paragraph) => `<p>${paragraph.replace(/\n/g, '<br />')}</p>`)
+      .join('');
   }
 
   gerarDocumentosAdmissao() {
@@ -1126,7 +1413,46 @@ export class App {
 
   editarGenerico(form: string, item: any) {
     (this as any)[form] = { ...item };
-    this.scrollTop();
+    if (form === 'beneficioColaboradorForm') {
+      this.beneficioColaboradorForm.dataInicio = this.toDateInput(item.dataInicio);
+      this.beneficioColaboradorForm.dataFim = this.toDateInput(item.dataFim);
+    }
+    if (form === 'feriasForm') {
+      this.feriasForm.dataInicio = this.toDateInput(item.dataInicio);
+      this.feriasForm.dataFim = this.toDateInput(item.dataFim);
+      this.feriasForm.periodoAquisitivoInicio = this.toDateInput(item.periodoAquisitivoInicio);
+      this.feriasForm.periodoAquisitivoFim = this.toDateInput(item.periodoAquisitivoFim);
+    }
+    this.genericEditModal.set({ form, title: this.tituloModalGenerico(form) });
+  }
+
+  fecharModalGenerico() {
+    this.genericEditModal.set(null);
+  }
+
+  salvarModalGenerico(form: string) {
+    const actions: Record<string, () => void> = {
+      cargoForm: () => this.salvarCargo(),
+      departamentoForm: () => this.salvarDepartamento(),
+      filialForm: () => this.salvarFilial(),
+      beneficioForm: () => this.salvarBeneficio(),
+      beneficioColaboradorForm: () => this.salvarBeneficioColaborador(),
+      feriasForm: () => this.salvarFerias(),
+    };
+    actions[form]?.();
+    this.genericEditModal.set(null);
+  }
+
+  private tituloModalGenerico(form: string) {
+    const titles: Record<string, string> = {
+      cargoForm: 'Editar cargo',
+      departamentoForm: 'Editar departamento',
+      filialForm: 'Editar filial',
+      beneficioForm: 'Editar benefício',
+      beneficioColaboradorForm: 'Editar vínculo de benefício',
+      feriasForm: 'Editar férias',
+    };
+    return titles[form] ?? 'Editar registro';
   }
 
   pedirExclusao(endpoint: string, id: number | undefined, label: string) {
@@ -1300,6 +1626,76 @@ export class App {
     return this.cargos().find((x) => x.id === id)?.nome ?? id ?? '-';
   }
 
+  nomeEpi(id?: number) {
+    return this.epis().find((x) => x.id === id)?.nome ?? id ?? '-';
+  }
+
+  nomeFerramentaAcesso(id?: number) {
+    return this.ferramentasAcesso().find((x) => x.id === id)?.nome ?? id ?? '-';
+  }
+
+  episDoCargo(cargoId?: number) {
+    if (!cargoId) return [];
+    return this.cargosEpis().filter((x) => x.cargoId === cargoId);
+  }
+
+  episDoColaborador(colaboradorId?: number) {
+    if (!colaboradorId) return [];
+    return this.colaboradoresEpis().filter((x) => x.colaboradorId === colaboradorId);
+  }
+
+  episPendentesTroca(colaboradorId?: number) {
+    const hoje = new Date();
+    return this.episDoColaborador(colaboradorId).filter((x) => {
+      if (x.status !== 'Retirado' || !x.dataPrevistaTroca) return false;
+      return new Date(x.dataPrevistaTroca) <= hoje;
+    });
+  }
+
+  ferramentasDoColaborador(colaboradorId?: number) {
+    if (!colaboradorId) return [];
+    return this.colaboradoresFerramentasAcesso().filter((x) => x.colaboradorId === colaboradorId);
+  }
+
+  aplicarEpisDoCargoNoColaborador() {
+    const colaboradorId = this.colaboradorForm.id;
+    const cargoId = this.colaboradorForm.cargoId;
+    if (!colaboradorId || !cargoId) {
+      this.notificar('Salve o colaborador e selecione um cargo antes de lançar EPIs do cargo.', 'error');
+      return;
+    }
+
+    const jaRetirados = new Set(
+      this.episDoColaborador(colaboradorId)
+        .filter((x) => x.status === 'Retirado')
+        .map((x) => x.epiId),
+    );
+    const pendentes = this.episDoCargo(cargoId).filter((x) => !jaRetirados.has(x.epiId));
+    if (!pendentes.length) {
+      this.notificar('Todos os EPIs obrigatórios do cargo já constam na ficha.', 'info');
+      return;
+    }
+
+    forkJoin(
+      pendentes.map((item) =>
+        this.http.post(`${this.api}/colaboradoresEpis`, {
+          colaboradorId,
+          epiId: item.epiId,
+          quantidade: item.quantidadePadrao || 1,
+          dataRetirada: new Date().toISOString(),
+          status: 'Retirado',
+          observacoes: 'Lançado a partir do cargo do colaborador.',
+        }),
+      ),
+    ).subscribe({
+      next: () => {
+        this.carregarDados();
+        this.notificar('EPIs do cargo lançados na ficha do colaborador.', 'success');
+      },
+      error: () => this.notificar('Erro ao lançar EPIs do cargo.', 'error'),
+    });
+  }
+
   nomeDepartamento(id?: number) {
     return this.departamentos().find((x) => x.id === id)?.nome ?? id ?? '-';
   }
@@ -1356,18 +1752,18 @@ export class App {
   }
 
   etapasAdmissao(item: any) {
-    const nomes = [
-      'Candidato cadastrado',
-      'Entrevista com RH',
-      'Entrevista com gestor',
-      'Avaliacao psicologica',
-      'Anexar documentos',
-    ];
+    const configs = this.etapasProcessosConfig()
+      .filter((x) => x.tipoProcesso === 'Admissao' && x.ativa)
+      .sort((a, b) => Number(a.ordem ?? 0) - Number(b.ordem ?? 0));
+    const nomes = configs.length
+      ? configs.map((x) => x.nome)
+      : ['Candidato cadastrado', 'Entrevista com RH', 'Entrevista com gestor', 'Avaliacao psicologica', 'Anexar documentos'];
     const etapas = Array.isArray(item?.etapas) ? item.etapas : [];
 
     return nomes.map((nome, index) => {
       const etapa = etapas.find((x: any) => x.nome === nome);
-      return etapa ?? { id: 0, nome, status: index === 0 ? 'Concluida' : 'Bloqueada' };
+      const config = configs.find((x) => x.nome === nome);
+      return etapa ?? { id: 0, nome, status: config?.primeiraEtapaConcluida || index === 0 ? 'Concluida' : 'Bloqueada' };
     });
   }
 
@@ -1563,7 +1959,10 @@ export class App {
   }
 
   etapasDemissao(item: any) {
-    const nomes = ['Aprovada pela direcao', 'Entrevista demissional', 'Exame demissional', 'Demissao efetivada'];
+    const configs = this.etapasProcessosConfig()
+      .filter((x) => x.tipoProcesso === 'Demissao' && x.ativa)
+      .sort((a, b) => Number(a.ordem ?? 0) - Number(b.ordem ?? 0));
+    const nomes = configs.length ? configs.map((x) => x.nome) : ['Aprovada pela direcao', 'Entrevista demissional', 'Exame demissional', 'Demissao efetivada'];
     const etapas = Array.isArray(item?.etapas) ? item.etapas : [];
 
     return nomes.map((nome) => etapas.find((x: any) => x.nome === nome) ?? { id: 0, nome, status: 'Pendente' });
@@ -1688,11 +2087,107 @@ export class App {
     return this.treinamentos().find((x) => x.id === id)?.titulo ?? id ?? '-';
   }
 
+  imprimirFichaEpi(colaborador: any) {
+    const retiradas = this.episDoColaborador(colaborador.id);
+    const linhas = retiradas
+      .map(
+        (item) => `
+          <tr>
+            <td>${this.escapeHtml(this.nomeEpi(item.epiId))}</td>
+            <td>${item.quantidade ?? 1}</td>
+            <td>${this.formatDatePrint(item.dataRetirada)}</td>
+            <td>${this.formatDatePrint(item.dataPrevistaTroca)}</td>
+            <td>${this.formatDatePrint(item.dataDevolucao)}</td>
+            <td>${this.escapeHtml(item.status ?? '')}</td>
+            <td>${this.escapeHtml(item.observacoes ?? '')}</td>
+          </tr>
+        `,
+      )
+      .join('');
+
+    this.imprimirHtml(`
+      <h1>Ficha de entrega de EPIs</h1>
+      <p><strong>Colaborador:</strong> ${this.escapeHtml(colaborador.nome)} &nbsp; <strong>CPF:</strong> ${this.escapeHtml(colaborador.cpf ?? '')}</p>
+      <p><strong>Cargo:</strong> ${this.escapeHtml(this.nomeCargo(colaborador.cargoId))} &nbsp; <strong>Data:</strong> ${this.formatDatePrint(new Date())}</p>
+      <table>
+        <thead><tr><th>EPI</th><th>Qtd.</th><th>Retirada</th><th>Troca prevista</th><th>Devolução</th><th>Status</th><th>Observações</th></tr></thead>
+        <tbody>${linhas || '<tr><td colspan="7">Nenhum EPI retirado.</td></tr>'}</tbody>
+      </table>
+      <div class="signatures">
+        <span>Assinatura do colaborador</span>
+        <span>Responsável pela entrega</span>
+      </div>
+    `);
+  }
+
+  imprimirDocumentosAdmissao(colaborador: any) {
+    const data = this.formatDatePrint(new Date());
+    const docs = [
+      'Termo de Ciência, Concordância e Adesão à Política Interna de Pausas para Café',
+      'Termo de Responsabilidade de Chaves e Senhas de Alarmes kONECT',
+      'Termo ciência Refeição KONECT',
+      'Alelo Alimentação - Termo Recebimento + Absenteísmo KONECT',
+      'Termo Celulares',
+      'Aditivo Contrato de Trabalho - KONECT - Imagem LGPD',
+    ];
+
+    this.imprimirHtml(
+      docs
+        .map(
+          (titulo) => `
+            <section class="document-page">
+              <h1>${this.escapeHtml(titulo)}</h1>
+              <p><strong>Colaborador:</strong> ${this.escapeHtml(colaborador.nome)}</p>
+              <p><strong>CPF:</strong> ${this.escapeHtml(colaborador.cpf ?? '')}</p>
+              <p><strong>Data:</strong> ${data}</p>
+              <p class="placeholder">Documento institucional para conferência, ciência e assinatura ao concluir o processo de admissão.</p>
+              <div class="signature">Assinatura do colaborador</div>
+            </section>
+          `,
+        )
+        .join(''),
+    );
+  }
+
+  imprimirListaPresenca(treinamento: any) {
+    const participantes = this.treinamentosColaboradores().filter((x) => x.treinamentoId === treinamento.id);
+    const linhas = participantes
+      .map(
+        (item) => `
+          <tr>
+            <td>${this.escapeHtml(this.nomeColaborador(item.colaboradorId))}</td>
+            <td>${this.escapeHtml(treinamento.instrutor ?? '')}</td>
+            <td>${this.escapeHtml(treinamento.titulo ?? '')}</td>
+            <td>${item.presente ? 'Presente' : 'Pendente'}</td>
+            <td></td>
+          </tr>
+        `,
+      )
+      .join('');
+
+    this.imprimirHtml(`
+      <h1>Lista de presença</h1>
+      <p><strong>Treinamento:</strong> ${this.escapeHtml(treinamento.titulo ?? '')}</p>
+      <p><strong>Instrutor:</strong> ${this.escapeHtml(treinamento.instrutor ?? '')} &nbsp; <strong>Data:</strong> ${this.formatDatePrint(treinamento.dataInicio)}</p>
+      <table>
+        <thead><tr><th>Colaborador</th><th>Instrutor</th><th>Treinamento</th><th>Status</th><th>Assinatura</th></tr></thead>
+        <tbody>${linhas || '<tr><td colspan="5">Nenhum participante vinculado.</td></tr>'}</tbody>
+      </table>
+    `);
+  }
+
   setModule(id: string) {
     this.activeModule.set(id);
     if (this.cadastroModules().some((module) => module.id === id)) this.cadastroMenuOpen.set(true);
     if (this.financeiroModules().some((module) => module.id === id)) this.financeiroMenuOpen.set(true);
     if (this.peopleModules().some((module) => module.id === id)) this.peopleMenuOpen.set(true);
+    if (this.recrutamentoModules().some((module) => module.id === id)) {
+      this.recrutamentoMenuOpen.set(true);
+      this.recrutamentoTab.set('pesquisa');
+      if (id === 'recrutamento-vagas') this.recrutamentoCadastro.set('vagas');
+      if (id === 'recrutamento-candidatos') this.recrutamentoCadastro.set('candidatos');
+      if (id === 'recrutamento-curriculos') this.recrutamentoCadastro.set('curriculos');
+    }
     this.search.set('');
     this.userMenuOpen.set(false);
   }
@@ -1827,6 +2322,9 @@ export class App {
   private notificar(texto: string, tipo: MessageType = 'info') {
     this.mensagem.set(texto);
     this.mensagemTipo.set(tipo);
+    if (tipo === 'success') this.toastr.success(texto);
+    else if (tipo === 'error') this.toastr.error(texto);
+    else this.toastr.info(texto);
     setTimeout(() => {
       if (this.mensagem() === texto) this.mensagem.set('');
     }, 4200);
@@ -1848,6 +2346,62 @@ export class App {
     return value ? new Date(value).toISOString().slice(0, 10) : '';
   }
 
+  private toDateTimeInput(value: any) {
+    return value ? new Date(value).toISOString().slice(0, 16) : '';
+  }
+
+  private formatDatePrint(value: any) {
+    if (!value) return '';
+    return new Date(value).toLocaleDateString('pt-BR');
+  }
+
+  private escapeHtml(value: any) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
+  private imprimirHtml(content: string) {
+    const janela = window.open('', '_blank', 'width=980,height=720');
+    if (!janela) {
+      this.notificar('Não foi possível abrir a janela de impressão.', 'error');
+      return;
+    }
+
+    janela.document.write(`
+      <!doctype html>
+      <html lang="pt-BR">
+        <head>
+          <meta charset="utf-8" />
+          <title>Impressão</title>
+          <style>
+            body { color: #111; font-family: Arial, sans-serif; margin: 28px; }
+            h1 { font-size: 22px; margin: 0 0 16px; text-transform: uppercase; }
+            p { margin: 8px 0; }
+            table { width: 100%; border-collapse: collapse; margin-top: 18px; }
+            th, td { border: 1px solid #333; padding: 8px; font-size: 12px; text-align: left; vertical-align: top; }
+            th { background: #f2f2f2; }
+            .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-top: 64px; }
+            .signatures span, .signature { border-top: 1px solid #111; padding-top: 8px; text-align: center; }
+            .signature { margin-top: 80px; }
+            .document-page { min-height: 92vh; page-break-after: always; }
+            .document-template-page { max-width: 760px; margin: 0 auto; }
+            .document-template-body { font-size: 13px; line-height: 1.55; white-space: normal; }
+            .document-template-body p { margin: 0 0 12px; }
+            .document-template-body p:first-child { font-weight: 700; text-align: center; text-transform: uppercase; margin-bottom: 22px; }
+            .placeholder { margin-top: 32px; line-height: 1.6; }
+            @media print { button { display: none; } body { margin: 18mm; } }
+          </style>
+        </head>
+        <body>${content}<script>window.onload = () => window.print();</script></body>
+      </html>
+    `);
+    janela.document.close();
+  }
+
   private normalizePayload<T>(payload: T): T {
     return JSON.parse(
       JSON.stringify(payload, (_key, value) => {
@@ -1855,6 +2409,43 @@ export class App {
         return value;
       }),
     ) as T;
+  }
+
+  limparErroCpfColaborador() {
+    if (this.cpfColaboradorDuplicado()) this.cpfColaboradorDuplicado.set(false);
+  }
+
+  private cpfColaboradorJaExiste() {
+    const cpf = this.normalizarCpf(this.colaboradorForm.cpf);
+    if (!cpf) return false;
+
+    return this.colaboradores().some((colaborador) => {
+      if (colaborador.id === this.colaboradorForm.id) return false;
+      return this.normalizarCpf(colaborador.cpf) === cpf;
+    });
+  }
+
+  private marcarCpfDuplicado() {
+    this.cpfColaboradorDuplicado.set(true);
+    this.notificar('Já existe um colaborador cadastrado com este CPF.', 'error');
+    setTimeout(() => {
+      const input = document.querySelector<HTMLInputElement>('.cpf-duplicado, input[name="colabCpf"], input[name="admColabCpf"]');
+      input?.focus();
+    }, 0);
+  }
+
+  private tratarErroSalvarColaborador(error: any, fallback = 'Erro ao salvar colaborador.') {
+    const texto = JSON.stringify(error?.error ?? error ?? '').toLowerCase();
+    if (error?.status === 409 || texto.includes('cpf') || texto.includes('duplicate') || texto.includes('unique')) {
+      this.marcarCpfDuplicado();
+      return;
+    }
+
+    this.notificar(fallback, 'error');
+  }
+
+  private normalizarCpf(value: any) {
+    return String(value ?? '').replace(/\D/g, '');
   }
 
   private normalizeDateTime(payload: any, fields: string[]) {
@@ -2086,6 +2677,8 @@ export class App {
       dataInicio: new Date().toISOString().slice(0, 16),
       dataFim: '',
       cargaHoraria: 1,
+      metodoAvaliacaoEficacia: '',
+      eficaz: false,
       status: 'Planejado',
       obrigatorio: false,
     };
@@ -2098,6 +2691,70 @@ export class App {
       presente: false,
       status: 'Inscrito',
       observacoes: '',
+    };
+  }
+
+  novoEpi() {
+    return {
+      nome: '',
+      ca: '',
+      descricao: '',
+      periodicidadeTrocaDias: 180,
+      ativo: true,
+    };
+  }
+
+  novoCargoEpi() {
+    return {
+      cargoId: undefined,
+      epiId: undefined,
+      quantidadePadrao: 1,
+      obrigatorio: true,
+    };
+  }
+
+  novoColaboradorEpi() {
+    return {
+      colaboradorId: undefined,
+      epiId: undefined,
+      quantidade: 1,
+      dataRetirada: new Date().toISOString().slice(0, 10),
+      dataPrevistaTroca: '',
+      dataDevolucao: '',
+      status: 'Retirado',
+      observacoes: '',
+    };
+  }
+
+  novaFerramentaAcesso() {
+    return {
+      nome: '',
+      tipo: 'Tag de acesso',
+      identificador: '',
+      descricao: '',
+      ativa: true,
+    };
+  }
+
+  novoColaboradorFerramentaAcesso() {
+    return {
+      colaboradorId: undefined,
+      ferramentaAcessoId: undefined,
+      dataEntrega: new Date().toISOString().slice(0, 10),
+      dataDevolucao: '',
+      status: 'Entregue',
+      observacoes: '',
+    };
+  }
+
+  novaEtapaProcesso() {
+    return {
+      tipoProcesso: 'Admissao',
+      nome: '',
+      descricao: '',
+      ordem: 1,
+      primeiraEtapaConcluida: false,
+      ativa: true,
     };
   }
 

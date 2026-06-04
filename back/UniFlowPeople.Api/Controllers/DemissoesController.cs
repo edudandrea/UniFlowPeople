@@ -26,10 +26,11 @@ public class DemissoesController(AppDbContext db, ITenantContext tenant) : BaseT
             .OrderByDescending(x => x.DataSolicitacao)
             .ToListAsync();
 
+        var etapasConfig = await EtapasConfig("Demissao");
         foreach (var processo in processos)
         {
-            SincronizarEtapasPadrao(processo);
-            AtualizarStatusProcesso(processo);
+            SincronizarEtapasPadrao(processo, etapasConfig);
+            AtualizarStatusProcesso(processo, etapasConfig.Select(x => x.Nome).ToList());
         }
 
         await db.SaveChangesAsync();
@@ -47,10 +48,10 @@ public class DemissoesController(AppDbContext db, ITenantContext tenant) : BaseT
         entity.EmpresaId = tenant.EmpresaId.Value;
         if (!entity.Etapas.Any())
         {
-            entity.Etapas = EtapasPadrao().Select(nome => new DemissaoEtapa { Nome = nome }).ToList();
+            entity.Etapas = (await EtapasConfig("Demissao")).Select(etapa => new DemissaoEtapa { Nome = etapa.Nome }).ToList();
         }
 
-        AtualizarStatusProcesso(entity);
+        AtualizarStatusProcesso(entity, (await EtapasConfig("Demissao")).Select(x => x.Nome).ToList());
         db.Demissoes.Add(entity);
         await db.SaveChangesAsync();
         return CreatedAtAction(nameof(GetById), new { id = entity.Id }, entity);
@@ -68,8 +69,9 @@ public class DemissoesController(AppDbContext db, ITenantContext tenant) : BaseT
 
         if (processo is not null)
         {
-            SincronizarEtapasPadrao(processo);
-            AtualizarStatusProcesso(processo);
+            var etapasConfig = await EtapasConfig("Demissao");
+            SincronizarEtapasPadrao(processo, etapasConfig);
+            AtualizarStatusProcesso(processo, etapasConfig.Select(x => x.Nome).ToList());
         }
 
         return processo is null ? NotFound() : processo;
@@ -97,7 +99,7 @@ public class DemissoesController(AppDbContext db, ITenantContext tenant) : BaseT
         {
             if (request.Status != "Concluida")
             {
-                var nomes = EtapasPadrao().ToList();
+                var nomes = (await EtapasConfig("Demissao")).Select(x => x.Nome).ToList();
                 var indice = nomes.FindIndex(nome => nome == etapa.Nome);
                 foreach (var posterior in processo.Etapas.Where(x => nomes.IndexOf(x.Nome) > indice))
                 {
@@ -106,7 +108,7 @@ public class DemissoesController(AppDbContext db, ITenantContext tenant) : BaseT
                 }
             }
 
-            AtualizarStatusProcesso(processo);
+            AtualizarStatusProcesso(processo, (await EtapasConfig("Demissao")).Select(x => x.Nome).ToList());
         }
 
         await db.SaveChangesAsync();
@@ -123,9 +125,10 @@ public class DemissoesController(AppDbContext db, ITenantContext tenant) : BaseT
             .Include(x => x.Etapas)
             .FirstOrDefaultAsync(x => x.Id == id && x.EmpresaId == tenant.EmpresaId.Value);
         if (processo is null) return NotFound();
-        SincronizarEtapasPadrao(processo);
+        var etapasConfig = await EtapasConfig("Demissao");
+        SincronizarEtapasPadrao(processo, etapasConfig);
 
-        if (EtapasPadrao().Any(nome => processo.Etapas.FirstOrDefault(x => x.Nome == nome)?.Status != "Concluida"))
+        if (etapasConfig.Any(etapa => processo.Etapas.FirstOrDefault(x => x.Nome == etapa.Nome)?.Status != "Concluida"))
         {
             return BadRequest("Conclua todas as etapas antes de efetivar a demissao.");
         }
@@ -138,33 +141,46 @@ public class DemissoesController(AppDbContext db, ITenantContext tenant) : BaseT
         return NoContent();
     }
 
-    private static string[] EtapasPadrao() =>
+    private async Task<List<EtapaProcessoConfig>> EtapasConfig(string tipoProcesso)
+    {
+        if (tenant.EmpresaId is null) return EtapasPadrao();
+        var etapas = await db.EtapasProcessosConfig
+            .AsNoTracking()
+            .Where(x => x.EmpresaId == tenant.EmpresaId.Value && x.TipoProcesso == tipoProcesso && x.Ativa)
+            .OrderBy(x => x.Ordem)
+            .ThenBy(x => x.Id)
+            .ToListAsync();
+
+        return etapas.Count > 0 ? etapas : EtapasPadrao();
+    }
+
+    private static List<EtapaProcessoConfig> EtapasPadrao() =>
     [
-        "Aprovada pela direcao",
-        "Entrevista demissional",
-        "Exame demissional",
-        "Demissao efetivada"
+        new() { Nome = "Aprovada pela direcao", Ordem = 1 },
+        new() { Nome = "Entrevista demissional", Ordem = 2 },
+        new() { Nome = "Exame demissional", Ordem = 3 },
+        new() { Nome = "Demissao efetivada", Ordem = 4 }
     ];
 
-    private static void SincronizarEtapasPadrao(DemissaoProcesso processo)
+    private static void SincronizarEtapasPadrao(DemissaoProcesso processo, IReadOnlyList<EtapaProcessoConfig> etapasConfig)
     {
         var existentes = processo.Etapas.Select(x => x.Nome).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        foreach (var nome in EtapasPadrao().Where(nome => !existentes.Contains(nome)))
+        foreach (var etapa in etapasConfig.Where(etapa => !existentes.Contains(etapa.Nome)))
         {
             processo.Etapas.Add(new DemissaoEtapa
             {
                 DemissaoProcessoId = processo.Id,
-                Nome = nome,
+                Nome = etapa.Nome,
                 Status = "Pendente"
             });
         }
     }
 
-    private static void AtualizarStatusProcesso(DemissaoProcesso processo)
+    private static void AtualizarStatusProcesso(DemissaoProcesso processo, IReadOnlyList<string> nomesEtapas)
     {
         if (processo.Status is "Concluido" or "Cancelado") return;
 
-        var etapaAtual = EtapasPadrao()
+        var etapaAtual = nomesEtapas
             .Select(nome => processo.Etapas.FirstOrDefault(x => x.Nome == nome))
             .FirstOrDefault(etapa => etapa is not null && etapa.Status != "Concluida");
 

@@ -66,15 +66,8 @@
   <div class="tab-panel" *ngIf="vm.colaboradoresTab() === 'dados'">
     <div class="empty-state" *ngIf="!vm.colaboradorForm.id">
       <strong>Selecione um colaborador</strong>
-      <span>Use a aba Pesquisa para localizar e editar um cadastro existente.</span>
+      <span>Use a aba Pesquisa para localizar e editar um cadastro existente em modal.</span>
     </div>
-
-    <form class="colaborador-form" *ngIf="vm.colaboradorForm.id" (ngSubmit)="vm.salvarColaborador()">
-      <ng-container *ngTemplateOutlet="colaboradorFields"></ng-container>
-      <div class="form-actions">
-        <button type="submit">Atualizar dados</button>
-      </div>
-    </form>
   </div>
 
   <div class="panel-footer">
@@ -86,7 +79,7 @@
   <form class="modal-card modal-card-xxl pop colaborador-form" (ngSubmit)="vm.salvarColaborador()">
     <div class="modal-head">
       <div>
-        <h2>Cadastrar colaborador</h2>
+        <h2>{{ vm.colaboradorForm.id ? 'Editar colaborador' : 'Cadastrar colaborador' }}</h2>
         <p>Preencha a ficha completa do colaborador.</p>
       </div>
       <button type="button" (click)="vm.colaboradorModalOpen.set(false)">×</button>
@@ -96,7 +89,7 @@
 
     <div class="modal-actions">
       <button type="button" class="soft" (click)="vm.colaboradorModalOpen.set(false)">Cancelar</button>
-      <button type="submit">Cadastrar colaborador</button>
+      <button type="submit">{{ vm.colaboradorForm.id ? 'Salvar alterações' : 'Cadastrar colaborador' }}</button>
     </div>
   </form>
 </section>
@@ -113,7 +106,16 @@
 
     <div class="form-grid cols-4 no-margin">
       <label class="span-2">Nome completo<input name="colabNome" [(ngModel)]="vm.colaboradorForm.nome" required /></label>
-      <label>CPF<input name="colabCpf" [(ngModel)]="vm.colaboradorForm.cpf" required /></label>
+      <label>CPF
+        <input
+          name="colabCpf"
+          [(ngModel)]="vm.colaboradorForm.cpf"
+          [class.cpf-duplicado]="vm.cpfColaboradorDuplicado()"
+          (ngModelChange)="vm.limparErroCpfColaborador()"
+          required
+        />
+        <small class="field-error" *ngIf="vm.cpfColaboradorDuplicado()">CPF já cadastrado para outro colaborador.</small>
+      </label>
       <label>RG<input name="colabRg" [(ngModel)]="vm.colaboradorForm.rg" /></label>
       <label>E-mail<input name="colabEmail" [(ngModel)]="vm.colaboradorForm.email" type="email" /></label>
       <label>Telefone<input name="colabTelefone" [(ngModel)]="vm.colaboradorForm.telefone" /></label>
@@ -245,4 +247,89 @@
       <label>Observações<textarea name="colabObservacoes" [(ngModel)]="vm.colaboradorForm.observacoes"></textarea></label>
     </div>
   </section>
+  <section class="form-section" *ngIf="vm.colaboradorForm.id">
+    <div class="section-title">
+      <span>06</span>
+      <div>
+        <strong>EPIs e acessos</strong>
+        <small>Itens exigidos pelo cargo, retiradas, trocas e ferramentas vinculadas.</small>
+      </div>
+    </div>
+
+    <div class="stage-actions">
+      <div class="stage-action-buttons">
+        <button type="button" class="soft" (click)="vm.aplicarEpisDoCargoNoColaborador()">Lançar EPIs do cargo</button>
+        <button type="button" class="soft" (click)="vm.abrirNovoColaboradorEpiModal(vm.colaboradorForm.id)">Lançar EPI manual</button>
+        <button type="button" class="soft" (click)="vm.abrirNovoColaboradorFerramentaAcessoModal(vm.colaboradorForm.id)">Vincular acesso</button>
+        <button type="button" (click)="vm.imprimirFichaEpi(vm.colaboradorForm)">Imprimir ficha de EPIs</button>
+        <button type="button" class="soft" (click)="vm.imprimirDocumentosAdmissao(vm.colaboradorForm)">Imprimir termos de admissão</button>
+      </div>
+    </div>
+
+    <div class="cards compact">
+      <article>
+        <strong>EPIs previstos no cargo</strong>
+        <span *ngFor="let item of vm.episDoCargo(vm.colaboradorForm.cargoId)">{{ vm.nomeEpi(item.epiId) }} · qtd. {{ item.quantidadePadrao }}</span>
+        <small *ngIf="!vm.episDoCargo(vm.colaboradorForm.cargoId).length">Nenhum EPI vinculado ao cargo.</small>
+      </article>
+      <article>
+        <strong>Itens a trocar</strong>
+        <span *ngFor="let item of vm.episPendentesTroca(vm.colaboradorForm.id)">{{ vm.nomeEpi(item.epiId) }} · {{ item.dataPrevistaTroca | date: 'dd/MM/yyyy' }}</span>
+        <small *ngIf="!vm.episPendentesTroca(vm.colaboradorForm.id).length">Nenhum item vencido para troca.</small>
+      </article>
+      <article>
+        <strong>Ferramentas de acesso</strong>
+        <span *ngFor="let item of vm.ferramentasDoColaborador(vm.colaboradorForm.id)">{{ vm.nomeFerramentaAcesso(item.ferramentaAcessoId) }} · {{ item.status }}</span>
+        <small *ngIf="!vm.ferramentasDoColaborador(vm.colaboradorForm.id).length">Nenhuma ferramenta vinculada.</small>
+      </article>
+    </div>
+
+    <div class="table-wrap excel-wrap">
+      <table class="excel-table">
+        <thead><tr><th>EPI</th><th>Qtd.</th><th>Retirada</th><th>Troca prevista</th><th>Devolução</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          <tr *ngFor="let item of vm.episDoColaborador(vm.colaboradorForm.id)">
+            <td>{{ vm.nomeEpi(item.epiId) }}</td>
+            <td>{{ item.quantidade }}</td>
+            <td>{{ item.dataRetirada | date: 'dd/MM/yyyy' }}</td>
+            <td>{{ item.dataPrevistaTroca | date: 'dd/MM/yyyy' }}</td>
+            <td>{{ item.dataDevolucao | date: 'dd/MM/yyyy' }}</td>
+            <td><span class="status" [class.off]="item.status !== 'Retirado'">{{ item.status }}</span></td>
+            <td class="actions"><button type="button" class="soft" (click)="vm.editarColaboradorEpi(item)">Editar</button></td>
+          </tr>
+          <tr *ngIf="!vm.episDoColaborador(vm.colaboradorForm.id).length"><td colspan="7" class="empty-cell">Nenhum EPI retirado.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 </ng-template>
+
+<section class="modal-backdrop" *ngIf="vm.colaboradorEpiModalOpen()">
+  <form class="modal-card modal-card-wide pop" (ngSubmit)="vm.salvarColaboradorEpi()">
+    <div class="modal-head"><h2>Lançar EPI do colaborador</h2><button type="button" (click)="vm.colaboradorEpiModalOpen.set(false)">×</button></div>
+    <div class="form-grid cols-2 no-margin">
+      <label>Colaborador<select name="colabEpiColabFicha" [(ngModel)]="vm.colaboradorEpiForm.colaboradorId" required><option [ngValue]="undefined">Selecione</option><option *ngFor="let colab of vm.colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option></select></label>
+      <label>EPI<select name="colabEpiEpiFicha" [(ngModel)]="vm.colaboradorEpiForm.epiId" required><option [ngValue]="undefined">Selecione</option><option *ngFor="let epi of vm.epis()" [ngValue]="epi.id">{{ epi.nome }}</option></select></label>
+      <label>Quantidade<input name="colabEpiQtdFicha" [(ngModel)]="vm.colaboradorEpiForm.quantidade" type="number" min="1" /></label>
+      <label>Status<select name="colabEpiStatusFicha" [(ngModel)]="vm.colaboradorEpiForm.status"><option>Retirado</option><option>Trocado</option><option>Devolvido</option><option>Extraviado</option></select></label>
+      <label>Retirada<input name="colabEpiRetiradaFicha" [(ngModel)]="vm.colaboradorEpiForm.dataRetirada" type="date" /></label>
+      <label>Troca prevista<input name="colabEpiTrocaFicha" [(ngModel)]="vm.colaboradorEpiForm.dataPrevistaTroca" type="date" /></label>
+      <label>Devolução<input name="colabEpiDevolucaoFicha" [(ngModel)]="vm.colaboradorEpiForm.dataDevolucao" type="date" /></label>
+      <label class="span-2">Observações<textarea name="colabEpiObsFicha" [(ngModel)]="vm.colaboradorEpiForm.observacoes"></textarea></label>
+    </div>
+    <div class="modal-actions"><button type="button" class="soft" (click)="vm.colaboradorEpiModalOpen.set(false)">Cancelar</button><button type="submit">Salvar</button></div>
+  </form>
+</section>
+
+<section class="modal-backdrop" *ngIf="vm.colaboradorFerramentaAcessoModalOpen()">
+  <form class="modal-card pop" (ngSubmit)="vm.salvarColaboradorFerramentaAcesso()">
+    <div class="modal-head"><h2>Vincular ferramenta</h2><button type="button" (click)="vm.colaboradorFerramentaAcessoModalOpen.set(false)">×</button></div>
+    <label>Colaborador<select name="cfaColabFicha" [(ngModel)]="vm.colaboradorFerramentaAcessoForm.colaboradorId" required><option [ngValue]="undefined">Selecione</option><option *ngFor="let colab of vm.colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option></select></label>
+    <label>Ferramenta<select name="cfaFerramentaFicha" [(ngModel)]="vm.colaboradorFerramentaAcessoForm.ferramentaAcessoId" required><option [ngValue]="undefined">Selecione</option><option *ngFor="let item of vm.ferramentasAcesso()" [ngValue]="item.id">{{ item.nome }}</option></select></label>
+    <label>Entrega<input name="cfaEntregaFicha" [(ngModel)]="vm.colaboradorFerramentaAcessoForm.dataEntrega" type="date" /></label>
+    <label>Devolução<input name="cfaDevolucaoFicha" [(ngModel)]="vm.colaboradorFerramentaAcessoForm.dataDevolucao" type="date" /></label>
+    <label>Status<select name="cfaStatusFicha" [(ngModel)]="vm.colaboradorFerramentaAcessoForm.status"><option>Entregue</option><option>Devolvido</option><option>Bloqueado</option><option>Extraviado</option></select></label>
+    <label>Observações<textarea name="cfaObsFicha" [(ngModel)]="vm.colaboradorFerramentaAcessoForm.observacoes"></textarea></label>
+    <div class="modal-actions"><button type="button" class="soft" (click)="vm.colaboradorFerramentaAcessoModalOpen.set(false)">Cancelar</button><button type="submit">Salvar</button></div>
+  </form>
+</section>

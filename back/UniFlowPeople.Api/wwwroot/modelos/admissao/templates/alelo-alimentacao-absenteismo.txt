@@ -1,0 +1,33 @@
+Declaração Recebimento Cartão Alimentação - CAJU
+
+Eu, {{NOME}}, declaro ter recebido o cartão CAJU ALIMENTAÇÃO, que será de minha total responsabilidade enquanto funcionário desta empresa.
+CPF: {{CPF}}
+Em caso de perda, furto ou extravio do cartão, a empresa deverá ser comunicada imediatamente.
+Estou ciente que, caso ocorra a rescisão do contrato de trabalho, o cartão deverá ser devolvido para a empresa imediatamente e em perfeitas condições de uso.
+
+Caxias do Sul, {{DATA}}.
+
+_________________________________________
+{{NOME}}
+CPF: {{CPF}}
+
+PROJETO INCENTIVO - ABSENTEÍSMO
+
+OBJETIVO: Zelar pela pontualidade e assiduidade do colaborador junto a empresa.
+
+Prêmio: Crédito no valor de R$ 150,00 no Cartão CAJU ALIMENTAÇÃO.
+
+Receberá o prêmio, o colaborador que não tiver faltas, atrasos, saídas antecipadas e atestados dentro do mês, considerando os seguintes critérios:
+Serão abonadas faltas decorrentes de acidente de trabalho, saídas e viagens a serviço da empresa e cursos oferecidos pela empresa.
+No período de férias o colaborador somente terá direito ao prêmio caso tenha recebido no mínimo 9 (nove) prêmios no decorrer do período aquisitivo;
+Quaisquer outros atrasos, não registro do ponto, saídas antecipadas, atestados e outras faltas previstas ou não em lei, farão com que o colaborador perca o direito ao prêmio relativo ao mês da ausência;
+Colaboradoras em licença maternidade não terão direito ao prêmio no período de afastamento;
+Colaboradores afastados por auxílio doença não terão direito ao prêmio no período de afastamento;
+Não poderá haver atrasos no intervalo de refeições;
+Não registro do ponto fará com que o colaborador também perca o direito;
+A tolerância para atrasos é de cinco minutos por mês;
+O colaborador passa a ter direito ao prêmio logo após a admissão, desde que trabalhe durante todo o mês, ou seja, do dia 01 ao dia 30/31;
+A recarga do Cartão Alimentação será feita até o dia 20 de cada mês.
+
+Atenciosamente
+RH

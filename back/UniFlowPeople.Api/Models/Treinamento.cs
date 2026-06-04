@@ -10,6 +10,8 @@ namespace UniFlowPeople.Api.Models
         public DateTime DataInicio { get; set; } = DateTime.UtcNow;
         public DateTime? DataFim { get; set; }
         public int CargaHoraria { get; set; }
+        public string? MetodoAvaliacaoEficacia { get; set; }
+        public bool Eficaz { get; set; }
         public string Status { get; set; } = "Planejado";
         public bool Obrigatorio { get; set; }
 

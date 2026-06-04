@@ -16,7 +16,7 @@
               <td>{{ item.nome }}</td>
               <td>{{ item.valorPadrao | currency: 'BRL' }}</td>
               <td>{{ item.descricao || '-' }}</td>
-              <td class="actions"><button class="soft" type="button" (click)="vm.editarGenerico('beneficioForm', item); vm.beneficiosTab.set('dados')">Editar</button></td>
+              <td class="actions"><button class="soft" type="button" (click)="vm.editarGenerico('beneficioForm', item)">Editar</button></td>
             </tr>
             <tr *ngIf="!vm.beneficios().length"><td colspan="4" class="empty-cell">Nenhum benefício encontrado.</td></tr>
           </tbody>
@@ -61,7 +61,7 @@
               <td>{{ vm.nomeBeneficio(item.beneficioId) }}</td>
               <td>{{ item.valor | currency: 'BRL' }}</td>
               <td>{{ item.dataInicio | date: 'dd/MM/yyyy' }}</td>
-              <td class="actions"><button class="soft" type="button" (click)="vm.editarGenerico('beneficioColaboradorForm', item); vm.beneficiosVinculosTab.set('dados')">Editar</button></td>
+              <td class="actions"><button class="soft" type="button" (click)="vm.editarGenerico('beneficioColaboradorForm', item)">Editar</button></td>
             </tr>
             <tr *ngIf="!vm.beneficiosColaboradores().length"><td colspan="5" class="empty-cell">Nenhum vínculo encontrado.</td></tr>
           </tbody>

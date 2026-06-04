@@ -1,19 +1,18 @@
 <section class="panel fade-in" (click)="vm.limparEtapaAdmissaoSelecionada()">
   <div class="panel-title">
-    <div><h2>Recrutamento</h2><p>Vagas, candidatos e banco de curriculos.</p></div>
+    <div>
+      <h2>
+        {{
+          vm.recrutamentoCadastro() === 'vagas'
+            ? 'Vagas'
+            : vm.recrutamentoCadastro() === 'candidatos'
+              ? 'Candidatos'
+              : 'Banco de currículos'
+        }}
+      </h2>
+      <p>Pesquisa, cadastro e manutenção do fluxo de recrutamento.</p>
+    </div>
     <span>{{ vm.filteredVagas().length + vm.filteredCandidatos().length + vm.filteredCurriculosBanco().length }} registros</span>
-  </div>
-
-  <div class="tabs">
-    <button type="button" [class.active]="vm.recrutamentoCadastro() === 'vagas'" (click)="vm.recrutamentoCadastro.set('vagas'); vm.recrutamentoTab.set('pesquisa')">
-      Vagas
-    </button>
-    <button type="button" [class.active]="vm.recrutamentoCadastro() === 'candidatos'" (click)="vm.recrutamentoCadastro.set('candidatos'); vm.recrutamentoTab.set('pesquisa')">
-      Candidatos
-    </button>
-    <button type="button" [class.active]="vm.recrutamentoCadastro() === 'curriculos'" (click)="vm.recrutamentoCadastro.set('curriculos'); vm.recrutamentoTab.set('pesquisa')">
-      Banco de curriculos
-    </button>
   </div>
 
   <div class="tabs">
@@ -195,4 +194,48 @@
       </ng-template>
     </ng-container>
   </ng-container>
+</section>
+
+<section class="modal-backdrop" *ngIf="vm.vagaModalOpen()">
+  <form class="modal-card modal-card-wide pop" (ngSubmit)="vm.salvarVaga()" (click)="$event.stopPropagation()">
+    <div class="modal-head">
+      <div>
+        <h2>{{ vm.vagaForm.id ? 'Editar vaga' : 'Nova vaga' }}</h2>
+        <p>Atualize os dados da vaga e sua situação no processo seletivo.</p>
+      </div>
+      <button type="button" (click)="vm.vagaModalOpen.set(false)">×</button>
+    </div>
+    <div class="form-grid cols-2 no-margin">
+      <label>Título da vaga<input name="modalVagaTitulo" [(ngModel)]="vm.vagaForm.titulo" required /></label>
+      <label>Status<select name="modalVagaStatus" [(ngModel)]="vm.vagaForm.status"><option>Aberta</option><option>Pausada</option><option>Encerrada</option></select></label>
+      <label>Departamento<select name="modalVagaDep" [(ngModel)]="vm.vagaForm.departamentoId"><option [ngValue]="undefined">Departamento</option><option *ngFor="let item of vm.departamentos()" [ngValue]="item.id">{{ item.nome }}</option></select></label>
+      <label>Cargo<select name="modalVagaCargo" [(ngModel)]="vm.vagaForm.cargoId"><option [ngValue]="undefined">Cargo</option><option *ngFor="let item of vm.cargos()" [ngValue]="item.id">{{ item.nome }}</option></select></label>
+      <label>Quantidade<input name="modalVagaQtd" [(ngModel)]="vm.vagaForm.quantidade" type="number" /></label>
+      <label>Salário<input name="modalVagaSalario" [(ngModel)]="vm.vagaForm.salario" type="number" /></label>
+      <label class="span-2">Descrição<textarea name="modalVagaDesc" [(ngModel)]="vm.vagaForm.descricao"></textarea></label>
+    </div>
+    <div class="modal-actions"><button type="button" class="soft" (click)="vm.vagaModalOpen.set(false)">Cancelar</button><button type="submit">Salvar vaga</button></div>
+  </form>
+</section>
+
+<section class="modal-backdrop" *ngIf="vm.candidatoModalOpen()">
+  <form class="modal-card modal-card-wide pop" (ngSubmit)="vm.salvarCandidato()" (click)="$event.stopPropagation()">
+    <div class="modal-head">
+      <div>
+        <h2>{{ vm.candidatoForm.id ? 'Editar candidato' : 'Novo candidato' }}</h2>
+        <p>Atualize os dados do candidato e sua etapa no pipeline.</p>
+      </div>
+      <button type="button" (click)="vm.candidatoModalOpen.set(false)">×</button>
+    </div>
+    <div class="form-grid cols-2 no-margin">
+      <label>Vaga<select name="modalCandVaga" [(ngModel)]="vm.candidatoForm.vagaId" required><option [ngValue]="undefined">Vaga</option><option *ngFor="let item of vm.vagas()" [ngValue]="item.id">{{ item.titulo }}</option></select></label>
+      <label>Nome<input name="modalCandNome" [(ngModel)]="vm.candidatoForm.nome" required /></label>
+      <label>E-mail<input name="modalCandEmail" [(ngModel)]="vm.candidatoForm.email" /></label>
+      <label>Telefone<input name="modalCandTel" [(ngModel)]="vm.candidatoForm.telefone" /></label>
+      <label>Status<select name="modalCandStatus" [(ngModel)]="vm.candidatoForm.status"><option>Recebido</option><option>Triagem</option><option>Entrevista</option><option>Aprovado</option><option>Reprovado</option></select></label>
+      <label>LinkedIn<input name="modalCandLinkedin" [(ngModel)]="vm.candidatoForm.linkedin" /></label>
+      <label class="span-2">Observações<textarea name="modalCandObs" [(ngModel)]="vm.candidatoForm.observacoes"></textarea></label>
+    </div>
+    <div class="modal-actions"><button type="button" class="soft" (click)="vm.candidatoModalOpen.set(false)">Cancelar</button><button type="submit">Salvar candidato</button></div>
+  </form>
 </section>

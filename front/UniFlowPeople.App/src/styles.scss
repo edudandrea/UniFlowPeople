@@ -7,9 +7,7 @@ body {
   min-height: 100vh;
   color: #0d251b;
   background:
-    radial-gradient(circle at 14% 20%, rgba(147, 213, 0, 0.12), transparent 24%),
-    radial-gradient(circle at 86% 12%, rgba(23, 104, 52, 0.1), transparent 28%),
-    #eef5ef;
+    linear-gradient(180deg, #f6faf5 0%, #edf5ec 100%);
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -47,9 +45,9 @@ select {
   --ink: #10251b;
   --muted: #6b7f70;
   --line: #dbe8da;
-  --panel: rgba(255, 255, 255, 0.86);
-  --shadow: 0 22px 60px rgba(5, 43, 26, 0.12);
-  --radius: 22px;
+  --panel: rgba(255, 255, 255, 0.94);
+  --shadow: 0 18px 46px rgba(5, 43, 26, 0.1);
+  --radius: 16px;
 }
 
 .login-shell,
@@ -432,7 +430,6 @@ select {
 
 .workspace > * {
   position: relative;
-  z-index: 1;
 }
 
 .topbar {
@@ -440,7 +437,7 @@ select {
   top: 0;
   right: 0;
   left: var(--sidebar-width);
-  z-index: 70;
+  z-index: 80;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -448,11 +445,11 @@ select {
   min-height: 132px;
   margin: 0;
   padding: 22px clamp(22px, 2.6vw, 38px);
-  background: rgba(244, 249, 242, 0.94);
+  background: rgba(248, 252, 247, 0.96);
   border: 1px solid rgba(219, 232, 218, 0.86);
   border-top: 0;
-  border-radius: 0 0 24px 24px;
-  box-shadow: 0 18px 45px rgba(5, 43, 26, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.74);
+  border-radius: 0 0 18px 18px;
+  box-shadow: 0 14px 34px rgba(5, 43, 26, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.84);
   backdrop-filter: blur(18px);
 }
 
@@ -597,7 +594,7 @@ button {
   justify-content: center;
   min-height: 42px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 12px;
   padding: 0 16px;
   color: #fff;
   font-weight: 800;
@@ -616,6 +613,11 @@ button {
   &:disabled {
     opacity: 0.55;
     cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(147, 213, 0, 0.38);
+    outline-offset: 2px;
   }
 }
 
@@ -696,13 +698,13 @@ button {
 }
 
 .panel {
-  padding: 22px;
+  padding: 24px;
   margin-bottom: 20px;
   border: 1px solid rgba(219, 232, 218, 0.86);
   border-radius: var(--radius);
   background: var(--panel);
   box-shadow: var(--shadow);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(10px);
   animation: panelRise 0.34s ease-out both;
 }
 
@@ -1379,11 +1381,11 @@ textarea {
   min-height: 44px;
   width: 100%;
   border: 1px solid #cfe0ce;
-  border-radius: 14px;
+  border-radius: 12px;
   padding: 0 13px;
   color: var(--ink);
   outline: none;
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.94);
   transition:
     border-color 0.18s ease,
     box-shadow 0.18s ease,
@@ -1394,6 +1396,19 @@ textarea {
     background: #fff;
     box-shadow: 0 0 0 4px rgba(147, 213, 0, 0.16);
   }
+}
+
+input.cpf-duplicado {
+  border-color: #dc2626 !important;
+  background: #fff5f5;
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.14) !important;
+}
+
+.field-error {
+  margin-top: -2px;
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 900;
 }
 
 input[type="file"] {
@@ -1458,7 +1473,7 @@ textarea {
 .table-wrap {
   overflow: auto;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 14px;
   background: #fff;
 }
 
@@ -1854,6 +1869,93 @@ textarea {
   }
 }
 
+.document-model-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.document-model-card {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(5, 43, 26, 0.07);
+
+  .row-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+.document-model-thumb {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 84px;
+  border: 1px solid #cfe0ce;
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, transparent 0 72%, rgba(23, 104, 52, 0.16) 72%),
+    linear-gradient(180deg, #ffffff, #f1faec);
+
+  span {
+    color: var(--green-800);
+    font-size: 11px;
+    font-weight: 950;
+  }
+}
+
+.document-model-info {
+  min-width: 0;
+
+  strong,
+  small,
+  span {
+    display: block;
+  }
+
+  strong {
+    color: var(--green-950);
+    font-size: 15px;
+  }
+
+  small {
+    margin-top: 4px;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  span {
+    margin-top: 8px;
+    color: var(--green-800);
+    font-size: 12px;
+    font-weight: 850;
+  }
+}
+
+.soft-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  border: 1px solid #d8efca;
+  border-radius: 10px;
+  padding: 0 11px;
+  color: var(--green-800);
+  font-size: 12px;
+  font-weight: 900;
+  background: #eef9e8;
+  text-decoration: none;
+}
+
 .curriculo-toolbar {
   display: flex;
   justify-content: flex-end;
@@ -1909,7 +2011,7 @@ table {
   }
 
   tbody tr:hover {
-    background: #f1faec;
+    background: #f4faef;
   }
 
   a {
@@ -1931,7 +2033,7 @@ table {
 th,
 td {
   border-bottom: 1px solid #e8f1e6;
-  padding: 14px 12px;
+  padding: 13px 12px;
   text-align: left;
   vertical-align: middle;
 }
@@ -1993,7 +2095,7 @@ tr {
   article {
     padding: 16px;
     border: 1px solid var(--line);
-    border-radius: 18px;
+    border-radius: 12px;
     background: #fff;
     transition:
       transform 0.18s ease,
@@ -2046,7 +2148,7 @@ tr {
     gap: 12px;
     padding: 14px;
     border: 1px solid var(--line);
-    border-radius: 18px;
+    border-radius: 12px;
     background: #fff;
 
     > span {
@@ -2111,28 +2213,28 @@ tr {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 90;
+  z-index: 1000;
   display: grid;
   place-items: center;
-  padding: 24px;
-  overflow: hidden;
-  background: rgba(5, 43, 26, 0.46);
-  backdrop-filter: blur(8px);
+  padding: clamp(18px, 3vw, 34px);
+  overflow: auto;
+  background: rgba(5, 43, 26, 0.56);
+  backdrop-filter: blur(12px);
   animation: modalBackdrop 0.22s ease-out;
 }
 
 .modal-card {
   width: min(480px, 100%);
-  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
   display: grid;
   gap: 14px;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 22px;
   border: 1px solid var(--line);
-  border-radius: 24px;
+  border-radius: 18px;
   background: #fff;
-  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.24);
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.28);
   scrollbar-width: thin;
   scrollbar-color: rgba(23, 104, 52, 0.35) transparent;
 
@@ -2159,7 +2261,7 @@ tr {
 }
 
 .modal-card-wide {
-  width: min(760px, 100%);
+  width: min(920px, 100%);
 }
 
 .modal-card-xxl {

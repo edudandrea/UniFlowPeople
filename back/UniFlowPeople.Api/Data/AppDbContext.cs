@@ -33,8 +33,14 @@ namespace UniFlowPeople.Api.Data
         public DbSet<Curriculo> Curriculos { get; set; }
         public DbSet<Treinamento> Treinamentos { get; set; }
         public DbSet<TreinamentoColaborador> TreinamentosColaboradores { get; set; }
+        public DbSet<Epi> Epis { get; set; }
+        public DbSet<CargoEpi> CargosEpis { get; set; }
+        public DbSet<ColaboradorEpi> ColaboradoresEpis { get; set; }
+        public DbSet<FerramentaAcesso> FerramentasAcesso { get; set; }
+        public DbSet<ColaboradorFerramentaAcesso> ColaboradoresFerramentasAcesso { get; set; }
         public DbSet<AdmissaoProcesso> Admissoes { get; set; }
         public DbSet<AdmissaoEtapa> AdmissaoEtapas { get; set; }
+        public DbSet<EtapaProcessoConfig> EtapasProcessosConfig { get; set; }
         public DbSet<AdmissaoDocumento> AdmissaoDocumentos { get; set; }
         public DbSet<DocumentoInstitucional> DocumentosInstitucionais { get; set; }
         public DbSet<DemissaoProcesso> Demissoes { get; set; }
@@ -150,11 +156,54 @@ namespace UniFlowPeople.Api.Data
                 .HasForeignKey(x => x.ColaboradorId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<CargoEpi>()
+                .HasIndex(x => new { x.EmpresaId, x.CargoId, x.EpiId })
+                .IsUnique();
+
+            modelBuilder.Entity<CargoEpi>()
+                .HasOne(x => x.Cargo)
+                .WithMany()
+                .HasForeignKey(x => x.CargoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<CargoEpi>()
+                .HasOne(x => x.Epi)
+                .WithMany(x => x.Cargos)
+                .HasForeignKey(x => x.EpiId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ColaboradorEpi>()
+                .HasOne(x => x.Colaborador)
+                .WithMany(x => x.Epis)
+                .HasForeignKey(x => x.ColaboradorId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ColaboradorEpi>()
+                .HasOne(x => x.Epi)
+                .WithMany(x => x.Retiradas)
+                .HasForeignKey(x => x.EpiId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ColaboradorFerramentaAcesso>()
+                .HasOne(x => x.Colaborador)
+                .WithMany(x => x.FerramentasAcesso)
+                .HasForeignKey(x => x.ColaboradorId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ColaboradorFerramentaAcesso>()
+                .HasOne(x => x.FerramentaAcesso)
+                .WithMany(x => x.Colaboradores)
+                .HasForeignKey(x => x.FerramentaAcessoId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             modelBuilder.Entity<AdmissaoProcesso>()
                 .HasOne(x => x.Colaborador)
                 .WithMany()
                 .HasForeignKey(x => x.ColaboradorId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<EtapaProcessoConfig>()
+                .HasIndex(x => new { x.EmpresaId, x.TipoProcesso, x.Ordem });
 
             modelBuilder.Entity<AdmissaoEtapa>()
                 .HasOne(x => x.AdmissaoProcesso)

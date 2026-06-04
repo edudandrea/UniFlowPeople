@@ -30,10 +30,11 @@ public class AdmissoesController(
             .OrderByDescending(x => x.DataCadastro)
             .ToListAsync();
 
+        var etapasConfig = await EtapasConfig("Admissao");
         foreach (var processo in processos)
         {
-            SincronizarEtapasPadrao(processo);
-            AtualizarStatusProcesso(processo);
+            SincronizarEtapasPadrao(processo, etapasConfig);
+            AtualizarStatusProcesso(processo, etapasConfig.Select(x => x.Nome).ToList());
         }
 
         await db.SaveChangesAsync();
@@ -49,16 +50,17 @@ public class AdmissoesController(
         entity.EmpresaId = tenant.EmpresaId.Value;
         if (!entity.Etapas.Any())
         {
-            entity.Etapas = EtapasPadrao()
-                .Select((nome, index) => new AdmissaoEtapa
+            var etapasConfig = await EtapasConfig("Admissao");
+            entity.Etapas = etapasConfig
+                .Select((etapa, index) => new AdmissaoEtapa
                 {
-                    Nome = nome,
-                    Status = index == 0 ? "Concluida" : "Pendente",
-                    DataConclusao = index == 0 ? DateTime.UtcNow : null
+                    Nome = etapa.Nome,
+                    Status = etapa.PrimeiraEtapaConcluida || index == 0 ? "Concluida" : "Pendente",
+                    DataConclusao = etapa.PrimeiraEtapaConcluida || index == 0 ? DateTime.UtcNow : null
                 })
                 .ToList();
         }
-        AtualizarStatusProcesso(entity);
+        AtualizarStatusProcesso(entity, (await EtapasConfig("Admissao")).Select(x => x.Nome).ToList());
 
         db.Admissoes.Add(entity);
         await db.SaveChangesAsync();
@@ -77,8 +79,9 @@ public class AdmissoesController(
 
         if (processo is not null)
         {
-            SincronizarEtapasPadrao(processo);
-            AtualizarStatusProcesso(processo);
+            var etapasConfig = await EtapasConfig("Admissao");
+            SincronizarEtapasPadrao(processo, etapasConfig);
+            AtualizarStatusProcesso(processo, etapasConfig.Select(x => x.Nome).ToList());
             await db.SaveChangesAsync();
         }
 
@@ -103,7 +106,7 @@ public class AdmissoesController(
         etapa.DataConclusao = request.Status == "Concluida" ? request.DataConclusao ?? DateTime.UtcNow : null;
         if (request.Status != "Concluida")
         {
-            var nomes = EtapasPadrao().ToList();
+            var nomes = (await EtapasConfig("Admissao")).Select(x => x.Nome).ToList();
             var etapaIndex = nomes.IndexOf(etapa.Nome);
             foreach (var etapaPosterior in etapa.AdmissaoProcesso.Etapas.Where(x => nomes.IndexOf(x.Nome) > etapaIndex))
             {
@@ -111,7 +114,7 @@ public class AdmissoesController(
                 etapaPosterior.DataConclusao = null;
             }
         }
-        AtualizarStatusProcesso(etapa.AdmissaoProcesso);
+        AtualizarStatusProcesso(etapa.AdmissaoProcesso, (await EtapasConfig("Admissao")).Select(x => x.Nome).ToList());
         await db.SaveChangesAsync();
         return NoContent();
     }
@@ -126,8 +129,9 @@ public class AdmissoesController(
             .FirstOrDefaultAsync(x => x.Id == id && x.EmpresaId == tenant.EmpresaId.Value);
         if (processo is null) return NotFound();
         if (processo.Status == "Cancelado") return BadRequest("Processo cancelado nao pode ser admitido.");
-        SincronizarEtapasPadrao(processo);
-        if (EtapasPadrao().Any(nome => processo.Etapas.FirstOrDefault(x => x.Nome == nome)?.Status != "Concluida"))
+        var etapasAdmissao = await EtapasConfig("Admissao");
+        SincronizarEtapasPadrao(processo, etapasAdmissao);
+        if (etapasAdmissao.Any(etapa => processo.Etapas.FirstOrDefault(x => x.Nome == etapa.Nome)?.Status != "Concluida"))
         {
             return BadRequest("Todas as etapas precisam estar concluidas antes da admissao.");
         }
@@ -274,35 +278,47 @@ public class AdmissoesController(
         if (System.IO.File.Exists(filePath)) System.IO.File.Delete(filePath);
     }
 
-    private static string[] EtapasPadrao() =>
+    private async Task<List<EtapaProcessoConfig>> EtapasConfig(string tipoProcesso)
+    {
+        if (tenant.EmpresaId is null) return EtapasPadrao();
+        var etapas = await db.EtapasProcessosConfig
+            .AsNoTracking()
+            .Where(x => x.EmpresaId == tenant.EmpresaId.Value && x.TipoProcesso == tipoProcesso && x.Ativa)
+            .OrderBy(x => x.Ordem)
+            .ThenBy(x => x.Id)
+            .ToListAsync();
+
+        return etapas.Count > 0 ? etapas : EtapasPadrao();
+    }
+
+    private static List<EtapaProcessoConfig> EtapasPadrao() =>
     [
-        "Candidato cadastrado",
-        "Entrevista com RH",
-        "Entrevista com gestor",
-        "Avaliacao psicologica",
-        "Anexar documentos"
+        new() { Nome = "Candidato cadastrado", Ordem = 1, PrimeiraEtapaConcluida = true },
+        new() { Nome = "Entrevista com RH", Ordem = 2 },
+        new() { Nome = "Entrevista com gestor", Ordem = 3 },
+        new() { Nome = "Avaliacao psicologica", Ordem = 4 },
+        new() { Nome = "Anexar documentos", Ordem = 5 }
     ];
 
-    private static void SincronizarEtapasPadrao(AdmissaoProcesso processo)
+    private static void SincronizarEtapasPadrao(AdmissaoProcesso processo, IReadOnlyList<EtapaProcessoConfig> etapasConfig)
     {
         var existentes = processo.Etapas.Select(x => x.Nome).ToHashSet();
-        foreach (var nome in EtapasPadrao().Where(nome => !existentes.Contains(nome)))
+        foreach (var etapa in etapasConfig.Where(etapa => !existentes.Contains(etapa.Nome)))
         {
-            var primeiraEtapa = nome == "Candidato cadastrado";
             processo.Etapas.Add(new AdmissaoEtapa
             {
-                Nome = nome,
-                Status = primeiraEtapa ? "Concluida" : "Pendente",
-                DataConclusao = primeiraEtapa ? DateTime.UtcNow : null
+                Nome = etapa.Nome,
+                Status = etapa.PrimeiraEtapaConcluida ? "Concluida" : "Pendente",
+                DataConclusao = etapa.PrimeiraEtapaConcluida ? DateTime.UtcNow : null
             });
         }
     }
 
-    private static void AtualizarStatusProcesso(AdmissaoProcesso processo)
+    private static void AtualizarStatusProcesso(AdmissaoProcesso processo, IReadOnlyList<string> nomesEtapas)
     {
         if (processo.Status is "Admitido" or "Cancelado") return;
 
-        var etapaAtual = EtapasPadrao()
+        var etapaAtual = nomesEtapas
             .Select(nome => processo.Etapas.FirstOrDefault(x => x.Nome == nome))
             .FirstOrDefault(etapa => etapa?.Status != "Concluida");
 

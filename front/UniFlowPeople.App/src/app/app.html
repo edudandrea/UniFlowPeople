@@ -96,7 +96,7 @@
           <button
             class="nav-group-toggle"
             type="button"
-            [class.active]="activeModule() === 'cargos' || activeModule() === 'colaboradores' || activeModule() === 'departamentos' || activeModule() === 'estrutura'"
+            [class.active]="activeModule() === 'cargos' || activeModule() === 'colaboradores' || activeModule() === 'epis-acessos' || activeModule() === 'etapas-processos' || activeModule() === 'departamentos' || activeModule() === 'estrutura'"
             (click)="cadastroMenuOpen.set(!cadastroMenuOpen())"
           >
             <span class="nav-icon">▦</span>
@@ -118,7 +118,42 @@
         </div>
 
         <button
-          *ngFor="let module of modules().slice(2, 5)"
+          *ngFor="let module of modules().slice(2, 3)"
+          type="button"
+          [class.active]="activeModule() === module.id"
+          (click)="setModule(module.id)"
+        >
+          <span class="nav-icon">{{ module.icon }}</span>
+          <span>{{ module.label }}</span>
+        </button>
+
+        <div class="nav-group">
+          <button
+            class="nav-group-toggle"
+            type="button"
+            [class.active]="activeModule().startsWith('recrutamento-')"
+            (click)="recrutamentoMenuOpen.set(!recrutamentoMenuOpen())"
+          >
+            <span class="nav-icon">◇</span>
+            <span>Recrutamento</span>
+            <b>{{ recrutamentoMenuOpen() ? '⌃' : '⌄' }}</b>
+          </button>
+
+          <div class="nav-submenu" *ngIf="recrutamentoMenuOpen()">
+            <button
+              *ngFor="let module of recrutamentoModules()"
+              type="button"
+              [class.active]="activeModule() === module.id"
+              (click)="setModule(module.id)"
+            >
+              <span class="nav-icon">{{ module.icon }}</span>
+              <span>{{ module.label }}</span>
+            </button>
+          </div>
+        </div>
+
+        <button
+          *ngFor="let module of modules().slice(3, 4)"
           type="button"
           [class.active]="activeModule() === module.id"
           (click)="setModule(module.id)"
@@ -153,7 +188,7 @@
       </div>
 
         <button
-          *ngFor="let module of modules().slice(5)"
+          *ngFor="let module of modules().slice(4)"
           type="button"
           [class.active]="activeModule() === module.id"
           (click)="setModule(module.id)"
@@ -224,6 +259,8 @@
     <app-contratos-page *ngIf="isSistemaAdmin() && (activeModule() === 'planos' || activeModule() === 'contratacoes' || activeModule() === 'cobrancas')" [vm]="vm"></app-contratos-page>
     <app-financeiro-page *ngIf="!isSistemaAdmin() && activeModule() === 'financeiro'" [vm]="vm"></app-financeiro-page>
     <app-colaboradores-page *ngIf="!isSistemaAdmin() && activeModule() === 'colaboradores'" [vm]="vm"></app-colaboradores-page>
+    <app-epis-acessos-page *ngIf="!isSistemaAdmin() && activeModule() === 'epis-acessos'" [vm]="vm"></app-epis-acessos-page>
+    <app-etapas-processos-page *ngIf="!isSistemaAdmin() && activeModule() === 'etapas-processos'" [vm]="vm"></app-etapas-processos-page>
     <app-departamentos-page *ngIf="!isSistemaAdmin() && activeModule() === 'departamentos'" [vm]="vm"></app-departamentos-page>
     <app-cargos-page *ngIf="!isSistemaAdmin() && activeModule() === 'cargos'" [vm]="vm"></app-cargos-page>
     <app-estrutura-page *ngIf="!isSistemaAdmin() && activeModule() === 'estrutura'" [vm]="vm"></app-estrutura-page>
@@ -232,7 +269,7 @@
     <app-beneficios-page *ngIf="!isSistemaAdmin() && activeModule() === 'beneficios'" [vm]="vm"></app-beneficios-page>
     <app-documentos-page *ngIf="!isSistemaAdmin() && activeModule() === 'documentos'" [vm]="vm"></app-documentos-page>
     <app-solicitacoes-page *ngIf="!isSistemaAdmin() && activeModule() === 'solicitacoes'" [vm]="vm"></app-solicitacoes-page>
-    <app-recrutamento-page *ngIf="!isSistemaAdmin() && activeModule() === 'recrutamento'" [vm]="vm"></app-recrutamento-page>
+    <app-recrutamento-page *ngIf="!isSistemaAdmin() && activeModule().startsWith('recrutamento-')" [vm]="vm"></app-recrutamento-page>
     <app-treinamentos-page *ngIf="!isSistemaAdmin() && activeModule() === 'treinamentos'" [vm]="vm"></app-treinamentos-page>
     <app-admissao-page *ngIf="!isSistemaAdmin() && activeModule() === 'admissao'" [vm]="vm"></app-admissao-page>
     <app-demissao-page *ngIf="!isSistemaAdmin() && activeModule() === 'demissao'" [vm]="vm"></app-demissao-page>
@@ -332,23 +369,25 @@
       <button type="button" (click)="fecharModalDocumentacaoAdmissao()">×</button>
     </div>
 
-    <div class="cards compact">
-      <article *ngFor="let item of documentosDaAdmissao(admissaoSelecionada)">
-        <strong>{{ item.titulo }}</strong>
-        <span>{{ item.tipoDocumento }}</span>
-        <small>{{ item.dataGeracao | date: 'dd/MM/yyyy HH:mm' }}</small>
-        <p>{{ item.conteudo }}</p>
+    <div class="document-model-grid">
+      <article class="document-model-card" *ngFor="let modelo of modelosDocumentosAdmissao">
+        <div class="document-model-thumb">
+          <span>{{ modelo.tipo }}</span>
+        </div>
+        <div class="document-model-info">
+          <strong>{{ modelo.titulo }}</strong>
+          <small>{{ modelo.arquivo }}</small>
+          <span>{{ nomeDocumentoAdmissao(admissaoSelecionada) || 'Nome pendente' }} · CPF {{ cpfDocumentoAdmissao(admissaoSelecionada) || 'pendente' }}</span>
+        </div>
+        <div class="row-actions">
+          <a class="soft-link" [href]="urlModeloDocumentoAdmissao(modelo)" target="_blank" rel="noopener">Abrir modelo</a>
+          <button type="button" (click)="imprimirModeloDocumentoAdmissao(modelo, admissaoSelecionada)">Imprimir</button>
+        </div>
       </article>
-    </div>
-
-    <div class="empty-state" *ngIf="!documentosDaAdmissao(admissaoSelecionada).length">
-      <strong>Nenhum documento gerado</strong>
-      <span>Gere os arquivos institucionais após a admissão concluída.</span>
     </div>
 
     <div class="modal-actions">
       <button type="button" class="soft" (click)="fecharModalDocumentacaoAdmissao()">Fechar</button>
-      <button type="button" (click)="gerarDocumentosAdmissao()">Gerar arquivos</button>
     </div>
   </div>
 </section>
@@ -368,7 +407,15 @@
         <input name="admColabFoto" type="file" accept="image/*" (change)="selecionarFotoColaborador($event)" />
       </label>
       <label>Nome<input name="admColabNome" [(ngModel)]="colaboradorForm.nome" required /></label>
-      <label>CPF<input name="admColabCpf" [(ngModel)]="colaboradorForm.cpf" /></label>
+      <label>CPF
+        <input
+          name="admColabCpf"
+          [(ngModel)]="colaboradorForm.cpf"
+          [class.cpf-duplicado]="cpfColaboradorDuplicado()"
+          (ngModelChange)="limparErroCpfColaborador()"
+        />
+        <small class="field-error" *ngIf="cpfColaboradorDuplicado()">CPF já cadastrado para outro colaborador.</small>
+      </label>
       <label>RG<input name="admColabRg" [(ngModel)]="colaboradorForm.rg" /></label>
       <label>E-mail<input name="admColabEmail" [(ngModel)]="colaboradorForm.email" type="email" /></label>
       <label>Telefone<input name="admColabTelefone" [(ngModel)]="colaboradorForm.telefone" /></label>
@@ -440,6 +487,73 @@
     <div class="modal-actions">
       <button type="button" class="soft" (click)="admissaoColaboradorModalOpen.set(false)">Cancelar</button>
       <button type="submit">Concluir cadastro</button>
+    </div>
+  </form>
+</section>
+
+<section class="modal-backdrop" *ngIf="genericEditModal() as modal">
+  <form class="modal-card modal-card-wide pop" (ngSubmit)="salvarModalGenerico(modal.form)">
+    <div class="modal-head">
+      <div>
+        <h2>{{ modal.title }}</h2>
+        <p>Atualize as informações do cadastro selecionado.</p>
+      </div>
+      <button type="button" (click)="fecharModalGenerico()">×</button>
+    </div>
+
+    <div class="form-grid cols-2 no-margin" [ngSwitch]="modal.form">
+      <ng-container *ngSwitchCase="'cargoForm'">
+        <label>Cargo<input name="modalCargoNome" [(ngModel)]="cargoForm.nome" required /></label>
+        <label>Nível<input name="modalCargoNivel" [(ngModel)]="cargoForm.nivel" /></label>
+        <label>Salário base<input name="modalCargoSalario" [(ngModel)]="cargoForm.salarioBase" type="number" min="0" step="0.01" /></label>
+        <label>Status<select name="modalCargoAtivo" [(ngModel)]="cargoForm.ativo"><option [ngValue]="true">Ativo</option><option [ngValue]="false">Inativo</option></select></label>
+        <label class="span-2">Descrição<textarea name="modalCargoDescricao" [(ngModel)]="cargoForm.descricao"></textarea></label>
+      </ng-container>
+
+      <ng-container *ngSwitchCase="'departamentoForm'">
+        <label>Departamento<input name="modalDepNome" [(ngModel)]="departamentoForm.nome" required /></label>
+        <label>Gestor<select name="modalDepGestor" [(ngModel)]="departamentoForm.gestorId"><option [ngValue]="undefined">Selecione</option><option *ngFor="let colab of colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option></select></label>
+        <label>Status<select name="modalDepAtivo" [(ngModel)]="departamentoForm.ativo"><option [ngValue]="true">Ativo</option><option [ngValue]="false">Inativo</option></select></label>
+        <label class="span-2">Descrição<textarea name="modalDepDesc" [(ngModel)]="departamentoForm.descricao"></textarea></label>
+      </ng-container>
+
+      <ng-container *ngSwitchCase="'filialForm'">
+        <label>Nome da filial<input name="modalFilialNome" [(ngModel)]="filialForm.nome" required /></label>
+        <label>CNPJ<input name="modalFilialCnpj" [(ngModel)]="filialForm.cnpj" /></label>
+        <label>Cidade<input name="modalFilialCidade" [(ngModel)]="filialForm.cidade" /></label>
+        <label>UF<input name="modalFilialEstado" [(ngModel)]="filialForm.estado" maxlength="2" /></label>
+        <label>Telefone<input name="modalFilialTelefone" [(ngModel)]="filialForm.telefone" /></label>
+        <label>Status<select name="modalFilialAtiva" [(ngModel)]="filialForm.ativa"><option [ngValue]="true">Ativa</option><option [ngValue]="false">Inativa</option></select></label>
+        <label class="span-2">Endereço<input name="modalFilialEndereco" [(ngModel)]="filialForm.endereco" /></label>
+      </ng-container>
+
+      <ng-container *ngSwitchCase="'beneficioForm'">
+        <label>Benefício<input name="modalBenefNome" [(ngModel)]="beneficioForm.nome" required /></label>
+        <label>Valor padrão<input name="modalBenefValor" [(ngModel)]="beneficioForm.valorPadrao" type="number" min="0" step="0.01" /></label>
+        <label class="span-2">Descrição<textarea name="modalBenefDesc" [(ngModel)]="beneficioForm.descricao"></textarea></label>
+      </ng-container>
+
+      <ng-container *ngSwitchCase="'beneficioColaboradorForm'">
+        <label>Colaborador<select name="modalBcColab" [(ngModel)]="beneficioColaboradorForm.colaboradorId" required><option [ngValue]="undefined">Selecione</option><option *ngFor="let colab of colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option></select></label>
+        <label>Benefício<select name="modalBcBenef" [(ngModel)]="beneficioColaboradorForm.beneficioId" required><option [ngValue]="undefined">Selecione</option><option *ngFor="let item of beneficios()" [ngValue]="item.id">{{ item.nome }}</option></select></label>
+        <label>Valor<input name="modalBcValor" [(ngModel)]="beneficioColaboradorForm.valor" type="number" min="0" step="0.01" /></label>
+        <label>Início<input name="modalBcInicio" [(ngModel)]="beneficioColaboradorForm.dataInicio" type="date" /></label>
+        <label>Fim<input name="modalBcFim" [(ngModel)]="beneficioColaboradorForm.dataFim" type="date" /></label>
+      </ng-container>
+
+      <ng-container *ngSwitchCase="'feriasForm'">
+        <label>Colaborador<select name="modalFeriasColab" [(ngModel)]="feriasForm.colaboradorId" required><option [ngValue]="undefined">Selecione</option><option *ngFor="let colab of colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option></select></label>
+        <label>Status<select name="modalFeriasStatus" [(ngModel)]="feriasForm.status"><option>Programada</option><option>Aprovada</option><option>Concluída</option><option>Cancelada</option></select></label>
+        <label>Início<input name="modalFeriasInicio" [(ngModel)]="feriasForm.dataInicio" type="date" /></label>
+        <label>Fim<input name="modalFeriasFim" [(ngModel)]="feriasForm.dataFim" type="date" /></label>
+        <label>Dias<input name="modalFeriasDias" [(ngModel)]="feriasForm.dias" type="number" min="1" /></label>
+        <label class="span-2">Observações<textarea name="modalFeriasObs" [(ngModel)]="feriasForm.observacoes"></textarea></label>
+      </ng-container>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="soft" (click)="fecharModalGenerico()">Cancelar</button>
+      <button type="submit">Salvar alterações</button>
     </div>
   </form>
 </section>

@@ -1,0 +1,180 @@
+<section class="grid two fade-in">
+  <article class="panel">
+    <div class="panel-title">
+      <div><h2>Catálogo de EPIs</h2><p>Itens, CA e periodicidade de troca.</p></div>
+      <div class="panel-title-actions">
+        <span>{{ vm.epis().length }} itens</span>
+        <button type="button" (click)="vm.abrirNovoEpiModal()">Novo EPI</button>
+      </div>
+    </div>
+
+    <div class="table-wrap excel-wrap">
+      <table class="excel-table">
+        <thead><tr><th>EPI</th><th>CA</th><th>Troca</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          <tr *ngFor="let item of vm.epis()">
+            <td>{{ item.nome }}</td>
+            <td>{{ item.ca || '-' }}</td>
+            <td>{{ item.periodicidadeTrocaDias }} dias</td>
+            <td><span class="status" [class.off]="!item.ativo">{{ item.ativo ? 'Ativo' : 'Inativo' }}</span></td>
+            <td class="actions"><button class="soft" type="button" (click)="vm.editarEpi(item)">Editar</button></td>
+          </tr>
+          <tr *ngIf="!vm.epis().length"><td colspan="5" class="empty-cell">Nenhum EPI cadastrado.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  <article class="panel">
+    <div class="panel-title">
+      <div><h2>EPIs por cargo</h2><p>Ao selecionar o cargo no colaborador, estes itens ficam disponíveis para lançamento.</p></div>
+      <div class="panel-title-actions">
+        <span>{{ vm.cargosEpis().length }} vínculos</span>
+        <button type="button" (click)="vm.abrirNovoCargoEpiModal()">Vincular</button>
+      </div>
+    </div>
+
+    <div class="table-wrap excel-wrap">
+      <table class="excel-table">
+        <thead><tr><th>Cargo</th><th>EPI</th><th>Qtd.</th><th>Obrigatório</th><th></th></tr></thead>
+        <tbody>
+          <tr *ngFor="let item of vm.cargosEpis()">
+            <td>{{ vm.nomeCargo(item.cargoId) }}</td>
+            <td>{{ vm.nomeEpi(item.epiId) }}</td>
+            <td>{{ item.quantidadePadrao }}</td>
+            <td>{{ item.obrigatorio ? 'Sim' : 'Não' }}</td>
+            <td class="actions"><button class="soft" type="button" (click)="vm.editarCargoEpi(item)">Editar</button></td>
+          </tr>
+          <tr *ngIf="!vm.cargosEpis().length"><td colspan="5" class="empty-cell">Nenhum EPI vinculado a cargo.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  <article class="panel">
+    <div class="panel-title">
+      <div><h2>Histórico de EPIs</h2><p>Todos os EPIs retirados ficam na mesma ficha imprimível.</p></div>
+      <div class="panel-title-actions">
+        <span>{{ vm.colaboradoresEpis().length }} retiradas</span>
+        <button type="button" (click)="vm.abrirNovoColaboradorEpiModal()">Lançar retirada</button>
+      </div>
+    </div>
+
+    <div class="table-wrap excel-wrap">
+      <table class="excel-table">
+        <thead><tr><th>Colaborador</th><th>EPI</th><th>Qtd.</th><th>Retirada</th><th>Troca</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          <tr *ngFor="let item of vm.colaboradoresEpis()">
+            <td>{{ vm.nomeColaborador(item.colaboradorId) }}</td>
+            <td>{{ vm.nomeEpi(item.epiId) }}</td>
+            <td>{{ item.quantidade }}</td>
+            <td>{{ item.dataRetirada | date: 'dd/MM/yyyy' }}</td>
+            <td>{{ item.dataPrevistaTroca | date: 'dd/MM/yyyy' }}</td>
+            <td><span class="status" [class.off]="item.status !== 'Retirado'">{{ item.status }}</span></td>
+            <td class="actions"><button class="soft" type="button" (click)="vm.editarColaboradorEpi(item)">Editar</button></td>
+          </tr>
+          <tr *ngIf="!vm.colaboradoresEpis().length"><td colspan="7" class="empty-cell">Nenhuma retirada lançada.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  <article class="panel">
+    <div class="panel-title">
+      <div><h2>Ferramentas de acesso</h2><p>Controle de portão, tags e outros acessos por colaborador.</p></div>
+      <div class="panel-title-actions">
+        <span>{{ vm.ferramentasAcesso().length }} ferramentas</span>
+        <button type="button" (click)="vm.abrirNovaFerramentaAcessoModal()">Nova ferramenta</button>
+      </div>
+    </div>
+
+    <div class="cards compact">
+      <article *ngFor="let item of vm.ferramentasAcesso()">
+        <div class="card-head"><strong>{{ item.nome }}</strong><span class="status" [class.off]="!item.ativa">{{ item.ativa ? 'Ativa' : 'Inativa' }}</span></div>
+        <span>{{ item.tipo }} · {{ item.identificador || '-' }}</span>
+        <small>{{ item.descricao || 'Sem descrição' }}</small>
+        <div class="row-actions"><button class="soft" type="button" (click)="vm.editarFerramentaAcesso(item)">Editar</button></div>
+      </article>
+    </div>
+
+    <div class="panel-footer">
+      <button type="button" (click)="vm.abrirNovoColaboradorFerramentaAcessoModal()">Vincular ao colaborador</button>
+    </div>
+
+    <div class="timeline">
+      <article *ngFor="let item of vm.colaboradoresFerramentasAcesso()">
+        <span></span>
+        <div>
+          <strong>{{ vm.nomeColaborador(item.colaboradorId) }}</strong>
+          <small>{{ vm.nomeFerramentaAcesso(item.ferramentaAcessoId) }} · {{ item.status }}</small>
+        </div>
+        <button class="soft" type="button" (click)="vm.editarColaboradorFerramentaAcesso(item)">Editar</button>
+      </article>
+    </div>
+  </article>
+</section>
+
+<section class="modal-backdrop" *ngIf="vm.epiModalOpen()">
+  <form class="modal-card pop" (ngSubmit)="vm.salvarEpi()">
+    <div class="modal-head"><h2>{{ vm.epiForm.id ? 'Editar EPI' : 'Cadastrar EPI' }}</h2><button type="button" (click)="vm.epiModalOpen.set(false)">×</button></div>
+    <label>Nome<input name="epiNome" [(ngModel)]="vm.epiForm.nome" required /></label>
+    <label>CA<input name="epiCa" [(ngModel)]="vm.epiForm.ca" /></label>
+    <label>Periodicidade de troca em dias<input name="epiTroca" [(ngModel)]="vm.epiForm.periodicidadeTrocaDias" type="number" min="1" /></label>
+    <label>Status<select name="epiAtivo" [(ngModel)]="vm.epiForm.ativo"><option [ngValue]="true">Ativo</option><option [ngValue]="false">Inativo</option></select></label>
+    <label>Descrição<textarea name="epiDescricao" [(ngModel)]="vm.epiForm.descricao"></textarea></label>
+    <div class="modal-actions"><button type="button" class="soft" (click)="vm.epiModalOpen.set(false)">Cancelar</button><button type="submit">Salvar</button></div>
+  </form>
+</section>
+
+<section class="modal-backdrop" *ngIf="vm.cargoEpiModalOpen()">
+  <form class="modal-card pop" (ngSubmit)="vm.salvarCargoEpi()">
+    <div class="modal-head"><h2>Vincular EPI ao cargo</h2><button type="button" (click)="vm.cargoEpiModalOpen.set(false)">×</button></div>
+    <label>Cargo<select name="cargoEpiCargo" [(ngModel)]="vm.cargoEpiForm.cargoId" required><option [ngValue]="undefined">Selecione</option><option *ngFor="let cargo of vm.cargos()" [ngValue]="cargo.id">{{ cargo.nome }}</option></select></label>
+    <label>EPI<select name="cargoEpiEpi" [(ngModel)]="vm.cargoEpiForm.epiId" required><option [ngValue]="undefined">Selecione</option><option *ngFor="let epi of vm.epis()" [ngValue]="epi.id">{{ epi.nome }}</option></select></label>
+    <label>Quantidade padrão<input name="cargoEpiQtd" [(ngModel)]="vm.cargoEpiForm.quantidadePadrao" type="number" min="1" /></label>
+    <label class="check"><input name="cargoEpiObrigatorio" [(ngModel)]="vm.cargoEpiForm.obrigatorio" type="checkbox" /> Obrigatório</label>
+    <div class="modal-actions"><button type="button" class="soft" (click)="vm.cargoEpiModalOpen.set(false)">Cancelar</button><button type="submit">Salvar</button></div>
+  </form>
+</section>
+
+<section class="modal-backdrop" *ngIf="vm.colaboradorEpiModalOpen()">
+  <form class="modal-card modal-card-wide pop" (ngSubmit)="vm.salvarColaboradorEpi()">
+    <div class="modal-head"><h2>Lançar EPI do colaborador</h2><button type="button" (click)="vm.colaboradorEpiModalOpen.set(false)">×</button></div>
+    <div class="form-grid cols-2 no-margin">
+      <label>Colaborador<select name="colabEpiColab" [(ngModel)]="vm.colaboradorEpiForm.colaboradorId" required><option [ngValue]="undefined">Selecione</option><option *ngFor="let colab of vm.colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option></select></label>
+      <label>EPI<select name="colabEpiEpi" [(ngModel)]="vm.colaboradorEpiForm.epiId" required><option [ngValue]="undefined">Selecione</option><option *ngFor="let epi of vm.epis()" [ngValue]="epi.id">{{ epi.nome }}</option></select></label>
+      <label>Quantidade<input name="colabEpiQtd" [(ngModel)]="vm.colaboradorEpiForm.quantidade" type="number" min="1" /></label>
+      <label>Status<select name="colabEpiStatus" [(ngModel)]="vm.colaboradorEpiForm.status"><option>Retirado</option><option>Trocado</option><option>Devolvido</option><option>Extraviado</option></select></label>
+      <label>Retirada<input name="colabEpiRetirada" [(ngModel)]="vm.colaboradorEpiForm.dataRetirada" type="date" /></label>
+      <label>Troca prevista<input name="colabEpiTroca" [(ngModel)]="vm.colaboradorEpiForm.dataPrevistaTroca" type="date" /></label>
+      <label>Devolução<input name="colabEpiDevolucao" [(ngModel)]="vm.colaboradorEpiForm.dataDevolucao" type="date" /></label>
+      <label class="span-2">Observações<textarea name="colabEpiObs" [(ngModel)]="vm.colaboradorEpiForm.observacoes"></textarea></label>
+    </div>
+    <div class="modal-actions"><button type="button" class="soft" (click)="vm.colaboradorEpiModalOpen.set(false)">Cancelar</button><button type="submit">Salvar</button></div>
+  </form>
+</section>
+
+<section class="modal-backdrop" *ngIf="vm.ferramentaAcessoModalOpen()">
+  <form class="modal-card pop" (ngSubmit)="vm.salvarFerramentaAcesso()">
+    <div class="modal-head"><h2>{{ vm.ferramentaAcessoForm.id ? 'Editar ferramenta' : 'Cadastrar ferramenta' }}</h2><button type="button" (click)="vm.ferramentaAcessoModalOpen.set(false)">×</button></div>
+    <label>Nome<input name="faNome" [(ngModel)]="vm.ferramentaAcessoForm.nome" required /></label>
+    <label>Tipo<select name="faTipo" [(ngModel)]="vm.ferramentaAcessoForm.tipo"><option>Controle de portão</option><option>Tag de acesso</option><option>Chave</option><option>Senha de alarme</option><option>Outro</option></select></label>
+    <label>Identificador<input name="faIdentificador" [(ngModel)]="vm.ferramentaAcessoForm.identificador" /></label>
+    <label>Status<select name="faAtiva" [(ngModel)]="vm.ferramentaAcessoForm.ativa"><option [ngValue]="true">Ativa</option><option [ngValue]="false">Inativa</option></select></label>
+    <label>Descrição<textarea name="faDescricao" [(ngModel)]="vm.ferramentaAcessoForm.descricao"></textarea></label>
+    <div class="modal-actions"><button type="button" class="soft" (click)="vm.ferramentaAcessoModalOpen.set(false)">Cancelar</button><button type="submit">Salvar</button></div>
+  </form>
+</section>
+
+<section class="modal-backdrop" *ngIf="vm.colaboradorFerramentaAcessoModalOpen()">
+  <form class="modal-card pop" (ngSubmit)="vm.salvarColaboradorFerramentaAcesso()">
+    <div class="modal-head"><h2>Vincular ferramenta</h2><button type="button" (click)="vm.colaboradorFerramentaAcessoModalOpen.set(false)">×</button></div>
+    <label>Colaborador<select name="cfaColab" [(ngModel)]="vm.colaboradorFerramentaAcessoForm.colaboradorId" required><option [ngValue]="undefined">Selecione</option><option *ngFor="let colab of vm.colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option></select></label>
+    <label>Ferramenta<select name="cfaFerramenta" [(ngModel)]="vm.colaboradorFerramentaAcessoForm.ferramentaAcessoId" required><option [ngValue]="undefined">Selecione</option><option *ngFor="let item of vm.ferramentasAcesso()" [ngValue]="item.id">{{ item.nome }}</option></select></label>
+    <label>Entrega<input name="cfaEntrega" [(ngModel)]="vm.colaboradorFerramentaAcessoForm.dataEntrega" type="date" /></label>
+    <label>Devolução<input name="cfaDevolucao" [(ngModel)]="vm.colaboradorFerramentaAcessoForm.dataDevolucao" type="date" /></label>
+    <label>Status<select name="cfaStatus" [(ngModel)]="vm.colaboradorFerramentaAcessoForm.status"><option>Entregue</option><option>Devolvido</option><option>Bloqueado</option><option>Extraviado</option></select></label>
+    <label>Observações<textarea name="cfaObs" [(ngModel)]="vm.colaboradorFerramentaAcessoForm.observacoes"></textarea></label>
+    <div class="modal-actions"><button type="button" class="soft" (click)="vm.colaboradorFerramentaAcessoModalOpen.set(false)">Cancelar</button><button type="submit">Salvar</button></div>
+  </form>
+</section>

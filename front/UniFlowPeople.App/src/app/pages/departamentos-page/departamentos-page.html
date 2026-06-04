@@ -18,7 +18,7 @@
             <td>{{ item.nome }}</td>
             <td>{{ item.descricao || '-' }}</td>
             <td>{{ vm.nomeColaborador(item.gestorId) }}</td>
-            <td class="actions"><button class="soft" type="button" (click)="vm.editarGenerico('departamentoForm', item); vm.departamentosTab.set('dados')">Editar</button></td>
+            <td class="actions"><button class="soft" type="button" (click)="vm.editarGenerico('departamentoForm', item)">Editar</button></td>
           </tr>
           <tr *ngIf="!vm.departamentos().length"><td colspan="4" class="empty-cell">Nenhum departamento encontrado.</td></tr>
         </tbody>

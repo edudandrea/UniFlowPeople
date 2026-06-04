@@ -57,6 +57,8 @@ namespace UniFlowPeople.Api.Models
     public ICollection<RegistroPonto> RegistrosPonto { get; set; } = new List<RegistroPonto>();
     public ICollection<Ferias> Ferias { get; set; } = new List<Ferias>();
     public ICollection<BeneficioColaborador> Beneficios { get; set; } = new List<BeneficioColaborador>();
+    public ICollection<ColaboradorEpi> Epis { get; set; } = new List<ColaboradorEpi>();
+    public ICollection<ColaboradorFerramentaAcesso> FerramentasAcesso { get; set; } = new List<ColaboradorFerramentaAcesso>();
 
     }
 }

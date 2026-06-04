@@ -1,0 +1,23 @@
+TERMO DE RESPONSABILIDADE
+
+Eu, {{NOME}}, declaro ter recebido nesta data:
+CPF: {{CPF}}
+
+- 01 cópia da chave do armário nº vestiário 12 MASCULINO;
+- 01 cópia da chave do armário para guarda do aparelho celular;
+- 01 cópia do controle do portão eletrônico de acesso a empresa.
+
+Cláusula de Isenção de Responsabilidade sobre Estacionamento:
+"A empresa não se responsabiliza por qualquer dano, furto, roubo ou acidente que possa ocorrer no estacionamento de suas dependências, sendo de inteira responsabilidade do usuário a vigilância e segurança de seu veículo e pertences. O estacionamento é oferecido como um benefício, sem qualquer garantia de segurança, e a utilização do espaço é de risco exclusivo do usuário."
+
+Assim sendo, me responsabilizo com as regras abaixo descritas:
+
+Comunicar imediatamente ao setor de RH, caso houver perda das mesmas;
+Em caso de perda será cobrada nova cópia;
+Em hipótese alguma fornece-la a terceiros.
+
+Caxias do Sul, {{DATA}}
+
+.....................................................................
+{{NOME}}
+CPF: {{CPF}}

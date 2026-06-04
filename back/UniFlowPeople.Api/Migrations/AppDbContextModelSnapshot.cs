@@ -292,6 +292,41 @@ namespace UniFlowPeople.Api.Migrations
                     b.ToTable("Cargos");
                 });
 
+            modelBuilder.Entity("UniFlowPeople.Api.Models.CargoEpi", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CargoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("EpiId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Obrigatorio")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("QuantidadePadrao")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CargoId");
+
+                    b.HasIndex("EpiId");
+
+                    b.HasIndex("EmpresaId", "CargoId", "EpiId")
+                        .IsUnique();
+
+                    b.ToTable("CargosEpis");
+                });
+
             modelBuilder.Entity("UniFlowPeople.Api.Models.Cobranca", b =>
                 {
                     b.Property<int>("Id")
@@ -447,6 +482,94 @@ namespace UniFlowPeople.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Colaboradores");
+                });
+
+            modelBuilder.Entity("UniFlowPeople.Api.Models.ColaboradorEpi", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ColaboradorId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DataDevolucao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DataPrevistaTroca")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DataRetirada")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("EpiId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Observacoes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Quantidade")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ColaboradorId");
+
+                    b.HasIndex("EmpresaId");
+
+                    b.HasIndex("EpiId");
+
+                    b.ToTable("ColaboradoresEpis");
+                });
+
+            modelBuilder.Entity("UniFlowPeople.Api.Models.ColaboradorFerramentaAcesso", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ColaboradorId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DataDevolucao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DataEntrega")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("FerramentaAcessoId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Observacoes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ColaboradorId");
+
+                    b.HasIndex("EmpresaId");
+
+                    b.HasIndex("FerramentaAcessoId");
+
+                    b.ToTable("ColaboradoresFerramentasAcesso");
                 });
 
             modelBuilder.Entity("UniFlowPeople.Api.Models.Contrato", b =>
@@ -783,6 +906,78 @@ namespace UniFlowPeople.Api.Migrations
                     b.ToTable("Empresas");
                 });
 
+            modelBuilder.Entity("UniFlowPeople.Api.Models.Epi", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Ca")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Descricao")
+                        .HasColumnType("text");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("PeriodicidadeTrocaDias")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmpresaId");
+
+                    b.ToTable("Epis");
+                });
+
+            modelBuilder.Entity("UniFlowPeople.Api.Models.EtapaProcessoConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Ativa")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Descricao")
+                        .HasColumnType("text");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("PrimeiraEtapaConcluida")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("TipoProcesso")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmpresaId", "TipoProcesso", "Ordem");
+
+                    b.ToTable("EtapasProcessosConfig");
+                });
+
             modelBuilder.Entity("UniFlowPeople.Api.Models.Ferias", b =>
                 {
                     b.Property<int>("Id")
@@ -821,6 +1016,41 @@ namespace UniFlowPeople.Api.Migrations
                     b.HasIndex("ColaboradorId");
 
                     b.ToTable("Ferias");
+                });
+
+            modelBuilder.Entity("UniFlowPeople.Api.Models.FerramentaAcesso", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Ativa")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Descricao")
+                        .HasColumnType("text");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Identificador")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmpresaId");
+
+                    b.ToTable("FerramentasAcesso");
                 });
 
             modelBuilder.Entity("UniFlowPeople.Api.Models.Filial", b =>
@@ -1012,11 +1242,17 @@ namespace UniFlowPeople.Api.Migrations
                     b.Property<string>("Descricao")
                         .HasColumnType("text");
 
+                    b.Property<bool>("Eficaz")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("EmpresaId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Instrutor")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MetodoAvaliacaoEficacia")
                         .HasColumnType("text");
 
                     b.Property<bool>("Obrigatorio")
@@ -1281,6 +1517,33 @@ namespace UniFlowPeople.Api.Migrations
                     b.Navigation("Empresa");
                 });
 
+            modelBuilder.Entity("UniFlowPeople.Api.Models.CargoEpi", b =>
+                {
+                    b.HasOne("UniFlowPeople.Api.Models.Cargo", "Cargo")
+                        .WithMany()
+                        .HasForeignKey("CargoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("UniFlowPeople.Api.Models.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("UniFlowPeople.Api.Models.Epi", "Epi")
+                        .WithMany("Cargos")
+                        .HasForeignKey("EpiId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Cargo");
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("Epi");
+                });
+
             modelBuilder.Entity("UniFlowPeople.Api.Models.Cobranca", b =>
                 {
                     b.HasOne("UniFlowPeople.Api.Models.Contrato", "Contrato")
@@ -1327,6 +1590,60 @@ namespace UniFlowPeople.Api.Migrations
                     b.Navigation("Empresa");
 
                     b.Navigation("Filial");
+                });
+
+            modelBuilder.Entity("UniFlowPeople.Api.Models.ColaboradorEpi", b =>
+                {
+                    b.HasOne("UniFlowPeople.Api.Models.Colaborador", "Colaborador")
+                        .WithMany("Epis")
+                        .HasForeignKey("ColaboradorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("UniFlowPeople.Api.Models.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("UniFlowPeople.Api.Models.Epi", "Epi")
+                        .WithMany("Retiradas")
+                        .HasForeignKey("EpiId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Colaborador");
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("Epi");
+                });
+
+            modelBuilder.Entity("UniFlowPeople.Api.Models.ColaboradorFerramentaAcesso", b =>
+                {
+                    b.HasOne("UniFlowPeople.Api.Models.Colaborador", "Colaborador")
+                        .WithMany("FerramentasAcesso")
+                        .HasForeignKey("ColaboradorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("UniFlowPeople.Api.Models.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("UniFlowPeople.Api.Models.FerramentaAcesso", "FerramentaAcesso")
+                        .WithMany("Colaboradores")
+                        .HasForeignKey("FerramentaAcessoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Colaborador");
+
+                    b.Navigation("Empresa");
+
+                    b.Navigation("FerramentaAcesso");
                 });
 
             modelBuilder.Entity("UniFlowPeople.Api.Models.Contrato", b =>
@@ -1441,6 +1758,28 @@ namespace UniFlowPeople.Api.Migrations
                     b.Navigation("Empresa");
                 });
 
+            modelBuilder.Entity("UniFlowPeople.Api.Models.Epi", b =>
+                {
+                    b.HasOne("UniFlowPeople.Api.Models.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Empresa");
+                });
+
+            modelBuilder.Entity("UniFlowPeople.Api.Models.EtapaProcessoConfig", b =>
+                {
+                    b.HasOne("UniFlowPeople.Api.Models.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Empresa");
+                });
+
             modelBuilder.Entity("UniFlowPeople.Api.Models.Ferias", b =>
                 {
                     b.HasOne("UniFlowPeople.Api.Models.Colaborador", "Colaborador")
@@ -1450,6 +1789,17 @@ namespace UniFlowPeople.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Colaborador");
+                });
+
+            modelBuilder.Entity("UniFlowPeople.Api.Models.FerramentaAcesso", b =>
+                {
+                    b.HasOne("UniFlowPeople.Api.Models.Empresa", "Empresa")
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Empresa");
                 });
 
             modelBuilder.Entity("UniFlowPeople.Api.Models.Filial", b =>
@@ -1585,7 +1935,11 @@ namespace UniFlowPeople.Api.Migrations
 
                     b.Navigation("Documentos");
 
+                    b.Navigation("Epis");
+
                     b.Navigation("Ferias");
+
+                    b.Navigation("FerramentasAcesso");
 
                     b.Navigation("RegistrosPonto");
                 });
@@ -1618,6 +1972,18 @@ namespace UniFlowPeople.Api.Migrations
                     b.Navigation("Departamentos");
 
                     b.Navigation("Filiais");
+                });
+
+            modelBuilder.Entity("UniFlowPeople.Api.Models.Epi", b =>
+                {
+                    b.Navigation("Cargos");
+
+                    b.Navigation("Retiradas");
+                });
+
+            modelBuilder.Entity("UniFlowPeople.Api.Models.FerramentaAcesso", b =>
+                {
+                    b.Navigation("Colaboradores");
                 });
 
             modelBuilder.Entity("UniFlowPeople.Api.Models.Filial", b =>

@@ -1,0 +1,65 @@
+<section class="panel fade-in">
+  <div class="panel-title">
+    <div>
+      <h2>Etapas de processos</h2>
+      <p>Personalize as etapas usadas nos fluxos de admissão e demissão.</p>
+    </div>
+    <div class="panel-title-actions">
+      <span>{{ vm.etapasProcessosConfig().length }} etapas</span>
+      <button type="button" (click)="vm.abrirNovaEtapaProcessoModal()">Nova etapa</button>
+    </div>
+  </div>
+
+  <div class="table-wrap excel-wrap">
+    <table class="excel-table">
+      <thead>
+        <tr><th>Processo</th><th>Ordem</th><th>Etapa</th><th>Descrição</th><th>Primeira concluída</th><th>Status</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of vm.etapasProcessosOrdenadas()">
+          <td>{{ item.tipoProcesso }}</td>
+          <td>{{ item.ordem }}</td>
+          <td>{{ item.nome }}</td>
+          <td>{{ item.descricao || '-' }}</td>
+          <td>{{ item.primeiraEtapaConcluida ? 'Sim' : 'Não' }}</td>
+          <td><span class="status" [class.off]="!item.ativa">{{ item.ativa ? 'Ativa' : 'Inativa' }}</span></td>
+          <td class="actions">
+            <button type="button" class="soft" (click)="vm.editarEtapaProcesso(item)">Editar</button>
+          </td>
+        </tr>
+        <tr *ngIf="!vm.etapasProcessosConfig().length">
+          <td colspan="7" class="empty-cell">Nenhuma etapa personalizada cadastrada.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="modal-backdrop" *ngIf="vm.etapaProcessoModalOpen()">
+  <form class="modal-card modal-card-wide pop" (ngSubmit)="vm.salvarEtapaProcesso()">
+    <div class="modal-head">
+      <div>
+        <h2>{{ vm.etapaProcessoForm.id ? 'Editar etapa' : 'Nova etapa' }}</h2>
+        <p>Defina onde esta etapa aparece e sua ordem no fluxo.</p>
+      </div>
+      <button type="button" (click)="vm.etapaProcessoModalOpen.set(false)">×</button>
+    </div>
+    <div class="form-grid cols-2 no-margin">
+      <label>Processo
+        <select name="etapaTipo" [(ngModel)]="vm.etapaProcessoForm.tipoProcesso">
+          <option>Admissao</option>
+          <option>Demissao</option>
+        </select>
+      </label>
+      <label>Ordem<input name="etapaOrdem" [(ngModel)]="vm.etapaProcessoForm.ordem" type="number" min="1" /></label>
+      <label class="span-2">Nome<input name="etapaNome" [(ngModel)]="vm.etapaProcessoForm.nome" required /></label>
+      <label class="span-2">Descrição<textarea name="etapaDescricao" [(ngModel)]="vm.etapaProcessoForm.descricao"></textarea></label>
+      <label class="check"><input name="etapaPrimeira" [(ngModel)]="vm.etapaProcessoForm.primeiraEtapaConcluida" type="checkbox" /> Nasce concluída</label>
+      <label class="check"><input name="etapaAtiva" [(ngModel)]="vm.etapaProcessoForm.ativa" type="checkbox" /> Ativa</label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="soft" (click)="vm.etapaProcessoModalOpen.set(false)">Cancelar</button>
+      <button type="submit">Salvar etapa</button>
+    </div>
+  </form>
+</section>
