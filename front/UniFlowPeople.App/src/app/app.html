@@ -1,3 +1,17 @@
+<ngx-spinner
+  name="uniflow-loading"
+  bdColor="rgba(10, 32, 24, 0.68)"
+  color="#b7ef79"
+  size="medium"
+  type="ball-scale-multiple"
+  [fullScreen]="true"
+>
+  <div class="hr-spinner-content">
+    <span class="hr-spinner-icon">RH</span>
+    <strong>Carregando dados de pessoas</strong>
+  </div>
+</ngx-spinner>
+
 <main class="app-shell" *ngIf="isLogged(); else loginView">
   <aside class="sidebar">
     <div class="brand">
@@ -359,6 +373,44 @@
   </form>
 </section>
 
+<section class="modal-backdrop" *ngIf="demissaoProcessoModalOpen()">
+  <form class="modal-card modal-card-wide pop" (ngSubmit)="salvarDemissao()">
+    <div class="modal-head">
+      <div>
+        <h2>{{ demissaoForm.id ? 'Editar processo demissional' : 'Novo processo demissional' }}</h2>
+        <p>Cadastre o desligamento para iniciar o fluxo demissional.</p>
+      </div>
+      <button type="button" (click)="fecharModalProcessoDemissao()">×</button>
+    </div>
+
+    <div class="form-grid cols-2 no-margin">
+      <label>Colaborador
+        <select name="demModalColaborador" [(ngModel)]="demissaoForm.colaboradorId" [disabled]="!!demissaoForm.id" required>
+          <option [ngValue]="undefined">Colaborador</option>
+          <option *ngFor="let colab of colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option>
+        </select>
+      </label>
+      <label>Tipo de demissão
+        <select name="demModalTipo" [(ngModel)]="demissaoForm.tipoDemissao">
+          <option>Sem justa causa</option>
+          <option>Com justa causa</option>
+          <option>Pedido de demissao</option>
+          <option>Termino de contrato</option>
+        </select>
+      </label>
+      <label>Data de solicitação<input name="demModalSolicitacao" [(ngModel)]="demissaoForm.dataSolicitacao" type="date" /></label>
+      <label>Data de desligamento<input name="demModalDesligamento" [(ngModel)]="demissaoForm.dataDesligamento" type="date" /></label>
+      <label>Motivo<input name="demModalMotivo" [(ngModel)]="demissaoForm.motivo" /></label>
+      <label class="span-2">Observações<textarea name="demModalObs" [(ngModel)]="demissaoForm.observacoes"></textarea></label>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="soft" (click)="fecharModalProcessoDemissao()">Cancelar</button>
+      <button type="submit">Salvar processo</button>
+    </div>
+  </form>
+</section>
+
 <section class="modal-backdrop" *ngIf="admissaoDocumentosModalOpen() && admissaoSelecionada">
   <div class="modal-card modal-card-wide pop">
     <div class="modal-head">
@@ -455,7 +507,7 @@
       <label>Cargo
         <select name="admColabCargo" [(ngModel)]="colaboradorForm.cargoId">
           <option [ngValue]="undefined">Selecione</option>
-          <option *ngFor="let cargo of cargos()" [ngValue]="cargo.id">{{ cargo.nome }}</option>
+          <option *ngFor="let cargo of cargosSelecionaveis(colaboradorForm.cargoId)" [ngValue]="cargo.id" [disabled]="cargoExtinto(cargo)">{{ labelCargo(cargo) }}</option>
         </select>
       </label>
       <label>Filial
@@ -506,7 +558,7 @@
         <label>Cargo<input name="modalCargoNome" [(ngModel)]="cargoForm.nome" required /></label>
         <label>Nível<input name="modalCargoNivel" [(ngModel)]="cargoForm.nivel" /></label>
         <label>Salário base<input name="modalCargoSalario" [(ngModel)]="cargoForm.salarioBase" type="number" min="0" step="0.01" /></label>
-        <label>Status<select name="modalCargoAtivo" [(ngModel)]="cargoForm.ativo"><option [ngValue]="true">Ativo</option><option [ngValue]="false">Inativo</option></select></label>
+        <label class="check"><input name="modalCargoExtinto" type="checkbox" [ngModel]="!cargoForm.ativo" (ngModelChange)="cargoForm.ativo = !$event" /> Cargo extinto</label>
         <label class="span-2">Descrição<textarea name="modalCargoDescricao" [(ngModel)]="cargoForm.descricao"></textarea></label>
       </ng-container>
 

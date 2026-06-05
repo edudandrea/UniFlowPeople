@@ -129,7 +129,7 @@
 <section class="modal-backdrop" *ngIf="vm.cargoEpiModalOpen()">
   <form class="modal-card pop" (ngSubmit)="vm.salvarCargoEpi()">
     <div class="modal-head"><h2>Vincular EPI ao cargo</h2><button type="button" (click)="vm.cargoEpiModalOpen.set(false)">×</button></div>
-    <label>Cargo<select name="cargoEpiCargo" [(ngModel)]="vm.cargoEpiForm.cargoId" required><option [ngValue]="undefined">Selecione</option><option *ngFor="let cargo of vm.cargos()" [ngValue]="cargo.id">{{ cargo.nome }}</option></select></label>
+    <label>Cargo<select name="cargoEpiCargo" [(ngModel)]="vm.cargoEpiForm.cargoId" required><option [ngValue]="undefined">Selecione</option><option *ngFor="let cargo of vm.cargosSelecionaveis(vm.cargoEpiForm.cargoId)" [ngValue]="cargo.id" [disabled]="vm.cargoExtinto(cargo)">{{ vm.labelCargo(cargo) }}</option></select></label>
     <label>EPI<select name="cargoEpiEpi" [(ngModel)]="vm.cargoEpiForm.epiId" required><option [ngValue]="undefined">Selecione</option><option *ngFor="let epi of vm.epis()" [ngValue]="epi.id">{{ epi.nome }}</option></select></label>
     <label>Quantidade padrão<input name="cargoEpiQtd" [(ngModel)]="vm.cargoEpiForm.quantidadePadrao" type="number" min="1" /></label>
     <label class="check"><input name="cargoEpiObrigatorio" [(ngModel)]="vm.cargoEpiForm.obrigatorio" type="checkbox" /> Obrigatório</label>

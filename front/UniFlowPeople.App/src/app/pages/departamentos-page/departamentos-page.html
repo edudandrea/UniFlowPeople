@@ -1,57 +1,28 @@
 <section class="panel fade-in">
   <div class="panel-title">
     <div><h2>Departamentos</h2><p>Pesquisa, cadastro e manutenção das áreas.</p></div>
-    <span>{{ vm.departamentos().length }} departamentos</span>
-  </div>
-
-  <div class="tabs">
-    <button type="button" [class.active]="vm.departamentosTab() === 'pesquisa'" (click)="vm.departamentosTab.set('pesquisa')">Pesquisa</button>
-    <button type="button" [class.active]="vm.departamentosTab() === 'dados'" (click)="vm.departamentosTab.set('dados')">Dados do departamento</button>
-  </div>
-
-  <div class="tab-panel" *ngIf="vm.departamentosTab() === 'pesquisa'">
-    <div class="table-wrap excel-wrap">
-      <table class="excel-table">
-        <thead><tr><th>Departamento</th><th>Descrição</th><th>Gestor</th><th></th></tr></thead>
-        <tbody>
-          <tr *ngFor="let item of vm.departamentos()">
-            <td>{{ item.nome }}</td>
-            <td>{{ item.descricao || '-' }}</td>
-            <td>{{ vm.nomeColaborador(item.gestorId) }}</td>
-            <td class="actions"><button class="soft" type="button" (click)="vm.editarGenerico('departamentoForm', item)">Editar</button></td>
-          </tr>
-          <tr *ngIf="!vm.departamentos().length"><td colspan="4" class="empty-cell">Nenhum departamento encontrado.</td></tr>
-        </tbody>
-      </table>
+    <div class="panel-title-actions">
+      <span>{{ vm.filteredDepartamentos().length }} departamentos</span>
+      <button type="button" (click)="vm.abrirNovoDepartamentoModal()">Novo departamento</button>
+      <label class="search-box">
+        <span>Pesquisar departamento</span>
+        <input name="departamentoSearch" [ngModel]="vm.departamentoSearch()" (ngModelChange)="vm.departamentoSearch.set($event)" placeholder="Nome, gestor ou descrição" />
+      </label>
     </div>
   </div>
 
-  <div class="tab-panel" *ngIf="vm.departamentosTab() === 'dados'">
-    <form class="colaborador-form" (ngSubmit)="vm.salvarDepartamento()">
-      <section class="form-section">
-        <div class="section-title"><span>01</span><div><strong>Dados da área</strong><small>Nome, gestor e descrição organizacional.</small></div></div>
-        <div class="form-grid cols-4 no-margin">
-          <label>Departamento<input name="depNome" [(ngModel)]="vm.departamentoForm.nome" required /></label>
-          <label>Gestor
-            <select name="depGestor" [(ngModel)]="vm.departamentoForm.gestorId">
-              <option [ngValue]="undefined">Selecione</option>
-              <option *ngFor="let colab of vm.colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option>
-            </select>
-          </label>
-          <label>Status
-            <select name="depAtivo" [(ngModel)]="vm.departamentoForm.ativo">
-              <option [ngValue]="true">Ativo</option>
-              <option [ngValue]="false">Inativo</option>
-            </select>
-          </label>
-          <label class="span-2">Descrição<textarea name="depDesc" [(ngModel)]="vm.departamentoForm.descricao"></textarea></label>
-        </div>
-      </section>
-      <div class="form-actions">
-        <button type="submit">{{ vm.departamentoForm.id ? 'Atualizar departamento' : 'Salvar departamento' }}</button>
-        <button type="button" class="soft" (click)="vm.departamentoForm = vm.novoDepartamento()">Limpar</button>
-        <button type="button" class="danger-soft" *ngIf="vm.departamentoForm.id" (click)="vm.pedirExclusao('departamentos', vm.departamentoForm.id, vm.departamentoForm.nome)">Excluir</button>
-      </div>
-    </form>
+  <div class="table-wrap excel-wrap">
+    <table class="excel-table">
+      <thead><tr><th>Departamento</th><th>Descrição</th><th>Gestor</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr class="clickable-row" *ngFor="let item of vm.filteredDepartamentos()" (click)="vm.editarGenerico('departamentoForm', item)">
+          <td>{{ item.nome }}</td>
+          <td>{{ item.descricao || '-' }}</td>
+          <td>{{ vm.nomeColaborador(item.gestorId) }}</td>
+          <td><span class="status" [class.off]="!item.ativo">{{ item.ativo ? 'Ativo' : 'Inativo' }}</span></td>
+        </tr>
+        <tr *ngIf="!vm.filteredDepartamentos().length"><td colspan="4" class="empty-cell">Nenhum departamento encontrado.</td></tr>
+      </tbody>
+    </table>
   </div>
 </section>

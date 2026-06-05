@@ -5,20 +5,17 @@
       <div class="panel-title-actions">
         <span>{{ vm.filteredAdmissoes().length }} processos</span>
         <button type="button" (click)="vm.abrirNovoProcessoAdmissao()">Novo processo</button>
+        <label class="search-box">
+          <span>Pesquisar processo</span>
+          <input
+            type="search"
+            [ngModel]="vm.admissaoSearch()"
+            (ngModelChange)="vm.setAdmissaoSearch($event)"
+            name="admissaoSearch"
+            placeholder="Candidato, e-mail, cargo ou status"
+          />
+        </label>
       </div>
-    </div>
-
-    <div class="admission-toolbar">
-      <label>
-        <span>Pesquisar processo</span>
-        <input
-          type="search"
-          [ngModel]="vm.admissaoSearch()"
-          (ngModelChange)="vm.setAdmissaoSearch($event)"
-          name="admissaoSearch"
-          placeholder="Candidato, e-mail, cargo ou status"
-        />
-      </label>
     </div>
 
     <div class="table-wrap excel-wrap">

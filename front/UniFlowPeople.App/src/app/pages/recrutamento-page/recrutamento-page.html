@@ -12,186 +12,94 @@
       </h2>
       <p>Pesquisa, cadastro e manutenção do fluxo de recrutamento.</p>
     </div>
-    <span>{{ vm.filteredVagas().length + vm.filteredCandidatos().length + vm.filteredCurriculosBanco().length }} registros</span>
-  </div>
-
-  <div class="tabs">
-    <button type="button" [class.active]="vm.recrutamentoTab() === 'pesquisa'" (click)="vm.recrutamentoTab.set('pesquisa')">Pesquisa</button>
-    <button type="button" [class.active]="vm.recrutamentoTab() === 'dados'" (click)="vm.recrutamentoTab.set('dados')">Dados</button>
   </div>
 
   <ng-container [ngSwitch]="vm.recrutamentoCadastro()">
     <ng-container *ngSwitchCase="'vagas'">
-      <div *ngIf="vm.recrutamentoTab() === 'pesquisa'; else dadosVaga">
-        <div class="toolbar compact-toolbar">
-          <button type="button" (click)="vm.novaVagaRecrutamento()">Nova vaga</button>
-        </div>
-        <div class="table-wrap excel-wrap">
-          <table class="excel-table">
-            <thead>
-              <tr>
-                <th>Titulo</th>
-                <th>Departamento</th>
-                <th>Cargo</th>
-                <th>Quantidade</th>
-                <th>Salario</th>
-                <th>Status</th>
-                <th>Acoes</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let item of vm.filteredVagas()">
-                <td>{{ item.titulo }}</td>
-                <td>{{ vm.nomeDepartamento(item.departamentoId) }}</td>
-                <td>{{ vm.nomeCargo(item.cargoId) }}</td>
-                <td>{{ item.quantidade }}</td>
-                <td>{{ item.salario | currency: 'BRL' }}</td>
-                <td><span class="status">{{ item.status }}</span></td>
-                <td><button class="soft" type="button" (click)="vm.editarVaga(item)">Editar</button></td>
-              </tr>
-              <tr *ngIf="!vm.filteredVagas().length">
-                <td colspan="7" class="empty-cell">Nenhuma vaga cadastrada.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <div class="toolbar compact-toolbar">
+        <span>{{ vm.filteredVagas().length }} vagas</span>
+        <button type="button" (click)="vm.novaVagaRecrutamento()">Nova vaga</button>
+        <label class="search-box">
+          <span>Pesquisar vaga</span>
+          <input name="vagaSearch" [ngModel]="vm.vagaSearch()" (ngModelChange)="vm.vagaSearch.set($event)" placeholder="Título, cargo, departamento ou status" />
+        </label>
       </div>
-
-      <ng-template #dadosVaga>
-        <form class="form-grid cols-2" (ngSubmit)="vm.salvarVaga()" (click)="$event.stopPropagation()">
-          <input name="vagaTitulo" [(ngModel)]="vm.vagaForm.titulo" placeholder="Titulo da vaga" required />
-          <select name="vagaStatus" [(ngModel)]="vm.vagaForm.status">
-            <option>Aberta</option>
-            <option>Pausada</option>
-            <option>Encerrada</option>
-          </select>
-          <select name="vagaDep" [(ngModel)]="vm.vagaForm.departamentoId">
-            <option [ngValue]="undefined">Departamento</option>
-            <option *ngFor="let item of vm.departamentos()" [ngValue]="item.id">{{ item.nome }}</option>
-          </select>
-          <select name="vagaCargo" [(ngModel)]="vm.vagaForm.cargoId">
-            <option [ngValue]="undefined">Cargo</option>
-            <option *ngFor="let item of vm.cargos()" [ngValue]="item.id">{{ item.nome }}</option>
-          </select>
-          <input name="vagaQtd" [(ngModel)]="vm.vagaForm.quantidade" type="number" placeholder="Quantidade" />
-          <input name="vagaSalario" [(ngModel)]="vm.vagaForm.salario" type="number" placeholder="Salario" />
-          <textarea class="span-2" name="vagaDesc" [(ngModel)]="vm.vagaForm.descricao" placeholder="Descricao"></textarea>
-          <button type="submit">{{ vm.vagaForm.id ? 'Atualizar' : 'Salvar vaga' }}</button>
-          <button class="soft" type="button" (click)="vm.vagaForm = vm.novaVaga(); vm.recrutamentoTab.set('pesquisa')">Cancelar</button>
-        </form>
-      </ng-template>
+      <div class="table-wrap excel-wrap">
+        <table class="excel-table">
+          <thead><tr><th>Título</th><th>Departamento</th><th>Cargo</th><th>Quantidade</th><th>Salário</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr class="clickable-row" *ngFor="let item of vm.filteredVagas()" (click)="vm.editarVaga(item)">
+              <td>{{ item.titulo }}</td>
+              <td>{{ vm.nomeDepartamento(item.departamentoId) }}</td>
+              <td>{{ vm.nomeCargo(item.cargoId) }}</td>
+              <td>{{ item.quantidade }}</td>
+              <td>{{ item.salario | currency: 'BRL' }}</td>
+              <td><span class="status">{{ item.status }}</span></td>
+            </tr>
+            <tr *ngIf="!vm.filteredVagas().length"><td colspan="6" class="empty-cell">Nenhuma vaga cadastrada.</td></tr>
+          </tbody>
+        </table>
+      </div>
     </ng-container>
 
     <ng-container *ngSwitchCase="'candidatos'">
-      <div *ngIf="vm.recrutamentoTab() === 'pesquisa'; else dadosCandidato">
-        <div class="toolbar compact-toolbar">
-          <button type="button" (click)="vm.novoCandidatoRecrutamento()">Novo candidato</button>
-        </div>
-        <div class="table-wrap excel-wrap">
-          <table class="excel-table">
-            <thead>
-              <tr>
-                <th>Nome</th>
-                <th>Vaga</th>
-                <th>E-mail</th>
-                <th>Telefone</th>
-                <th>Status</th>
-                <th>Acoes</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let item of vm.filteredCandidatos()">
-                <td>{{ item.nome }}</td>
-                <td>{{ vm.nomeVaga(item.vagaId) }}</td>
-                <td>{{ item.email || '-' }}</td>
-                <td>{{ item.telefone || '-' }}</td>
-                <td><span class="status">{{ item.status }}</span></td>
-                <td>
-                  <div class="row-actions">
-                    <button class="soft" type="button" (click)="vm.editarCandidato(item)">Editar</button>
-                    <button class="soft" type="button" *ngIf="!vm.admissaoDoCandidato(item)" (click)="vm.abrirNovoProcessoAdmissao(); vm.selecionarVagaAdmissao(item.vagaId); vm.selecionarCandidatoAdmissao(item.id)">
-                      Iniciar admissao
-                    </button>
-                  </div>
-                </td>
-              </tr>
-              <tr *ngIf="!vm.filteredCandidatos().length">
-                <td colspan="6" class="empty-cell">Nenhum candidato cadastrado.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <div class="toolbar compact-toolbar">
+        <span>{{ vm.filteredCandidatos().length }} candidatos</span>
+        <button type="button" (click)="vm.novoCandidatoRecrutamento()">Novo candidato</button>
+        <label class="search-box">
+          <span>Pesquisar candidato</span>
+          <input name="candidatoSearch" [ngModel]="vm.candidatoSearch()" (ngModelChange)="vm.candidatoSearch.set($event)" placeholder="Nome, vaga, e-mail ou status" />
+        </label>
       </div>
-
-      <ng-template #dadosCandidato>
-        <form class="form-grid cols-2" (ngSubmit)="vm.salvarCandidato()" (click)="$event.stopPropagation()">
-          <select name="candVaga" [(ngModel)]="vm.candidatoForm.vagaId" required>
-            <option [ngValue]="undefined">Vaga</option>
-            <option *ngFor="let item of vm.vagas()" [ngValue]="item.id">{{ item.titulo }}</option>
-          </select>
-          <input name="candNome" [(ngModel)]="vm.candidatoForm.nome" placeholder="Nome" required />
-          <input name="candEmail" [(ngModel)]="vm.candidatoForm.email" placeholder="E-mail" />
-          <input name="candTel" [(ngModel)]="vm.candidatoForm.telefone" placeholder="Telefone" />
-          <select name="candStatus" [(ngModel)]="vm.candidatoForm.status">
-            <option>Recebido</option>
-            <option>Triagem</option>
-            <option>Entrevista</option>
-            <option>Aprovado</option>
-            <option>Reprovado</option>
-          </select>
-          <input name="candLinkedin" [(ngModel)]="vm.candidatoForm.linkedin" placeholder="LinkedIn" />
-          <textarea class="span-2" name="candObs" [(ngModel)]="vm.candidatoForm.observacoes" placeholder="Observacoes"></textarea>
-          <button type="submit">{{ vm.candidatoForm.id ? 'Atualizar' : 'Salvar candidato' }}</button>
-          <button class="soft" type="button" (click)="vm.candidatoForm = vm.novoCandidato(); vm.recrutamentoTab.set('pesquisa')">Cancelar</button>
-        </form>
-      </ng-template>
+      <div class="table-wrap excel-wrap">
+        <table class="excel-table">
+          <thead><tr><th>Nome</th><th>Vaga</th><th>E-mail</th><th>Telefone</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody>
+            <tr class="clickable-row" *ngFor="let item of vm.filteredCandidatos()" (click)="vm.editarCandidato(item)">
+              <td>{{ item.nome }}</td>
+              <td>{{ vm.nomeVaga(item.vagaId) }}</td>
+              <td>{{ item.email || '-' }}</td>
+              <td>{{ item.telefone || '-' }}</td>
+              <td><span class="status">{{ item.status }}</span></td>
+              <td>
+                <button class="soft" type="button" *ngIf="!vm.admissaoDoCandidato(item)" (click)="$event.stopPropagation(); vm.abrirNovoProcessoAdmissao(); vm.selecionarVagaAdmissao(item.vagaId); vm.selecionarCandidatoAdmissao(item.id)">
+                  Iniciar admissão
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="!vm.filteredCandidatos().length"><td colspan="6" class="empty-cell">Nenhum candidato cadastrado.</td></tr>
+          </tbody>
+        </table>
+      </div>
     </ng-container>
 
     <ng-container *ngSwitchCase="'curriculos'">
-      <div *ngIf="vm.recrutamentoTab() === 'pesquisa'; else dadosCurriculo">
-        <div class="toolbar compact-toolbar">
-          <button type="button" (click)="vm.novoCurriculoRecrutamento()">Novo curriculo</button>
-        </div>
-        <div class="table-wrap excel-wrap">
-          <table class="excel-table">
-            <thead>
-              <tr>
-                <th>Nome</th>
-                <th>Telefone</th>
-                <th>E-mail</th>
-                <th>Status</th>
-                <th>Curriculo</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let item of vm.filteredCurriculosBanco()">
-                <td>{{ item.nome }}</td>
-                <td>{{ item.telefone || '-' }}</td>
-                <td>{{ item.email }}</td>
-                <td><span class="status">{{ item.status }}</span></td>
-                <td>
-                  <a *ngIf="item.curriculoUrl; else semCurriculo" [href]="item.curriculoUrl" target="_blank">Abrir curriculo</a>
-                  <ng-template #semCurriculo>-</ng-template>
-                </td>
-              </tr>
-              <tr *ngIf="!vm.filteredCurriculosBanco().length">
-                <td colspan="5" class="empty-cell">Nenhum curriculo encontrado.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <div class="toolbar compact-toolbar">
+        <span>{{ vm.filteredCurriculosBanco().length }} currículos</span>
+        <button type="button" (click)="vm.novoCurriculoRecrutamento()">Novo currículo</button>
+        <label class="search-box">
+          <span>Pesquisar currículo</span>
+          <input name="curriculoSearch" [ngModel]="vm.curriculoSearch()" (ngModelChange)="vm.curriculoSearch.set($event)" placeholder="Nome, telefone, e-mail ou status" />
+        </label>
       </div>
-
-      <ng-template #dadosCurriculo>
-        <form class="form-grid cols-2" (ngSubmit)="vm.salvarCurriculo()" (click)="$event.stopPropagation()">
-          <input name="curNome" [(ngModel)]="vm.curriculoForm.nome" placeholder="Nome" required />
-          <input name="curTelefone" [(ngModel)]="vm.curriculoForm.telefone" placeholder="Telefone" />
-          <input name="curEmail" [(ngModel)]="vm.curriculoForm.email" placeholder="E-mail" required />
-          <input name="curArquivo" type="file" accept=".pdf,.doc,.docx" (change)="vm.selecionarCurriculoArquivo($event)" />
-          <button type="submit">Salvar curriculo</button>
-          <button class="soft" type="button" (click)="vm.curriculoForm = vm.novoCurriculo(); vm.recrutamentoTab.set('pesquisa')">Cancelar</button>
-        </form>
-      </ng-template>
+      <div class="table-wrap excel-wrap">
+        <table class="excel-table">
+          <thead><tr><th>Nome</th><th>Telefone</th><th>E-mail</th><th>Status</th><th>Currículo</th></tr></thead>
+          <tbody>
+            <tr class="clickable-row" *ngFor="let item of vm.filteredCurriculosBanco()" (click)="vm.editarCurriculo(item)">
+              <td>{{ item.nome }}</td>
+              <td>{{ item.telefone || '-' }}</td>
+              <td>{{ item.email }}</td>
+              <td><span class="status">{{ item.status }}</span></td>
+              <td>
+                <a *ngIf="item.curriculoUrl; else semCurriculo" [href]="item.curriculoUrl" target="_blank" (click)="$event.stopPropagation()">Abrir currículo</a>
+                <ng-template #semCurriculo>-</ng-template>
+              </td>
+            </tr>
+            <tr *ngIf="!vm.filteredCurriculosBanco().length"><td colspan="5" class="empty-cell">Nenhum currículo encontrado.</td></tr>
+          </tbody>
+        </table>
+      </div>
     </ng-container>
   </ng-container>
 </section>
@@ -209,7 +117,7 @@
       <label>Título da vaga<input name="modalVagaTitulo" [(ngModel)]="vm.vagaForm.titulo" required /></label>
       <label>Status<select name="modalVagaStatus" [(ngModel)]="vm.vagaForm.status"><option>Aberta</option><option>Pausada</option><option>Encerrada</option></select></label>
       <label>Departamento<select name="modalVagaDep" [(ngModel)]="vm.vagaForm.departamentoId"><option [ngValue]="undefined">Departamento</option><option *ngFor="let item of vm.departamentos()" [ngValue]="item.id">{{ item.nome }}</option></select></label>
-      <label>Cargo<select name="modalVagaCargo" [(ngModel)]="vm.vagaForm.cargoId"><option [ngValue]="undefined">Cargo</option><option *ngFor="let item of vm.cargos()" [ngValue]="item.id">{{ item.nome }}</option></select></label>
+      <label>Cargo<select name="modalVagaCargo" [(ngModel)]="vm.vagaForm.cargoId"><option [ngValue]="undefined">Cargo</option><option *ngFor="let item of vm.cargosSelecionaveis(vm.vagaForm.cargoId)" [ngValue]="item.id" [disabled]="vm.cargoExtinto(item)">{{ vm.labelCargo(item) }}</option></select></label>
       <label>Quantidade<input name="modalVagaQtd" [(ngModel)]="vm.vagaForm.quantidade" type="number" /></label>
       <label>Salário<input name="modalVagaSalario" [(ngModel)]="vm.vagaForm.salario" type="number" /></label>
       <label class="span-2">Descrição<textarea name="modalVagaDesc" [(ngModel)]="vm.vagaForm.descricao"></textarea></label>
@@ -237,5 +145,25 @@
       <label class="span-2">Observações<textarea name="modalCandObs" [(ngModel)]="vm.candidatoForm.observacoes"></textarea></label>
     </div>
     <div class="modal-actions"><button type="button" class="soft" (click)="vm.candidatoModalOpen.set(false)">Cancelar</button><button type="submit">Salvar candidato</button></div>
+  </form>
+</section>
+
+<section class="modal-backdrop" *ngIf="vm.curriculoModalOpen()">
+  <form class="modal-card modal-card-wide pop" (ngSubmit)="vm.salvarCurriculo()" (click)="$event.stopPropagation()">
+    <div class="modal-head">
+      <div>
+        <h2>{{ vm.curriculoForm.id ? 'Editar currículo' : 'Novo currículo' }}</h2>
+        <p>Registre o contato e anexe o arquivo do currículo.</p>
+      </div>
+      <button type="button" (click)="vm.curriculoModalOpen.set(false)">×</button>
+    </div>
+    <div class="form-grid cols-2 no-margin">
+      <label>Nome<input name="modalCurNome" [(ngModel)]="vm.curriculoForm.nome" required /></label>
+      <label>E-mail<input name="modalCurEmail" [(ngModel)]="vm.curriculoForm.email" type="email" required /></label>
+      <label>Telefone<input name="modalCurTelefone" [(ngModel)]="vm.curriculoForm.telefone" /></label>
+      <label>Status<select name="modalCurStatus" [(ngModel)]="vm.curriculoForm.status"><option>Disponivel</option><option>Em análise</option><option>Contratado</option><option>Arquivado</option></select></label>
+      <label class="span-2">Arquivo<input name="modalCurArquivo" type="file" accept=".pdf,.doc,.docx" (change)="vm.selecionarCurriculoArquivo($event)" /></label>
+    </div>
+    <div class="modal-actions"><button type="button" class="soft" (click)="vm.curriculoModalOpen.set(false)">Cancelar</button><button type="submit">Salvar currículo</button></div>
   </form>
 </section>

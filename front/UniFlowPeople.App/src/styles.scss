@@ -9,7 +9,9 @@ body {
   background:
     linear-gradient(180deg, #f6faf5 0%, #edf5ec 100%);
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    Aptos, "Avenir Next", "Segoe UI", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0;
 }
 
 body::before {
@@ -734,6 +736,7 @@ button {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 18px;
 
@@ -761,11 +764,16 @@ button {
 
 .panel-title-actions {
   display: flex;
-  flex: 0 0 auto;
-  align-items: center;
+  flex: 1 1 auto;
+  flex-basis: 100%;
+  align-items: flex-end;
+  justify-content: flex-start;
+  flex-wrap: wrap;
   gap: 10px;
+  min-width: min(100%, 320px);
 
   > span {
+    align-self: center;
     border-radius: 999px;
     padding: 8px 12px;
     color: var(--green-800);
@@ -775,6 +783,7 @@ button {
   }
 
   button {
+    align-self: center;
     min-height: 34px;
     padding: 0 12px;
     font-size: 12px;
@@ -2413,6 +2422,148 @@ tr {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.compact-toolbar,
+.curriculo-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin: -4px 0 14px;
+}
+
+.compact-toolbar button {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.compact-toolbar > span {
+  align-self: center;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: var(--green-800);
+  font-size: 12px;
+  font-weight: 900;
+  background: var(--lime-soft);
+}
+
+.search-box,
+.curriculo-toolbar label {
+  display: grid;
+  flex: 0 1 300px;
+  gap: 6px;
+  width: min(100%, 300px);
+  min-width: 0;
+  margin-left: auto;
+  color: var(--muted);
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.search-box span,
+.curriculo-toolbar label span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.search-box input,
+.curriculo-toolbar label input {
+  min-height: 38px;
+  padding: 8px 12px;
+  font-size: 0.86rem;
+}
+
+.clickable-row {
+  cursor: pointer;
+}
+
+.clickable-row:hover td {
+  background: rgba(183, 239, 121, 0.16);
+}
+
+.colaborador-detail {
+  margin-top: 18px;
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.detail-header h3 {
+  margin: 0 0 4px;
+  color: var(--ink);
+  font-size: 1.2rem;
+}
+
+.detail-header span {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.detail-section {
+  margin-top: 20px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.detail-grid span {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.74);
+  padding: 12px;
+  color: var(--ink);
+  font-weight: 450;
+  line-height: 1.35;
+}
+
+.detail-grid strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
+.detail-grid .span-2 {
+  grid-column: span 2;
+}
+
+.hr-spinner-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: #f7fff3;
+  font-weight: 900;
+}
+
+.hr-spinner-icon {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border: 2px solid rgba(183, 239, 121, 0.78);
+  border-radius: 50%;
+  background: rgba(6, 36, 24, 0.84);
+  color: #b7ef79;
+  font-size: 1rem;
+  letter-spacing: 0;
 }
 
 @keyframes loading {

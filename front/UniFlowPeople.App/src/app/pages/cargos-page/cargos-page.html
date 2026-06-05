@@ -1,54 +1,29 @@
 <section class="panel fade-in">
   <div class="panel-title">
     <div><h2>Cargos</h2><p>Pesquisa, cadastro e manutenção de funções.</p></div>
-    <span>{{ vm.cargos().length }} cargos</span>
-  </div>
-
-  <div class="tabs">
-    <button type="button" [class.active]="vm.cargosTab() === 'pesquisa'" (click)="vm.cargosTab.set('pesquisa')">Pesquisa</button>
-    <button type="button" [class.active]="vm.cargosTab() === 'dados'" (click)="vm.cargosTab.set('dados')">Dados do cargo</button>
-  </div>
-
-  <div class="tab-panel" *ngIf="vm.cargosTab() === 'pesquisa'">
-    <div class="table-wrap excel-wrap">
-      <table class="excel-table">
-        <thead><tr><th>Cargo</th><th>Nível</th><th>Salário base</th><th>Descrição</th><th></th></tr></thead>
-        <tbody>
-          <tr *ngFor="let item of vm.cargos()">
-            <td>{{ item.nome }}</td>
-            <td>{{ item.nivel || '-' }}</td>
-            <td>{{ item.salarioBase | currency: 'BRL' }}</td>
-            <td>{{ item.descricao || '-' }}</td>
-            <td class="actions"><button class="soft" type="button" (click)="vm.editarGenerico('cargoForm', item)">Editar</button></td>
-          </tr>
-          <tr *ngIf="!vm.cargos().length"><td colspan="5" class="empty-cell">Nenhum cargo encontrado.</td></tr>
-        </tbody>
-      </table>
+    <div class="panel-title-actions">
+      <span>{{ vm.filteredCargos().length }} cargos</span>
+      <button type="button" (click)="vm.abrirNovoCargoModal()">Novo cargo</button>
+      <label class="search-box">
+        <span>Pesquisar cargo</span>
+        <input name="cargoSearch" [ngModel]="vm.cargoSearch()" (ngModelChange)="vm.cargoSearch.set($event)" placeholder="Nome, nível ou descrição" />
+      </label>
     </div>
   </div>
 
-  <div class="tab-panel" *ngIf="vm.cargosTab() === 'dados'">
-    <form class="colaborador-form" (ngSubmit)="vm.salvarCargo()">
-      <section class="form-section">
-        <div class="section-title"><span>01</span><div><strong>Dados do cargo</strong><small>Função, nível, salário e descrição.</small></div></div>
-        <div class="form-grid cols-4 no-margin">
-          <label>Cargo<input name="cargoNome" [(ngModel)]="vm.cargoForm.nome" required /></label>
-          <label>Nível<input name="cargoNivel" [(ngModel)]="vm.cargoForm.nivel" /></label>
-          <label>Salário base<input name="cargoSalario" [(ngModel)]="vm.cargoForm.salarioBase" type="number" min="0" step="0.01" /></label>
-          <label>Status
-            <select name="cargoAtivo" [(ngModel)]="vm.cargoForm.ativo">
-              <option [ngValue]="true">Ativo</option>
-              <option [ngValue]="false">Inativo</option>
-            </select>
-          </label>
-          <label class="span-2">Descrição<textarea name="cargoDescricao" [(ngModel)]="vm.cargoForm.descricao"></textarea></label>
-        </div>
-      </section>
-      <div class="form-actions">
-        <button type="submit">{{ vm.cargoForm.id ? 'Atualizar cargo' : 'Salvar cargo' }}</button>
-        <button type="button" class="soft" (click)="vm.cargoForm = vm.novoCargo()">Limpar</button>
-        <button type="button" class="danger-soft" *ngIf="vm.cargoForm.id" (click)="vm.pedirExclusao('cargos', vm.cargoForm.id, vm.cargoForm.nome)">Excluir</button>
-      </div>
-    </form>
+  <div class="table-wrap excel-wrap">
+    <table class="excel-table">
+      <thead><tr><th>Cargo</th><th>Nível</th><th>Salário base</th><th>Descrição</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr class="clickable-row" *ngFor="let item of vm.filteredCargos()" (click)="vm.editarGenerico('cargoForm', item)">
+          <td>{{ item.nome }}</td>
+          <td>{{ item.nivel || '-' }}</td>
+          <td>{{ item.salarioBase | currency: 'BRL' }}</td>
+          <td>{{ item.descricao || '-' }}</td>
+          <td><span class="status" [class.off]="!item.ativo">{{ item.ativo ? 'Ativo' : 'Extinto' }}</span></td>
+        </tr>
+        <tr *ngIf="!vm.filteredCargos().length"><td colspan="5" class="empty-cell">Nenhum cargo encontrado.</td></tr>
+      </tbody>
+    </table>
   </div>
 </section>

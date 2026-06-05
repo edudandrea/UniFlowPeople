@@ -2,8 +2,8 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { NgxSpinnerModule, NgxSpinnerService } from 'ngx-spinner';
 import { finalize, forkJoin } from 'rxjs';
-import { ToastrService } from 'ngx-toastr';
 import { AdmissaoPage } from './pages/admissao-page/admissao-page';
 import { BeneficiosPage } from './pages/beneficios-page/beneficios-page';
 import { CargosPage } from './pages/cargos-page/cargos-page';
@@ -121,6 +121,7 @@ interface ModuleItem {
   imports: [
     CommonModule,
     FormsModule,
+    NgxSpinnerModule,
     AdmissaoPage,
     BeneficiosPage,
     CargosPage,
@@ -148,7 +149,7 @@ interface ModuleItem {
 export class App {
   vm = this;
   private readonly http = inject(HttpClient);
-  private readonly toastr = inject(ToastrService);
+  private readonly spinner = inject(NgxSpinnerService);
   private readonly api = 'http://localhost:5036/api';
   private readonly sessionTimeoutMs = 30 * 60 * 1000;
   private inactivityTimeoutId?: ReturnType<typeof setTimeout>;
@@ -173,6 +174,7 @@ export class App {
   admissaoProcessoModalOpen = signal(false);
   admissaoDocumentosModalOpen = signal(false);
   admissaoColaboradorModalOpen = signal(false);
+  demissaoProcessoModalOpen = signal(false);
   colaboradorModalOpen = signal(false);
   treinamentoModalOpen = signal(false);
   epiModalOpen = signal(false);
@@ -183,17 +185,31 @@ export class App {
   etapaProcessoModalOpen = signal(false);
   vagaModalOpen = signal(false);
   candidatoModalOpen = signal(false);
+  curriculoModalOpen = signal(false);
+  usuarioModalOpen = signal(false);
+  documentoModalOpen = signal(false);
+  solicitacaoModalOpen = signal(false);
   genericEditModal = signal<{ form: string; title: string } | null>(null);
   confirmDelete = signal<{ endpoint: string; id: number; label: string } | null>(null);
   cpfColaboradorDuplicado = signal(false);
   search = signal('');
+  cargoSearch = signal('');
+  departamentoSearch = signal('');
+  usuarioSearch = signal('');
+  vagaSearch = signal('');
+  candidatoSearch = signal('');
   curriculoSearch = signal('');
+  etapaProcessoSearch = signal('');
+  documentoSearch = signal('');
+  solicitacaoSearch = signal('');
   colaboradorSearch = signal('');
   admissaoSearch = signal('');
+  demissaoSearch = signal('');
   planoSearch = signal('');
   contratoSearch = signal('');
   cobrancaSearch = signal('');
   admissaoPage = signal(1);
+  demissaoPage = signal(1);
   empresasTab = signal<'pesquisa' | 'dados'>('pesquisa');
   usuariosTab = signal<'pesquisa' | 'dados'>('pesquisa');
   cargosTab = signal<'pesquisa' | 'dados'>('pesquisa');
@@ -290,7 +306,7 @@ export class App {
   modelosDocumentosAdmissao = [
     {
       titulo: 'Pausas para café',
-      arquivo: 'TERMO DE CIÊNCIA, CONCORDÂNCIA E ADESÃO À POLÍTICA INTERNA DE PAUSAS PARA CAFÉ.docx',
+      arquivo: 'TERMO DE CIÊNCIA CONCORDÂNCIA E ADESÃO À POLÍTICA INTERNA DE PAUSAS PARA CAFÉ.docx',
       tipo: 'DOCX',
       template: 'pausas-cafe.txt',
     },
@@ -451,7 +467,17 @@ export class App {
       ),
     );
   });
-  filteredUsuarios = computed(() => this.filterByTerm(this.usuarios(), ['nome', 'login', 'email', 'role']));
+  filteredUsuarios = computed(() =>
+    this.filterBySignal(this.usuarios(), this.usuarioSearch(), ['nome', 'login', 'email', 'role'], (item) =>
+      String(this.nomeEmpresa(item.empresaId || undefined)),
+    ),
+  );
+  filteredCargos = computed(() => this.filterBySignal(this.cargos(), this.cargoSearch(), ['nome', 'nivel', 'descricao']));
+  filteredDepartamentos = computed(() =>
+    this.filterBySignal(this.departamentos(), this.departamentoSearch(), ['nome', 'descricao'], (item) =>
+      this.nomeColaborador(item.gestorId),
+    ),
+  );
   filteredColaboradores = computed(() => this.filterByTerm(this.colaboradores(), ['nome', 'cpf', 'email', 'status']));
   filteredColaboradoresCadastro = computed(() => {
     const term = this.colaboradorSearch().trim().toLowerCase();
@@ -465,8 +491,16 @@ export class App {
       );
     });
   });
-  filteredVagas = computed(() => this.filterByTerm(this.vagas(), ['titulo', 'status']));
-  filteredCandidatos = computed(() => this.filterByTerm(this.candidatos(), ['nome', 'email', 'status']));
+  filteredVagas = computed(() =>
+    this.filterBySignal(this.vagas(), this.vagaSearch(), ['titulo', 'status', 'descricao'], (item) =>
+      [this.nomeDepartamento(item.departamentoId), this.nomeCargo(item.cargoId)].join(' '),
+    ),
+  );
+  filteredCandidatos = computed(() =>
+    this.filterBySignal(this.candidatos(), this.candidatoSearch(), ['nome', 'email', 'telefone', 'status', 'linkedin'], (item) =>
+      this.nomeVaga(item.vagaId),
+    ),
+  );
   filteredCurriculos = computed(() => this.filterByTerm(this.curriculos(), ['nome', 'email', 'telefone', 'status']));
   filteredCurriculosBanco = computed(() => {
     const term = this.curriculoSearch().trim().toLowerCase();
@@ -487,8 +521,45 @@ export class App {
       ),
     );
   });
+  filteredDemissoes = computed(() => {
+    const term = this.demissaoSearch().trim().toLowerCase();
+    const items = this.demissoes();
+    if (!term) return items;
+
+    return items.filter((item) =>
+      [
+        this.nomeColaborador(item.colaboradorId),
+        item.colaborador?.email,
+        item.colaborador?.telefone,
+        item.tipoDemissao,
+        item.motivo,
+        item.observacoes,
+        this.statusDemissao(item),
+      ].some((value) => String(value ?? '').toLowerCase().includes(term)),
+    );
+  });
+  filteredEtapasProcessos = computed(() =>
+    this.filterBySignal(this.etapasProcessosOrdenadas(), this.etapaProcessoSearch(), [
+      'tipoProcesso',
+      'nome',
+      'descricao',
+      'ordem',
+    ]),
+  );
+  filteredDocumentos = computed(() =>
+    this.filterBySignal(this.documentos(), this.documentoSearch(), ['tipoDocumento', 'nomeArquivo', 'urlArquivo'], (item) =>
+      this.nomeColaborador(item.colaboradorId),
+    ),
+  );
   filteredSolicitacoes = computed(() =>
-    this.filterByTerm(this.solicitacoes(), ['tipo', 'titulo', 'descricao', 'prioridade', 'status', 'respostaRh']),
+    this.filterBySignal(this.solicitacoes(), this.solicitacaoSearch(), [
+      'tipo',
+      'titulo',
+      'descricao',
+      'prioridade',
+      'status',
+      'respostaRh',
+    ], (item) => this.nomeColaborador(item.colaboradorId)),
   );
   admissaoTotalPages = computed(() => Math.max(1, Math.ceil(this.filteredAdmissoes().length / 10)));
   admissaoCurrentPage = computed(() => Math.min(this.admissaoPage(), this.admissaoTotalPages()));
@@ -496,6 +567,13 @@ export class App {
     const page = this.admissaoCurrentPage();
     const start = (page - 1) * 10;
     return this.filteredAdmissoes().slice(start, start + 10);
+  });
+  demissaoTotalPages = computed(() => Math.max(1, Math.ceil(this.filteredDemissoes().length / 10)));
+  demissaoCurrentPage = computed(() => Math.min(this.demissaoPage(), this.demissaoTotalPages()));
+  pagedDemissoes = computed(() => {
+    const page = this.demissaoCurrentPage();
+    const start = (page - 1) * 10;
+    return this.filteredDemissoes().slice(start, start + 10);
   });
 
   constructor() {
@@ -510,10 +588,10 @@ export class App {
   }
 
   login() {
-    this.loading.set(true);
+    this.setLoading(true);
     this.http
       .post<AuthResponse>(`${this.api}/auth/login`, this.loginForm)
-      .pipe(finalize(() => this.loading.set(false)))
+      .pipe(finalize(() => this.setLoading(false)))
       .subscribe({
         next: (response) => this.aplicarLogin(response),
         error: () => this.notificar('Login ou senha inválidos.', 'error'),
@@ -521,10 +599,10 @@ export class App {
   }
 
   bootstrapAdmin() {
-    this.loading.set(true);
+    this.setLoading(true);
     this.http
       .post<AuthResponse>(`${this.api}/auth/bootstrap-system-admin`, this.bootstrapForm)
-      .pipe(finalize(() => this.loading.set(false)))
+      .pipe(finalize(() => this.setLoading(false)))
       .subscribe({
         next: (response) => {
           this.systemAdminExists.set(true);
@@ -598,7 +676,7 @@ export class App {
 
   carregarDados() {
     this.mensagem.set('');
-    this.loading.set(true);
+    this.setLoading(true);
 
     if (this.isSistemaAdmin()) {
       this.empresaLogada.set(null);
@@ -612,7 +690,7 @@ export class App {
       });
       this.http.get<Cobranca[]>(`${this.api}/contratos/cobrancas`).subscribe((x) => this.cobrancas.set(x ?? []));
       this.carregarUsuarios();
-      this.loading.set(false);
+      this.setLoading(false);
       return;
     }
 
@@ -651,7 +729,7 @@ export class App {
     this.http.get<any[]>(`${this.api}/beneficiosColaboradores`).subscribe({
       next: (x) => {
         this.beneficiosColaboradores.set(x ?? []);
-        this.loading.set(false);
+        this.setLoading(false);
       },
       error: () => this.notificar('Não foi possível carregar dados da empresa.', 'error'),
     });
@@ -789,6 +867,7 @@ export class App {
     request.subscribe({
       next: () => {
         this.usuarioForm = this.novoUsuario();
+        this.usuarioModalOpen.set(false);
         this.carregarDados();
         this.notificar(editando ? 'Usuário atualizado com sucesso.' : 'Usuário criado com sucesso.', 'success');
       },
@@ -808,8 +887,12 @@ export class App {
       role: item.role,
       ativo: true,
     };
-    this.usuariosTab.set('dados');
-    this.scrollTop();
+    this.usuarioModalOpen.set(true);
+  }
+
+  abrirNovoUsuarioModal() {
+    this.usuarioForm = this.novoUsuario();
+    this.usuarioModalOpen.set(true);
   }
 
   salvarFilial() {
@@ -822,6 +905,16 @@ export class App {
 
   salvarCargo() {
     this.salvarCrud('cargos', this.cargoForm, () => (this.cargoForm = this.novoCargo()));
+  }
+
+  abrirNovoCargoModal() {
+    this.cargoForm = this.novoCargo();
+    this.genericEditModal.set({ form: 'cargoForm', title: 'Novo cargo' });
+  }
+
+  abrirNovoDepartamentoModal() {
+    this.departamentoForm = this.novoDepartamento();
+    this.genericEditModal.set({ form: 'departamentoForm', title: 'Novo departamento' });
   }
 
   salvarColaborador() {
@@ -838,10 +931,11 @@ export class App {
 
     request.subscribe({
       next: () => {
+        const colaboradorAtualizado = { ...this.colaboradorForm };
         this.cpfColaboradorDuplicado.set(false);
-        this.colaboradorForm = this.novoColaborador();
+        this.colaboradorForm = editando ? colaboradorAtualizado : this.novoColaborador();
         this.colaboradorModalOpen.set(false);
-        this.colaboradoresTab.set('pesquisa');
+        this.colaboradoresTab.set(editando ? 'dados' : 'pesquisa');
         this.carregarDados();
         this.notificar(editando ? 'Colaborador atualizado com sucesso.' : 'Colaborador cadastrado com sucesso.', 'success');
       },
@@ -851,6 +945,7 @@ export class App {
 
   abrirNovoColaboradorModal() {
     this.colaboradorForm = this.novoColaborador();
+    this.colaboradoresTab.set('pesquisa');
     this.colaboradorModalOpen.set(true);
   }
 
@@ -898,6 +993,16 @@ export class App {
     this.colaboradorModalOpen.set(true);
   }
 
+  selecionarColaborador(item: any) {
+    this.colaboradorForm = {
+      ...item,
+      dataNascimento: this.toDateInput(item.dataNascimento),
+      dataAdmissao: this.toDateInput(item.dataAdmissao),
+      dataDemissao: this.toDateInput(item.dataDemissao),
+    };
+    this.colaboradoresTab.set('dados');
+  }
+
   salvarBeneficio() {
     this.salvarCrud('beneficios', this.beneficioForm, () => (this.beneficioForm = this.novoBeneficio()));
   }
@@ -937,8 +1042,14 @@ export class App {
     this.curriculoForm = this.novoCurriculo();
     this.curriculoArquivo = null;
     this.recrutamentoCadastro.set('curriculos');
-    this.recrutamentoTab.set('dados');
-    this.scrollTop();
+    this.curriculoModalOpen.set(true);
+  }
+
+  editarCurriculo(item: any) {
+    this.curriculoForm = { ...item };
+    this.curriculoArquivo = null;
+    this.recrutamentoCadastro.set('curriculos');
+    this.curriculoModalOpen.set(true);
   }
 
   salvarCandidato() {
@@ -974,20 +1085,27 @@ export class App {
   }
 
   salvarCurriculo() {
+    const editando = !!this.curriculoForm.id;
     const form = new FormData();
     form.append('nome', this.curriculoForm.nome ?? '');
     form.append('telefone', this.curriculoForm.telefone ?? '');
     form.append('email', this.curriculoForm.email ?? '');
+    form.append('status', this.curriculoForm.status ?? 'Disponivel');
     if (this.curriculoArquivo) form.append('arquivo', this.curriculoArquivo);
 
-    this.http.post(`${this.api}/curriculos`, form).subscribe({
+    const request = editando
+      ? this.http.put(`${this.api}/curriculos/${this.curriculoForm.id}`, form)
+      : this.http.post(`${this.api}/curriculos`, form);
+
+    request.subscribe({
       next: () => {
         this.curriculoForm = this.novoCurriculo();
         this.curriculoArquivo = null;
+        this.curriculoModalOpen.set(false);
         this.carregarDados();
-        this.notificar('Currículo cadastrado com sucesso.', 'success');
+        this.notificar(editando ? 'Currículo atualizado com sucesso.' : 'Currículo cadastrado com sucesso.', 'success');
       },
-      error: () => this.notificar('Erro ao cadastrar currículo.', 'error'),
+      error: () => this.notificar('Erro ao salvar currículo.', 'error'),
     });
   }
 
@@ -1301,9 +1419,22 @@ export class App {
     });
   }
 
+  abrirNovoProcessoDemissao() {
+    this.demissaoForm = this.novaDemissao();
+    this.demissaoProcessoModalOpen.set(true);
+  }
+
+  fecharModalProcessoDemissao() {
+    this.demissaoProcessoModalOpen.set(false);
+    this.demissaoForm = this.novaDemissao();
+  }
+
   salvarDemissao() {
     this.normalizeDateTime(this.demissaoForm, ['dataSolicitacao', 'dataDesligamento']);
-    this.salvarCrud('demissoes', this.demissaoForm, () => (this.demissaoForm = this.novaDemissao()));
+    this.salvarCrud('demissoes', this.demissaoForm, () => {
+      this.fecharModalProcessoDemissao();
+      this.demissaoPage.set(1);
+    });
   }
 
   editarDemissao(item: any) {
@@ -1312,6 +1443,7 @@ export class App {
       dataSolicitacao: this.toDateInput(item.dataSolicitacao),
       dataDesligamento: this.toDateInput(item.dataDesligamento),
     };
+    this.demissaoProcessoModalOpen.set(true);
   }
 
   concluirDemissao(item: any) {
@@ -1327,6 +1459,20 @@ export class App {
         this.notificar('Fluxo demissional concluído e colaborador inativado.', 'success');
       },
       error: () => this.notificar('Erro ao concluir demissão.', 'error'),
+    });
+  }
+
+  cancelarProcessoDemissao(item: any) {
+    if (!item?.id || this.processoDemissaoFinalizado(item)) return;
+
+    this.http.post(`${this.api}/demissoes/${item.id}/cancelar`, {}).subscribe({
+      next: () => {
+        item.status = 'Cancelado';
+        this.demissaoEtapaSelecionada.set(null);
+        this.carregarDados();
+        this.notificar('Processo demissional cancelado.', 'success');
+      },
+      error: () => this.notificar('Erro ao cancelar processo demissional.', 'error'),
     });
   }
 
@@ -1347,14 +1493,31 @@ export class App {
   }
 
   salvarDocumento() {
-    this.http.post(`${this.api}/documentosColaboradores`, this.documentoForm).subscribe({
+    const editando = !!this.documentoForm.id;
+    const payload = this.normalizePayload(this.documentoForm);
+    const request = editando
+      ? this.http.put(`${this.api}/documentosColaboradores/${this.documentoForm.id}`, payload)
+      : this.http.post(`${this.api}/documentosColaboradores`, payload);
+
+    request.subscribe({
       next: () => {
         this.documentoForm = this.novoDocumento();
+        this.documentoModalOpen.set(false);
         this.carregarDados();
-        this.notificar('Documento salvo.', 'success');
+        this.notificar(editando ? 'Documento atualizado.' : 'Documento salvo.', 'success');
       },
       error: () => this.notificar('Erro ao salvar documento.', 'error'),
     });
+  }
+
+  abrirNovoDocumentoModal() {
+    this.documentoForm = this.novoDocumento();
+    this.documentoModalOpen.set(true);
+  }
+
+  editarDocumento(item: any) {
+    this.documentoForm = { ...item };
+    this.documentoModalOpen.set(true);
   }
 
   salvarSolicitacao() {
@@ -1373,6 +1536,7 @@ export class App {
     request.subscribe({
       next: () => {
         this.solicitacaoForm = this.novaSolicitacao();
+        this.solicitacaoModalOpen.set(false);
         this.carregarDados();
         this.notificar(editando ? 'Solicitação atualizada.' : 'Solicitação enviada ao RH.', 'success');
       },
@@ -1382,7 +1546,12 @@ export class App {
 
   editarSolicitacao(item: any) {
     this.solicitacaoForm = { ...item };
-    this.scrollTop();
+    this.solicitacaoModalOpen.set(true);
+  }
+
+  abrirNovaSolicitacaoModal() {
+    this.solicitacaoForm = this.novaSolicitacao();
+    this.solicitacaoModalOpen.set(true);
   }
 
   limparSolicitacao() {
@@ -1626,6 +1795,18 @@ export class App {
     return this.cargos().find((x) => x.id === id)?.nome ?? id ?? '-';
   }
 
+  cargoExtinto(cargo: any) {
+    return cargo?.ativo === false;
+  }
+
+  cargosSelecionaveis(cargoId?: number | null) {
+    return this.cargos().filter((cargo) => cargo.ativo !== false || cargo.id === cargoId);
+  }
+
+  labelCargo(cargo: any) {
+    return cargo?.ativo === false ? `${cargo.nome} (Extinto)` : cargo?.nome;
+  }
+
   nomeEpi(id?: number) {
     return this.epis().find((x) => x.id === id)?.nome ?? id ?? '-';
   }
@@ -1698,6 +1879,10 @@ export class App {
 
   nomeDepartamento(id?: number) {
     return this.departamentos().find((x) => x.id === id)?.nome ?? id ?? '-';
+  }
+
+  nomeFilial(id?: number) {
+    return this.filiais().find((x) => x.id === id)?.nome ?? id ?? '-';
   }
 
   nomeVaga(id?: number) {
@@ -1925,6 +2110,20 @@ export class App {
 
   admissaoPageNumbers() {
     return Array.from({ length: this.admissaoTotalPages() }, (_value, index) => index + 1);
+  }
+
+  setDemissaoSearch(value: string) {
+    this.demissaoSearch.set(value);
+    this.demissaoPage.set(1);
+  }
+
+  setDemissaoPage(page: number) {
+    const bounded = Math.min(Math.max(page, 1), this.demissaoTotalPages());
+    this.demissaoPage.set(bounded);
+  }
+
+  demissaoPageNumbers() {
+    return Array.from({ length: this.demissaoTotalPages() }, (_value, index) => index + 1);
   }
 
   voltarEtapaSelecionada(item: any) {
@@ -2322,12 +2521,18 @@ export class App {
   private notificar(texto: string, tipo: MessageType = 'info') {
     this.mensagem.set(texto);
     this.mensagemTipo.set(tipo);
-    if (tipo === 'success') this.toastr.success(texto);
-    else if (tipo === 'error') this.toastr.error(texto);
-    else this.toastr.info(texto);
     setTimeout(() => {
       if (this.mensagem() === texto) this.mensagem.set('');
     }, 4200);
+  }
+
+  private setLoading(value: boolean) {
+    this.loading.set(value);
+    if (value) {
+      void this.spinner.show('uniflow-loading');
+      return;
+    }
+    void this.spinner.hide('uniflow-loading');
   }
 
   private filterByTerm<T extends Record<string, any>>(items: T[], fields: string[]) {
@@ -2336,6 +2541,20 @@ export class App {
     return items.filter((item) =>
       fields.some((field) => String(item[field] ?? '').toLowerCase().includes(term)),
     );
+  }
+
+  private filterBySignal<T extends Record<string, any>>(
+    items: T[],
+    value: string,
+    fields: string[],
+    extra?: (item: T) => string,
+  ) {
+    const term = value.trim().toLowerCase();
+    if (!term) return items;
+    return items.filter((item) => {
+      const directMatch = fields.some((field) => String(item[field] ?? '').toLowerCase().includes(term));
+      return directMatch || String(extra?.(item) ?? '').toLowerCase().includes(term);
+    });
   }
 
   private scrollTop() {

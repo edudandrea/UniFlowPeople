@@ -33,6 +33,28 @@ public class DocumentosColaboradoresController(AppDbContext db, ITenantContext t
         return CreatedAtAction(nameof(GetAll), new { id = documento.Id }, documento);
     }
 
+    [HttpPut("{id:int}")]
+    [Authorize(Roles = Roles.AdminOrRh)]
+    public async Task<IActionResult> Update(int id, DocumentoColaborador documento)
+    {
+        var current = await db.DocumentosColaboradores
+            .Include(x => x.Colaborador)
+            .FirstOrDefaultAsync(x => x.Id == id);
+        if (current is null) return NotFound();
+        if (current.Colaborador.EmpresaId != tenant.EmpresaId) return Forbid();
+        if (!await ColaboradorPertenceEmpresa(documento.ColaboradorId)) return Forbid();
+
+        current.ColaboradorId = documento.ColaboradorId;
+        current.TipoDocumento = documento.TipoDocumento;
+        current.NomeArquivo = documento.NomeArquivo;
+        current.UrlArquivo = documento.UrlArquivo;
+        current.Obrigatorio = documento.Obrigatorio;
+        current.Validado = documento.Validado;
+
+        await db.SaveChangesAsync();
+        return NoContent();
+    }
+
     [HttpDelete("{id:int}")]
     [Authorize(Roles = Roles.AdminOrRh)]
     public async Task<IActionResult> Delete(int id)

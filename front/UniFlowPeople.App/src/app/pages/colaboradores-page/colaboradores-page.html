@@ -4,21 +4,10 @@
       <h2>Colaboradores</h2>
       <p>Pesquisa, cadastro e manutenção do vínculo dos colaboradores.</p>
     </div>
-    <span>{{ vm.filteredColaboradoresCadastro().length }} pessoas</span>
-  </div>
-
-  <div class="tabs">
-    <button type="button" [class.active]="vm.colaboradoresTab() === 'pesquisa'" (click)="vm.colaboradoresTab.set('pesquisa')">
-      Pesquisa
-    </button>
-    <button type="button" [class.active]="vm.colaboradoresTab() === 'dados'" (click)="vm.colaboradoresTab.set('dados')">
-      Dados do colaborador
-    </button>
-  </div>
-
-  <div class="tab-panel" *ngIf="vm.colaboradoresTab() === 'pesquisa'">
-    <div class="curriculo-toolbar colaborador-search">
-      <label>
+    <div class="panel-title-actions">
+      <span>{{ vm.filteredColaboradoresCadastro().length }} pessoas</span>
+      <button type="button" (click)="vm.abrirNovoColaboradorModal()">Novo colaborador</button>
+      <label class="search-box">
         <span>Pesquisar colaborador</span>
         <input
           type="search"
@@ -29,7 +18,14 @@
         />
       </label>
     </div>
+  </div>
 
+  <div class="tabs">
+    <button type="button" [class.active]="vm.colaboradoresTab() === 'pesquisa'" (click)="vm.colaboradoresTab.set('pesquisa')">Pesquisa</button>
+    <button type="button" [class.active]="vm.colaboradoresTab() === 'dados'" [disabled]="!vm.colaboradorForm.id" (click)="vm.colaboradoresTab.set('dados')">Dados do colaborador</button>
+  </div>
+
+  <div *ngIf="vm.colaboradoresTab() === 'pesquisa'">
     <div class="table-wrap excel-wrap">
       <table class="excel-table">
         <thead>
@@ -40,39 +36,101 @@
             <th>Cargo</th>
             <th>Status</th>
             <th>Admissão</th>
-            <th></th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let item of vm.filteredColaboradoresCadastro()">
+          <tr class="clickable-row" *ngFor="let item of vm.filteredColaboradoresCadastro()" (click)="vm.selecionarColaborador(item)">
             <td>{{ item.nome }}</td>
             <td>{{ item.cpf }}</td>
             <td>{{ item.telefone || '-' }}</td>
             <td>{{ vm.nomeCargo(item.cargoId) }}</td>
             <td><span class="status" [class.off]="item.status === 'Demitido'">{{ item.status }}</span></td>
             <td>{{ item.dataAdmissao | date: 'dd/MM/yyyy' }}</td>
-            <td class="actions">
-              <button type="button" class="soft" (click)="vm.editarColaborador(item)">Editar</button>
-            </td>
           </tr>
           <tr *ngIf="!vm.filteredColaboradoresCadastro().length">
-            <td colspan="7" class="empty-cell">Nenhum colaborador encontrado.</td>
+            <td colspan="6" class="empty-cell">Nenhum colaborador encontrado.</td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <div class="tab-panel" *ngIf="vm.colaboradoresTab() === 'dados'">
-    <div class="empty-state" *ngIf="!vm.colaboradorForm.id">
-      <strong>Selecione um colaborador</strong>
-      <span>Use a aba Pesquisa para localizar e editar um cadastro existente em modal.</span>
+  <div class="tab-panel colaborador-detail" *ngIf="vm.colaboradoresTab() === 'dados'">
+    <div class="detail-header">
+      <div>
+        <h3>{{ vm.colaboradorForm.nome }}</h3>
+        <span>{{ vm.nomeCargo(vm.colaboradorForm.cargoId) }} · {{ vm.colaboradorForm.status }}</span>
+      </div>
+      <button type="button" (click)="vm.editarColaborador(vm.colaboradorForm)">Editar</button>
     </div>
+
+    <section class="detail-section">
+      <div class="section-title"><span>01</span><div><strong>Identificação</strong><small>Dados principais e documentos pessoais.</small></div></div>
+      <div class="detail-grid">
+        <span><strong>Nome completo</strong>{{ vm.colaboradorForm.nome || '-' }}</span>
+        <span><strong>CPF</strong>{{ vm.colaboradorForm.cpf || '-' }}</span>
+        <span><strong>RG</strong>{{ vm.colaboradorForm.rg || '-' }}</span>
+        <span><strong>E-mail</strong>{{ vm.colaboradorForm.email || '-' }}</span>
+        <span><strong>Telefone</strong>{{ vm.colaboradorForm.telefone || '-' }}</span>
+        <span><strong>Matrícula</strong>{{ vm.colaboradorForm.matricula || '-' }}</span>
+      </div>
+    </section>
+
+    <section class="detail-section">
+      <div class="section-title"><span>02</span><div><strong>Dados pessoais</strong><small>Perfil civil, nascimento e documentos trabalhistas.</small></div></div>
+      <div class="detail-grid">
+        <span><strong>Data de nascimento</strong>{{ vm.colaboradorForm.dataNascimento | date: 'dd/MM/yyyy' }}</span>
+        <span><strong>Sexo</strong>{{ vm.colaboradorForm.sexo || '-' }}</span>
+        <span><strong>Estado civil</strong>{{ vm.colaboradorForm.estadoCivil || '-' }}</span>
+        <span><strong>PIS</strong>{{ vm.colaboradorForm.pis || '-' }}</span>
+        <span><strong>CTPS</strong>{{ vm.colaboradorForm.ctps || '-' }}</span>
+      </div>
+    </section>
+
+    <section class="detail-section">
+      <div class="section-title"><span>03</span><div><strong>Endereço</strong><small>Localização residencial e contato postal.</small></div></div>
+      <div class="detail-grid">
+        <span class="span-2"><strong>Endereço</strong>{{ vm.colaboradorForm.endereco || '-' }}</span>
+        <span><strong>Bairro</strong>{{ vm.colaboradorForm.bairro || '-' }}</span>
+        <span><strong>CEP</strong>{{ vm.colaboradorForm.cep || '-' }}</span>
+        <span><strong>Cidade</strong>{{ vm.colaboradorForm.cidade || '-' }}</span>
+        <span><strong>Estado</strong>{{ vm.colaboradorForm.estado || '-' }}</span>
+      </div>
+    </section>
+
+    <section class="detail-section">
+      <div class="section-title"><span>04</span><div><strong>Vínculo profissional</strong><small>Lotação, cargo, contrato e situação atual.</small></div></div>
+      <div class="detail-grid">
+        <span><strong>Filial</strong>{{ vm.nomeFilial(vm.colaboradorForm.filialId) }}</span>
+        <span><strong>Departamento</strong>{{ vm.nomeDepartamento(vm.colaboradorForm.departamentoId) }}</span>
+        <span><strong>Cargo</strong>{{ vm.nomeCargo(vm.colaboradorForm.cargoId) }}</span>
+        <span><strong>Tipo de contrato</strong>{{ vm.colaboradorForm.tipoContrato || '-' }}</span>
+        <span><strong>Data de admissão</strong>{{ vm.colaboradorForm.dataAdmissao | date: 'dd/MM/yyyy' }}</span>
+        <span><strong>Data de demissão</strong>{{ vm.colaboradorForm.dataDemissao | date: 'dd/MM/yyyy' }}</span>
+        <span><strong>Salário</strong>{{ vm.colaboradorForm.salario | currency: 'BRL' }}</span>
+        <span><strong>Carga horária semanal</strong>{{ vm.colaboradorForm.cargaHorariaSemanal || '-' }}</span>
+        <span><strong>Status</strong>{{ vm.colaboradorForm.status || '-' }}</span>
+      </div>
+    </section>
+
+    <section class="detail-section">
+      <div class="section-title"><span>05</span><div><strong>Observações</strong><small>Notas internas sobre o colaborador.</small></div></div>
+      <div class="detail-grid">
+        <span class="span-2"><strong>Observações</strong>{{ vm.colaboradorForm.observacoes || '-' }}</span>
+      </div>
+    </section>
+
+    <section class="detail-section">
+      <div class="section-title"><span>06</span><div><strong>EPIs e acessos</strong><small>Itens previstos, retiradas e ferramentas vinculadas.</small></div></div>
+      <div class="detail-grid">
+        <span><strong>EPIs previstos no cargo</strong>{{ vm.episDoCargo(vm.colaboradorForm.cargoId).length || 0 }}</span>
+        <span><strong>EPIs retirados</strong>{{ vm.episDoColaborador(vm.colaboradorForm.id).length || 0 }}</span>
+        <span><strong>Itens a trocar</strong>{{ vm.episPendentesTroca(vm.colaboradorForm.id).length || 0 }}</span>
+        <span><strong>Ferramentas de acesso</strong>{{ vm.ferramentasDoColaborador(vm.colaboradorForm.id).length || 0 }}</span>
+      </div>
+    </section>
   </div>
 
-  <div class="panel-footer">
-    <button type="button" (click)="vm.abrirNovoColaboradorModal()">Cadastrar novo colaborador</button>
-  </div>
 </section>
 
 <section class="modal-backdrop" *ngIf="vm.colaboradorModalOpen()">
@@ -210,7 +268,7 @@
       <label>Cargo
         <select name="colabCargo" [(ngModel)]="vm.colaboradorForm.cargoId">
           <option [ngValue]="undefined">Selecione</option>
-          <option *ngFor="let cargo of vm.cargos()" [ngValue]="cargo.id">{{ cargo.nome }}</option>
+          <option *ngFor="let cargo of vm.cargosSelecionaveis(vm.colaboradorForm.cargoId)" [ngValue]="cargo.id" [disabled]="vm.cargoExtinto(cargo)">{{ vm.labelCargo(cargo) }}</option>
         </select>
       </label>
       <label>Tipo de contrato

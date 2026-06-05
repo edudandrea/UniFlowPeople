@@ -1,23 +1,59 @@
 <section class="panel fade-in">
-  <div class="panel-title"><div><h2>Documentos</h2><p>Controle documentos obrigatórios e validações.</p></div><span>{{ vm.documentos().length }}</span></div>
-  <form class="form-grid cols-6" (ngSubmit)="vm.salvarDocumento()">
-    <select name="docColab" [(ngModel)]="vm.documentoForm.colaboradorId" required>
-      <option [ngValue]="undefined">Colaborador</option>
-      <option *ngFor="let colab of vm.colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option>
-    </select>
-    <input name="docTipo" [(ngModel)]="vm.documentoForm.tipoDocumento" placeholder="Tipo" required />
-    <input name="docNome" [(ngModel)]="vm.documentoForm.nomeArquivo" placeholder="Nome do arquivo" required />
-    <input name="docUrl" [(ngModel)]="vm.documentoForm.urlArquivo" placeholder="URL do arquivo" required />
-    <label class="check"><input name="docObrig" [(ngModel)]="vm.documentoForm.obrigatorio" type="checkbox" /> Obrigatório</label>
-    <label class="check"><input name="docVal" [(ngModel)]="vm.documentoForm.validado" type="checkbox" /> Validado</label>
-    <button type="submit">Salvar documento</button>
-  </form>
-  <div class="cards">
-    <article *ngFor="let item of vm.documentos()">
-      <div class="card-head"><strong>{{ item.tipoDocumento }}</strong><span class="status">{{ item.validado ? 'Validado' : 'Pendente' }}</span></div>
-      <span>{{ vm.nomeColaborador(item.colaboradorId) }}</span>
-      <small>{{ item.nomeArquivo }}</small>
-      <div class="row-actions"><button class="danger-soft" type="button" (click)="vm.pedirExclusao('documentosColaboradores', item.id, item.nomeArquivo)">Excluir</button></div>
-    </article>
+  <div class="panel-title">
+    <div><h2>Documentos</h2><p>Controle documentos obrigatórios e validações.</p></div>
+    <div class="panel-title-actions">
+      <span>{{ vm.filteredDocumentos().length }} documentos</span>
+      <button type="button" (click)="vm.abrirNovoDocumentoModal()">Novo documento</button>
+      <label class="search-box">
+        <span>Pesquisar documento</span>
+        <input name="documentoSearch" [ngModel]="vm.documentoSearch()" (ngModelChange)="vm.documentoSearch.set($event)" placeholder="Colaborador, tipo ou arquivo" />
+      </label>
+    </div>
   </div>
+
+  <div class="table-wrap excel-wrap">
+    <table class="excel-table">
+      <thead><tr><th>Tipo</th><th>Colaborador</th><th>Arquivo</th><th>Obrigatório</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr class="clickable-row" *ngFor="let item of vm.filteredDocumentos()" (click)="vm.editarDocumento(item)">
+          <td>{{ item.tipoDocumento }}</td>
+          <td>{{ vm.nomeColaborador(item.colaboradorId) }}</td>
+          <td>{{ item.nomeArquivo }}</td>
+          <td>{{ item.obrigatorio ? 'Sim' : 'Não' }}</td>
+          <td><span class="status" [class.off]="!item.validado">{{ item.validado ? 'Validado' : 'Pendente' }}</span></td>
+        </tr>
+        <tr *ngIf="!vm.filteredDocumentos().length"><td colspan="5" class="empty-cell">Nenhum documento encontrado.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="modal-backdrop" *ngIf="vm.documentoModalOpen()">
+  <form class="modal-card modal-card-wide pop" (ngSubmit)="vm.salvarDocumento()">
+    <div class="modal-head">
+      <div>
+        <h2>{{ vm.documentoForm.id ? 'Editar documento' : 'Novo documento' }}</h2>
+        <p>Atualize o vínculo, arquivo e validação do documento.</p>
+      </div>
+      <button type="button" (click)="vm.documentoModalOpen.set(false)">×</button>
+    </div>
+    <div class="form-grid cols-2 no-margin">
+      <label>Colaborador
+        <select name="docColab" [(ngModel)]="vm.documentoForm.colaboradorId" required>
+          <option [ngValue]="undefined">Colaborador</option>
+          <option *ngFor="let colab of vm.colaboradores()" [ngValue]="colab.id">{{ colab.nome }}</option>
+        </select>
+      </label>
+      <label>Tipo<input name="docTipo" [(ngModel)]="vm.documentoForm.tipoDocumento" required /></label>
+      <label>Nome do arquivo<input name="docNome" [(ngModel)]="vm.documentoForm.nomeArquivo" required /></label>
+      <label>URL do arquivo<input name="docUrl" [(ngModel)]="vm.documentoForm.urlArquivo" required /></label>
+      <label class="check"><input name="docObrig" [(ngModel)]="vm.documentoForm.obrigatorio" type="checkbox" /> Obrigatório</label>
+      <label class="check"><input name="docVal" [(ngModel)]="vm.documentoForm.validado" type="checkbox" /> Validado</label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="danger-soft" *ngIf="vm.documentoForm.id" (click)="vm.pedirExclusao('documentosColaboradores', vm.documentoForm.id, vm.documentoForm.nomeArquivo)">Excluir</button>
+      <button type="button" class="soft" (click)="vm.documentoModalOpen.set(false)">Cancelar</button>
+      <button type="submit">Salvar documento</button>
+    </div>
+  </form>
 </section>

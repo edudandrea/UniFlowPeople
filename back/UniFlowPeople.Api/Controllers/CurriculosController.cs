@@ -42,6 +42,7 @@ public class CurriculosController(
             Telefone = request.Telefone,
             Email = request.Email
         };
+        if (!string.IsNullOrWhiteSpace(request.Status)) curriculo.Status = request.Status;
 
         if (request.Arquivo is not null && request.Arquivo.Length > 0)
         {
@@ -62,6 +63,40 @@ public class CurriculosController(
         db.Curriculos.Add(curriculo);
         await db.SaveChangesAsync();
         return CreatedAtAction(nameof(GetAll), new { id = curriculo.Id }, curriculo);
+    }
+
+    [HttpPut("{id:int}")]
+    [Authorize(Roles = Roles.AdminOrRh)]
+    [RequestSizeLimit(20_000_000)]
+    public async Task<IActionResult> Update(int id, [FromForm] CurriculoUploadRequest request)
+    {
+        if (tenant.EmpresaId is null) return Forbid();
+        var curriculo = await db.Curriculos.FirstOrDefaultAsync(x => x.Id == id && x.EmpresaId == tenant.EmpresaId.Value);
+        if (curriculo is null) return NotFound();
+
+        curriculo.Nome = request.Nome;
+        curriculo.Telefone = request.Telefone;
+        curriculo.Email = request.Email;
+        if (!string.IsNullOrWhiteSpace(request.Status)) curriculo.Status = request.Status;
+
+        if (request.Arquivo is not null && request.Arquivo.Length > 0)
+        {
+            var uploadsDir = Path.Combine(environment.WebRootPath ?? Path.Combine(environment.ContentRootPath, "wwwroot"), "uploads", "curriculos");
+            Directory.CreateDirectory(uploadsDir);
+
+            var extension = Path.GetExtension(request.Arquivo.FileName);
+            var fileName = $"{Guid.NewGuid():N}{extension}";
+            var filePath = Path.Combine(uploadsDir, fileName);
+
+            await using var stream = System.IO.File.Create(filePath);
+            await request.Arquivo.CopyToAsync(stream);
+
+            curriculo.NomeArquivo = request.Arquivo.FileName;
+            curriculo.CurriculoUrl = $"{Request.Scheme}://{Request.Host}/uploads/curriculos/{fileName}";
+        }
+
+        await db.SaveChangesAsync();
+        return NoContent();
     }
 
     [HttpDelete("{id:int}")]

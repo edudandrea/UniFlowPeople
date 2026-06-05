@@ -5,30 +5,31 @@
       <p>Personalize as etapas usadas nos fluxos de admissão e demissão.</p>
     </div>
     <div class="panel-title-actions">
-      <span>{{ vm.etapasProcessosConfig().length }} etapas</span>
+      <span>{{ vm.filteredEtapasProcessos().length }} etapas</span>
       <button type="button" (click)="vm.abrirNovaEtapaProcessoModal()">Nova etapa</button>
+      <label class="search-box">
+        <span>Pesquisar etapa</span>
+        <input name="etapaProcessoSearch" [ngModel]="vm.etapaProcessoSearch()" (ngModelChange)="vm.etapaProcessoSearch.set($event)" placeholder="Processo, etapa ou descrição" />
+      </label>
     </div>
   </div>
 
   <div class="table-wrap excel-wrap">
     <table class="excel-table">
       <thead>
-        <tr><th>Processo</th><th>Ordem</th><th>Etapa</th><th>Descrição</th><th>Primeira concluída</th><th>Status</th><th></th></tr>
+        <tr><th>Processo</th><th>Ordem</th><th>Etapa</th><th>Descrição</th><th>Primeira concluída</th><th>Status</th></tr>
       </thead>
       <tbody>
-        <tr *ngFor="let item of vm.etapasProcessosOrdenadas()">
+        <tr class="clickable-row" *ngFor="let item of vm.filteredEtapasProcessos()" (click)="vm.editarEtapaProcesso(item)">
           <td>{{ item.tipoProcesso }}</td>
           <td>{{ item.ordem }}</td>
           <td>{{ item.nome }}</td>
           <td>{{ item.descricao || '-' }}</td>
           <td>{{ item.primeiraEtapaConcluida ? 'Sim' : 'Não' }}</td>
           <td><span class="status" [class.off]="!item.ativa">{{ item.ativa ? 'Ativa' : 'Inativa' }}</span></td>
-          <td class="actions">
-            <button type="button" class="soft" (click)="vm.editarEtapaProcesso(item)">Editar</button>
-          </td>
         </tr>
-        <tr *ngIf="!vm.etapasProcessosConfig().length">
-          <td colspan="7" class="empty-cell">Nenhuma etapa personalizada cadastrada.</td>
+        <tr *ngIf="!vm.filteredEtapasProcessos().length">
+          <td colspan="6" class="empty-cell">Nenhuma etapa personalizada cadastrada.</td>
         </tr>
       </tbody>
     </table>

@@ -86,6 +86,7 @@ public class DemissoesController(AppDbContext db, ITenantContext tenant) : BaseT
             .Include(x => x.DemissaoProcesso)
             .FirstOrDefaultAsync(x => x.Id == etapaId && x.DemissaoProcessoId == id && x.DemissaoProcesso.EmpresaId == tenant.EmpresaId.Value);
         if (etapa is null) return NotFound();
+        if (etapa.DemissaoProcesso.Status is "Concluido" or "Cancelado") return BadRequest("Nao e possivel alterar etapas de um processo finalizado.");
 
         etapa.Status = request.Status;
         etapa.Responsavel = request.Responsavel;
@@ -137,6 +138,28 @@ public class DemissoesController(AppDbContext db, ITenantContext tenant) : BaseT
         processo.Colaborador.Status = "Demitido";
         processo.Colaborador.Ativo = false;
         processo.Colaborador.DataDemissao = processo.DataDesligamento ?? DateTime.UtcNow;
+        await db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpPost("{id:int}/cancelar")]
+    [Authorize(Roles = Roles.AdminOrRh)]
+    public async Task<IActionResult> Cancelar(int id)
+    {
+        if (tenant.EmpresaId is null) return Forbid();
+        var processo = await db.Demissoes
+            .Include(x => x.Etapas)
+            .FirstOrDefaultAsync(x => x.Id == id && x.EmpresaId == tenant.EmpresaId.Value);
+        if (processo is null) return NotFound();
+        if (processo.Status is "Concluido" or "Cancelado") return BadRequest("Processo ja finalizado.");
+
+        processo.Status = "Cancelado";
+        foreach (var etapa in processo.Etapas.Where(x => x.Status != "Concluida"))
+        {
+            etapa.Status = "Cancelado";
+            etapa.DataConclusao = null;
+        }
+
         await db.SaveChangesAsync();
         return NoContent();
     }
