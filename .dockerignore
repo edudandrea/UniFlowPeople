@@ -1,0 +1,9 @@
+.git
+.vscode
+tmp
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/.angular
+back/UniFlowPeople.Api/wwwroot/uploads

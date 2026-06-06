@@ -150,7 +150,7 @@ export class App {
   vm = this;
   private readonly http = inject(HttpClient);
   private readonly spinner = inject(NgxSpinnerService);
-  private readonly api = 'http://localhost:5036/api';
+  private readonly api = this.resolveApiBase();
   private readonly sessionTimeoutMs = 30 * 60 * 1000;
   private inactivityTimeoutId?: ReturnType<typeof setTimeout>;
 
@@ -3061,5 +3061,11 @@ export class App {
       dataFim: '',
       ativo: true,
     };
+  }
+
+  private resolveApiBase() {
+    const origin = window.location.origin;
+    const isAngularDevServer = ['localhost:4200', '127.0.0.1:4200'].includes(window.location.host);
+    return isAngularDevServer ? 'http://localhost:5036/api' : `${origin}/api`;
   }
 }

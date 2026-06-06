@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Update="appsettings.Development.json" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.10" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.7" />
@@ -22,5 +26,24 @@
     </PackageReference>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
   </ItemGroup>
+
+  <Target Name="PublishAngularApp" AfterTargets="Publish" Condition="'$(BuildFrontend)' != 'false'">
+    <PropertyGroup>
+      <FrontendRoot>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\front\UniFlowPeople.App\'))</FrontendRoot>
+      <FrontendDist>$(FrontendRoot)dist\uniflowpeople-front\browser\</FrontendDist>
+    </PropertyGroup>
+
+    <Exec WorkingDirectory="$(FrontendRoot)" Command="npm ci" />
+    <Exec WorkingDirectory="$(FrontendRoot)" Command="npm run build" />
+
+    <ItemGroup>
+      <AngularDistFiles Include="$(FrontendDist)**\*" />
+    </ItemGroup>
+
+    <Copy
+      SourceFiles="@(AngularDistFiles)"
+      DestinationFiles="@(AngularDistFiles->'$(PublishDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>
