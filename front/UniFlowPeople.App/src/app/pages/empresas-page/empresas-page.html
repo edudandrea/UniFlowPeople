@@ -7,9 +7,12 @@
     <span>{{ vm.filteredEmpresas().length }} registros</span>
   </div>
 
-  <div class="tabs">
-    <button type="button" [class.active]="vm.empresasTab() === 'pesquisa'" (click)="vm.empresasTab.set('pesquisa')">Pesquisa</button>
-    <button type="button" [class.active]="vm.empresasTab() === 'dados'" (click)="vm.empresasTab.set('dados')">Dados da empresa</button>
+  <div class="tabs-row">
+    <div class="tabs">
+      <button type="button" [class.active]="vm.empresasTab() === 'pesquisa'" (click)="vm.empresasTab.set('pesquisa')">Pesquisa</button>
+      <button type="button" [class.active]="vm.empresasTab() === 'dados'" (click)="vm.empresasTab.set('dados')">Dados da empresa</button>
+    </div>
+    <button type="button" (click)="vm.abrirNovaEmpresaModal()">Nova empresa</button>
   </div>
 
   <div class="tab-panel" *ngIf="vm.empresasTab() === 'pesquisa'">
@@ -23,7 +26,7 @@
             <td>{{ empresa.cnpj }}</td>
             <td>{{ empresa.cidade || '-' }} {{ empresa.estado || '' }}</td>
             <td><span class="status" [class.off]="!empresa.ativo">{{ empresa.ativo ? 'Ativa' : 'Inativa' }}</span></td>
-            <td class="actions"><button type="button" class="soft" (click)="vm.editarEmpresa(empresa)">Editar</button></td>
+            <td class="actions"><button type="button" class="soft" (click)="vm.selecionarEmpresa(empresa)">Ver dados</button></td>
           </tr>
           <tr *ngIf="!vm.filteredEmpresas().length"><td colspan="6" class="empty-cell">Nenhuma empresa encontrada.</td></tr>
         </tbody>
@@ -32,32 +35,27 @@
   </div>
 
   <div class="tab-panel" *ngIf="vm.empresasTab() === 'dados'">
-    <form class="colaborador-form" (ngSubmit)="vm.salvarEmpresa()">
-      <section class="form-section">
-        <div class="section-title"><span>01</span><div><strong>Dados cadastrais</strong><small>Identificação e contato da empresa.</small></div></div>
-        <div class="form-grid cols-4 no-margin">
-          <label class="span-2">Razão social<input name="razaoSocial" [(ngModel)]="vm.empresaForm.razaoSocial" required /></label>
-          <label>Nome fantasia<input name="nomeFantasia" [(ngModel)]="vm.empresaForm.nomeFantasia" required /></label>
-          <label>CNPJ<input name="cnpj" [(ngModel)]="vm.empresaForm.cnpj" required /></label>
-          <label>Telefone<input name="telefone" [(ngModel)]="vm.empresaForm.telefone" /></label>
-          <label>E-mail<input name="email" [(ngModel)]="vm.empresaForm.email" type="email" /></label>
-          <label>Cidade<input name="cidade" [(ngModel)]="vm.empresaForm.cidade" /></label>
-          <label>UF<input name="estado" [(ngModel)]="vm.empresaForm.estado" maxlength="2" /></label>
-          <label class="span-2">Endereço<input name="endereco" [(ngModel)]="vm.empresaForm.endereco" /></label>
-          <label>CEP<input name="cep" [(ngModel)]="vm.empresaForm.cep" /></label>
-          <label>Status
-            <select name="empresaAtiva" [(ngModel)]="vm.empresaForm.ativo">
-              <option [ngValue]="true">Ativa</option>
-              <option [ngValue]="false">Inativa</option>
-            </select>
-          </label>
+    <ng-container *ngIf="vm.empresaForm.id; else semEmpresaSelecionada">
+      <div class="panel-title compact-title">
+        <div>
+          <h2>{{ vm.empresaForm.nomeFantasia }}</h2>
+          <p>{{ vm.empresaForm.razaoSocial }}</p>
         </div>
-      </section>
-      <div class="form-actions">
-        <button type="submit">{{ vm.empresaForm.id ? 'Atualizar empresa' : 'Cadastrar empresa' }}</button>
-        <button type="button" class="soft" (click)="vm.empresaForm = vm.novaEmpresa()">Limpar</button>
-        <button type="button" class="danger-soft" *ngIf="vm.empresaForm.id" (click)="vm.pedirExclusao('empresas', vm.empresaForm.id, vm.empresaForm.nomeFantasia)">Excluir</button>
+        <button type="button" (click)="vm.editarEmpresa(vm.empresaForm)">Editar empresa</button>
       </div>
-    </form>
+
+      <div class="detail-list elevated">
+        <article><span>CNPJ</span><strong>{{ vm.empresaForm.cnpj }}</strong></article>
+        <article><span>Contato</span><strong>{{ vm.empresaForm.telefone || '-' }} · {{ vm.empresaForm.email || '-' }}</strong></article>
+        <article><span>Endereço</span><strong>{{ vm.empresaForm.endereco || '-' }}</strong></article>
+        <article><span>Cidade/UF</span><strong>{{ vm.empresaForm.cidade || '-' }} {{ vm.empresaForm.estado || '' }}</strong></article>
+        <article><span>CEP</span><strong>{{ vm.empresaForm.cep || '-' }}</strong></article>
+        <article><span>Status</span><strong>{{ vm.empresaForm.ativo ? 'Ativa' : 'Inativa' }}</strong></article>
+      </div>
+    </ng-container>
+
+    <ng-template #semEmpresaSelecionada>
+      <div class="empty-state"><strong>Nenhuma empresa selecionada</strong><span>Selecione uma empresa na pesquisa para visualizar os dados.</span></div>
+    </ng-template>
   </div>
 </section>

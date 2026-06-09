@@ -610,6 +610,156 @@
   </form>
 </section>
 
+<section class="modal-backdrop" *ngIf="empresaModalOpen()">
+  <form class="modal-card modal-card-wide pop" (ngSubmit)="salvarEmpresa()">
+    <div class="modal-head">
+      <div>
+        <h2>{{ empresaForm.id ? 'Editar empresa' : 'Nova empresa' }}</h2>
+        <p>Atualize os dados cadastrais, contato e status da contratante.</p>
+      </div>
+      <button type="button" (click)="empresaModalOpen.set(false)">×</button>
+    </div>
+    <div class="form-grid cols-2 no-margin">
+      <label>Razão social<input name="modalEmpresaRazao" [(ngModel)]="empresaForm.razaoSocial" required /></label>
+      <label>Nome fantasia<input name="modalEmpresaFantasia" [(ngModel)]="empresaForm.nomeFantasia" required /></label>
+      <label>CNPJ<input name="modalEmpresaCnpj" [(ngModel)]="empresaForm.cnpj" required /></label>
+      <label>Telefone<input name="modalEmpresaTelefone" [(ngModel)]="empresaForm.telefone" /></label>
+      <label>E-mail<input name="modalEmpresaEmail" [(ngModel)]="empresaForm.email" type="email" /></label>
+      <label>Cidade<input name="modalEmpresaCidade" [(ngModel)]="empresaForm.cidade" /></label>
+      <label>UF<input name="modalEmpresaEstado" [(ngModel)]="empresaForm.estado" maxlength="2" /></label>
+      <label>CEP<input name="modalEmpresaCep" [(ngModel)]="empresaForm.cep" /></label>
+      <label class="span-2">Endereço<input name="modalEmpresaEndereco" [(ngModel)]="empresaForm.endereco" /></label>
+      <label>Status<select name="modalEmpresaAtiva" [(ngModel)]="empresaForm.ativo"><option [ngValue]="true">Ativa</option><option [ngValue]="false">Inativa</option></select></label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="danger-soft" *ngIf="empresaForm.id" (click)="pedirExclusao('empresas', empresaForm.id, empresaForm.nomeFantasia); empresaModalOpen.set(false)">Excluir</button>
+      <span></span>
+      <button type="button" class="soft" (click)="empresaModalOpen.set(false)">Cancelar</button>
+      <button type="submit">{{ empresaForm.id ? 'Salvar alterações' : 'Cadastrar empresa' }}</button>
+    </div>
+  </form>
+</section>
+
+<section class="modal-backdrop" *ngIf="planoModalOpen()">
+  <form class="modal-card modal-card-wide pop" (ngSubmit)="salvarPlano()">
+    <div class="modal-head">
+      <div>
+        <h2>{{ planoForm.id ? 'Editar plano' : 'Novo plano' }}</h2>
+        <p>Configure prazo, limite, valor e status comercial.</p>
+      </div>
+      <button type="button" (click)="planoModalOpen.set(false)">×</button>
+    </div>
+    <div class="form-grid cols-2 no-margin">
+      <label>Nome do plano<input name="modalPlanoNome" [(ngModel)]="planoForm.nome" required /></label>
+      <label>Status<select name="modalPlanoStatus" [(ngModel)]="planoForm.status"><option>Ativo</option><option>Inativo</option></select></label>
+      <label>Prazo em dias<input name="modalPlanoPrazo" [(ngModel)]="planoForm.prazoDias" type="number" required /></label>
+      <label>Limite de pessoas<input name="modalPlanoLimite" [(ngModel)]="planoForm.limiteColaboradores" type="number" /></label>
+      <label>Valor de cobrança<input name="modalPlanoValor" [(ngModel)]="planoForm.valorCobranca" type="number" min="0" step="0.01" /></label>
+      <label class="span-2">Observações<textarea name="modalPlanoObs" [(ngModel)]="planoForm.observacoes"></textarea></label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="danger-soft" *ngIf="planoForm.id" (click)="pedirExclusao('contratos/planos', planoForm.id, planoForm.nome); planoModalOpen.set(false)">Excluir</button>
+      <span></span>
+      <button type="button" class="soft" (click)="planoModalOpen.set(false)">Cancelar</button>
+      <button type="submit">{{ planoForm.id ? 'Salvar alterações' : 'Cadastrar plano' }}</button>
+    </div>
+  </form>
+</section>
+
+<section class="modal-backdrop" *ngIf="contratoModalOpen()">
+  <form class="modal-card modal-card-wide pop" (ngSubmit)="salvarContrato()">
+    <div class="modal-head">
+      <div>
+        <h2>{{ contratoForm.id ? 'Editar contrato' : 'Novo contrato' }}</h2>
+        <p>Defina empresa, plano, vigência, valor e condições comerciais.</p>
+      </div>
+      <button type="button" (click)="contratoModalOpen.set(false)">×</button>
+    </div>
+    <div class="form-grid cols-2 no-margin">
+      <label>Empresa<select name="modalContratoEmpresa" [(ngModel)]="contratoForm.empresaId" required><option [ngValue]="0">Selecione</option><option *ngFor="let empresa of empresas()" [ngValue]="empresa.id">{{ empresa.nomeFantasia }}</option></select></label>
+      <label>Plano<select name="modalContratoPlano" [(ngModel)]="contratoForm.planoId" (ngModelChange)="aplicarPlanoContrato($event)" required><option [ngValue]="null">Selecione</option><option *ngFor="let plano of planos()" [ngValue]="plano.id">{{ plano.nome }}</option></select></label>
+      <label>Status<select name="modalContratoStatus" [(ngModel)]="contratoForm.status"><option>Ativo</option><option>Pago</option><option>Pendente</option><option>Vencido</option><option>Cancelado</option></select></label>
+      <label>Data de início<input name="modalContratoInicio" [(ngModel)]="contratoForm.dataInicio" type="date" /></label>
+      <label>Data de vencimento<input name="modalContratoFim" [(ngModel)]="contratoForm.dataFim" type="date" /></label>
+      <label>Limite de pessoas<input name="modalContratoLimite" [(ngModel)]="contratoForm.limiteColaboradores" type="number" /></label>
+      <label>Valor mensal<input name="modalContratoValor" [(ngModel)]="contratoForm.valorMensal" type="number" min="0" step="0.01" /></label>
+      <label class="span-2">Observações<textarea name="modalContratoObs" [(ngModel)]="contratoForm.observacoes"></textarea></label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="danger-soft" *ngIf="contratoForm.id" (click)="pedirExclusao('contratos', contratoForm.id, contratoForm.plano); contratoModalOpen.set(false)">Excluir</button>
+      <span></span>
+      <button type="button" class="soft" (click)="contratoModalOpen.set(false)">Cancelar</button>
+      <button type="submit">{{ contratoForm.id ? 'Salvar alterações' : 'Cadastrar contrato' }}</button>
+    </div>
+  </form>
+</section>
+
+<section class="modal-backdrop" *ngIf="cobrancaModalOpen()">
+  <form class="modal-card modal-card-wide pop" (ngSubmit)="salvarCobranca()">
+    <div class="modal-head">
+      <div>
+        <h2>{{ cobrancaForm.id ? 'Editar cobrança' : 'Nova cobrança' }}</h2>
+        <p>Controle contrato, vencimento, valor e status financeiro.</p>
+      </div>
+      <button type="button" (click)="cobrancaModalOpen.set(false)">×</button>
+    </div>
+    <div class="form-grid cols-2 no-margin">
+      <label>Empresa<select name="modalCobrancaEmpresa" [(ngModel)]="cobrancaForm.empresaId" required><option [ngValue]="0">Selecione</option><option *ngFor="let empresa of empresas()" [ngValue]="empresa.id">{{ empresa.nomeFantasia }}</option></select></label>
+      <label>Contrato<select name="modalCobrancaContrato" [(ngModel)]="cobrancaForm.contratoId" required><option [ngValue]="0">Selecione</option><option *ngFor="let contrato of contratos()" [ngValue]="contrato.id">{{ nomeEmpresa(contrato.empresaId) }} - {{ contrato.plano }}</option></select></label>
+      <label>Status<select name="modalCobrancaStatus" [(ngModel)]="cobrancaForm.status"><option>Pendente</option><option>Pago</option><option>Vencido</option><option>Cancelado</option></select></label>
+      <label>Valor<input name="modalCobrancaValor" [(ngModel)]="cobrancaForm.valor" type="number" min="0" step="0.01" /></label>
+      <label>Data de geração<input name="modalCobrancaGeracao" [(ngModel)]="cobrancaForm.dataGeracao" type="date" /></label>
+      <label>Vencimento<input name="modalCobrancaVencimento" [(ngModel)]="cobrancaForm.dataVencimento" type="date" /></label>
+      <label class="span-2">Descrição<textarea name="modalCobrancaDescricao" [(ngModel)]="cobrancaForm.descricao" required></textarea></label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="danger-soft" *ngIf="cobrancaForm.id" (click)="pedirExclusao('contratos/cobrancas', cobrancaForm.id, cobrancaForm.descricao); cobrancaModalOpen.set(false)">Excluir</button>
+      <span></span>
+      <button type="button" class="soft" (click)="cobrancaModalOpen.set(false)">Cancelar</button>
+      <button type="submit">{{ cobrancaForm.id ? 'Salvar alterações' : 'Cadastrar cobrança' }}</button>
+    </div>
+  </form>
+</section>
+
+<section class="modal-backdrop" *ngIf="contratoPreviewModalOpen()">
+  <div class="modal-card modal-card-xxl pop" *ngIf="contratoGerado() as contrato">
+    <div class="modal-head">
+      <div>
+        <h2>Contrato profissional</h2>
+        <p>{{ nomeEmpresa(contrato.empresaId) }} · {{ contrato.plano }}</p>
+      </div>
+      <button type="button" (click)="contratoPreviewModalOpen.set(false)">×</button>
+    </div>
+    <div class="contract-options">
+      <label>Assinatura eletrônica
+        <select name="assinaturaContrato" [ngModel]="contratoAssinatura()" (ngModelChange)="definirAssinaturaContrato($event)">
+          <option>GOV.BR</option>
+          <option>Certificado digital</option>
+        </select>
+      </label>
+      <div class="row-actions">
+        <button type="button" class="soft" (click)="imprimirContratoGerado()">Imprimir</button>
+        <button type="button" class="soft" (click)="enviarContratoEmail()">Enviar por e-mail</button>
+        <button type="button" (click)="baixarContratoPdf()">Baixar PDF</button>
+      </div>
+    </div>
+    <article class="contract-preview">
+      <h1>Contrato de Prestação de Serviços SaaS - UniFlow People</h1>
+      <p><strong>Contratante:</strong> {{ nomeEmpresa(contrato.empresaId) }}</p>
+      <p><strong>Objeto:</strong> disponibilização da plataforma UniFlow People para gestão de rotinas de RH, documentos, processos, indicadores e módulos habilitados.</p>
+      <p><strong>Plano:</strong> {{ contrato.plano }} com limite de {{ contrato.limiteColaboradores }} pessoas cadastradas.</p>
+      <p><strong>Vigência:</strong> {{ contrato.dataInicio | date: 'dd/MM/yyyy' }} até {{ contrato.dataFim | date: 'dd/MM/yyyy' }}.</p>
+      <p><strong>Valor mensal:</strong> {{ contrato.valorMensal | currency: 'BRL' }}.</p>
+      <p><strong>Proteção de dados:</strong> as partes comprometem-se a cumprir a LGPD e aplicar medidas adequadas de segurança da informação.</p>
+      <p><strong>Assinatura:</strong> este instrumento poderá ser assinado eletronicamente por {{ contratoAssinatura() }}.</p>
+      <div class="signatures">
+        <span>CONTRATANTE<br />{{ nomeEmpresa(contrato.empresaId) }}</span>
+        <span>CONTRATADA<br />UniFlow People</span>
+      </div>
+    </article>
+  </div>
+</section>
+
 <section class="modal-backdrop" *ngIf="confirmDelete() as item">
   <div class="modal-card pop">
     <div class="modal-head">

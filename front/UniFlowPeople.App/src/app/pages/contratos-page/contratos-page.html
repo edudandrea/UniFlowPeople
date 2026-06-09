@@ -7,9 +7,12 @@
     <span>{{ vm.filteredPlanos().length }} planos</span>
   </div>
 
-  <div class="tabs">
-    <button type="button" [class.active]="vm.planosTab() === 'pesquisa'" (click)="vm.planosTab.set('pesquisa')">Pesquisa</button>
-    <button type="button" [class.active]="vm.planosTab() === 'dados'" (click)="vm.planosTab.set('dados')">Dados do plano</button>
+  <div class="tabs-row">
+    <div class="tabs">
+      <button type="button" [class.active]="vm.planosTab() === 'pesquisa'" (click)="vm.planosTab.set('pesquisa')">Pesquisa</button>
+      <button type="button" [class.active]="vm.planosTab() === 'dados'" (click)="vm.planosTab.set('dados')">Dados do plano</button>
+    </div>
+    <button type="button" (click)="vm.abrirNovoPlanoModal()">Novo plano</button>
   </div>
 
   <div class="tab-panel" *ngIf="vm.planosTab() === 'pesquisa'">
@@ -22,9 +25,7 @@
 
     <div class="table-wrap excel-wrap">
       <table class="excel-table">
-        <thead>
-          <tr><th>Plano</th><th>Prazo</th><th>Limite</th><th>Valor</th><th>Status</th><th></th></tr>
-        </thead>
+        <thead><tr><th>Plano</th><th>Prazo</th><th>Limite</th><th>Valor</th><th>Status</th><th></th></tr></thead>
         <tbody>
           <tr *ngFor="let plano of vm.filteredPlanos()">
             <td>{{ plano.nome }}</td>
@@ -32,70 +33,68 @@
             <td>{{ plano.limiteColaboradores }}</td>
             <td>{{ plano.valorCobranca | currency: 'BRL' }}</td>
             <td><span class="status">{{ plano.status }}</span></td>
-            <td class="actions"><button type="button" class="soft" (click)="vm.editarPlano(plano)">Editar</button></td>
+            <td class="actions"><button type="button" class="soft" (click)="vm.selecionarPlano(plano)">Ver dados</button></td>
           </tr>
-          <tr *ngIf="!vm.filteredPlanos().length">
-            <td colspan="6" class="empty-cell">Nenhum plano encontrado.</td>
-          </tr>
+          <tr *ngIf="!vm.filteredPlanos().length"><td colspan="6" class="empty-cell">Nenhum plano encontrado.</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
   <div class="tab-panel" *ngIf="vm.planosTab() === 'dados'">
-    <form class="colaborador-form" (ngSubmit)="vm.salvarPlano()">
-      <section class="form-section">
-        <div class="section-title"><span>01</span><div><strong>Dados comerciais</strong><small>Nome, prazo, limite e valor de cobrança.</small></div></div>
-        <div class="form-grid cols-4 no-margin">
-          <label class="span-2">Nome do plano<input name="planoNome" [(ngModel)]="vm.planoForm.nome" required /></label>
-          <label>Prazo em dias<input name="planoPrazo" [(ngModel)]="vm.planoForm.prazoDias" type="number" required /></label>
-          <label>Limite de pessoas<input name="planoLimite" [(ngModel)]="vm.planoForm.limiteColaboradores" type="number" /></label>
-          <label>Valor de cobrança<input name="planoValor" [(ngModel)]="vm.planoForm.valorCobranca" type="number" min="0" step="0.01" /></label>
-          <label>Status
-            <select name="planoStatus" [(ngModel)]="vm.planoForm.status">
-              <option>Ativo</option>
-              <option>Inativo</option>
-            </select>
-          </label>
-          <label class="span-2">Observações<textarea name="planoObs" [(ngModel)]="vm.planoForm.observacoes"></textarea></label>
+    <ng-container *ngIf="vm.planoForm.id; else semPlanoSelecionado">
+      <div class="panel-title compact-title">
+        <div>
+          <h2>{{ vm.planoForm.nome }}</h2>
+          <p>{{ vm.planoForm.status }} · {{ vm.planoForm.prazoDias }} dias</p>
         </div>
-      </section>
-      <div class="form-actions">
-        <button type="submit">{{ vm.planoForm.id ? 'Atualizar plano' : 'Cadastrar plano' }}</button>
-        <button type="button" class="soft" (click)="vm.planoForm = vm.novoPlano()">Limpar</button>
-        <button type="button" class="danger-soft" *ngIf="vm.planoForm.id" (click)="vm.pedirExclusao('contratos/planos', vm.planoForm.id, vm.planoForm.nome)">Excluir</button>
+        <button type="button" (click)="vm.editarPlano(vm.planoForm)">Editar plano</button>
       </div>
-    </form>
+      <div class="detail-list elevated">
+        <article><span>Prazo</span><strong>{{ vm.planoForm.prazoDias }} dias</strong></article>
+        <article><span>Limite de pessoas</span><strong>{{ vm.planoForm.limiteColaboradores }}</strong></article>
+        <article><span>Valor de cobrança</span><strong>{{ vm.planoForm.valorCobranca | currency: 'BRL' }}</strong></article>
+        <article><span>Status</span><strong>{{ vm.planoForm.status }}</strong></article>
+        <article><span>Observações</span><strong>{{ vm.planoForm.observacoes || 'Sem observações' }}</strong></article>
+      </div>
+    </ng-container>
+    <ng-template #semPlanoSelecionado>
+      <div class="empty-state"><strong>Nenhum plano selecionado</strong><span>Selecione um plano na pesquisa para visualizar os dados.</span></div>
+    </ng-template>
   </div>
 </section>
 
 <section class="panel fade-in" *ngIf="vm.activeModule() === 'contratacoes'">
   <div class="panel-title">
     <div>
-      <h2>Contratações</h2>
+      <h2>Contratos</h2>
       <p>Pesquisa, cadastro e manutenção dos contratos das empresas.</p>
     </div>
     <span>{{ vm.filteredContratos().length }} contratos</span>
   </div>
 
-  <div class="tabs">
-    <button type="button" [class.active]="vm.contratacoesTab() === 'pesquisa'" (click)="vm.contratacoesTab.set('pesquisa')">Pesquisa</button>
-    <button type="button" [class.active]="vm.contratacoesTab() === 'dados'" (click)="vm.contratacoesTab.set('dados')">Dados da contratação</button>
+  <div class="tabs-row">
+    <div class="tabs">
+      <button type="button" [class.active]="vm.contratacoesTab() === 'pesquisa'" (click)="vm.contratacoesTab.set('pesquisa')">Pesquisa</button>
+      <button type="button" [class.active]="vm.contratacoesTab() === 'dados'" (click)="vm.contratacoesTab.set('dados')">Dados do contrato</button>
+    </div>
+    <div class="row-actions">
+      <button type="button" class="soft" (click)="vm.gerarContrato()">Gerar contrato</button>
+      <button type="button" (click)="vm.abrirNovoContratoModal()">Novo contrato</button>
+    </div>
   </div>
 
   <div class="tab-panel" *ngIf="vm.contratacoesTab() === 'pesquisa'">
     <div class="curriculo-toolbar colaborador-search">
       <label>
-        <span>Pesquisar contratação</span>
+        <span>Pesquisar contrato</span>
         <input type="search" [ngModel]="vm.contratoSearch()" (ngModelChange)="vm.contratoSearch.set($event)" name="contratoSearch" placeholder="Empresa, plano ou status" />
       </label>
     </div>
 
     <div class="table-wrap excel-wrap">
       <table class="excel-table">
-        <thead>
-          <tr><th>Empresa</th><th>Plano</th><th>Status</th><th>Limite</th><th>Vencimento</th><th>Valor</th><th></th></tr>
-        </thead>
+        <thead><tr><th>Empresa</th><th>Plano</th><th>Status</th><th>Limite</th><th>Vencimento</th><th>Valor</th><th></th></tr></thead>
         <tbody>
           <tr *ngFor="let contrato of vm.filteredContratos()">
             <td>{{ contrato.empresa?.nomeFantasia || vm.nomeEmpresa(contrato.empresaId) }}</td>
@@ -104,55 +103,42 @@
             <td>{{ contrato.limiteColaboradores }}</td>
             <td>{{ contrato.dataFim | date: 'dd/MM/yyyy' }}</td>
             <td>{{ contrato.valorMensal | currency: 'BRL' }}</td>
-            <td class="actions"><button type="button" class="soft" (click)="vm.editarContrato(contrato)">Editar</button></td>
+            <td class="actions">
+              <button type="button" class="soft" (click)="vm.selecionarContrato(contrato)">Ver dados</button>
+              <button type="button" (click)="vm.gerarContrato(contrato)">Contrato</button>
+            </td>
           </tr>
-          <tr *ngIf="!vm.filteredContratos().length">
-            <td colspan="7" class="empty-cell">Nenhuma contratação encontrada.</td>
-          </tr>
+          <tr *ngIf="!vm.filteredContratos().length"><td colspan="7" class="empty-cell">Nenhum contrato encontrado.</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
   <div class="tab-panel" *ngIf="vm.contratacoesTab() === 'dados'">
-    <form class="colaborador-form" (ngSubmit)="vm.salvarContrato()">
-      <section class="form-section">
-        <div class="section-title"><span>01</span><div><strong>Dados da contratação</strong><small>Empresa, plano, vigência e valor.</small></div></div>
-        <div class="form-grid cols-4 no-margin">
-          <label>Empresa
-            <select name="empresaContrato" [(ngModel)]="vm.contratoForm.empresaId" required>
-              <option [ngValue]="0">Selecione</option>
-              <option *ngFor="let empresa of vm.empresas()" [ngValue]="empresa.id">{{ empresa.nomeFantasia }}</option>
-            </select>
-          </label>
-          <label>Plano
-            <select name="planoContrato" [(ngModel)]="vm.contratoForm.planoId" (ngModelChange)="vm.aplicarPlanoContrato($event)" required>
-              <option [ngValue]="null">Selecione</option>
-              <option *ngFor="let plano of vm.planos()" [ngValue]="plano.id">{{ plano.nome }}</option>
-            </select>
-          </label>
-          <label>Status
-            <select name="statusContrato" [(ngModel)]="vm.contratoForm.status">
-              <option>Ativo</option>
-              <option>Pago</option>
-              <option>Pendente</option>
-              <option>Vencido</option>
-              <option>Cancelado</option>
-            </select>
-          </label>
-          <label>Data de início<input name="inicioContrato" [(ngModel)]="vm.contratoForm.dataInicio" type="date" /></label>
-          <label>Data de vencimento<input name="fimContrato" [(ngModel)]="vm.contratoForm.dataFim" type="date" /></label>
-          <label>Limite de pessoas<input name="limiteContrato" [(ngModel)]="vm.contratoForm.limiteColaboradores" type="number" /></label>
-          <label>Valor mensal<input name="valorContrato" [(ngModel)]="vm.contratoForm.valorMensal" type="number" min="0" step="0.01" /></label>
-          <label class="span-2">Observações<textarea name="obsContrato" [(ngModel)]="vm.contratoForm.observacoes"></textarea></label>
+    <ng-container *ngIf="vm.contratoForm.id; else semContratoSelecionado">
+      <div class="panel-title compact-title">
+        <div>
+          <h2>{{ vm.contratoForm.plano }}</h2>
+          <p>{{ vm.nomeEmpresa(vm.contratoForm.empresaId) }} · {{ vm.contratoForm.status }}</p>
         </div>
-      </section>
-      <div class="form-actions">
-        <button type="submit">{{ vm.contratoForm.id ? 'Atualizar contratação' : 'Efetuar contratação' }}</button>
-        <button type="button" class="soft" (click)="vm.contratoForm = vm.novoContrato()">Limpar</button>
-        <button type="button" class="danger-soft" *ngIf="vm.contratoForm.id" (click)="vm.pedirExclusao('contratos', vm.contratoForm.id, vm.contratoForm.plano)">Excluir</button>
+        <div class="row-actions">
+          <button type="button" class="soft" (click)="vm.gerarContrato(vm.contratoForm)">Gerar contrato</button>
+          <button type="button" (click)="vm.editarContrato(vm.contratoForm)">Editar contrato</button>
+        </div>
       </div>
-    </form>
+      <div class="detail-list elevated">
+        <article><span>Empresa</span><strong>{{ vm.nomeEmpresa(vm.contratoForm.empresaId) }}</strong></article>
+        <article><span>Plano</span><strong>{{ vm.contratoForm.plano }}</strong></article>
+        <article><span>Status</span><strong>{{ vm.contratoForm.status }}</strong></article>
+        <article><span>Vigência</span><strong>{{ vm.contratoForm.dataInicio | date: 'dd/MM/yyyy' }} - {{ vm.contratoForm.dataFim | date: 'dd/MM/yyyy' }}</strong></article>
+        <article><span>Limite</span><strong>{{ vm.contratoForm.limiteColaboradores }}</strong></article>
+        <article><span>Valor mensal</span><strong>{{ vm.contratoForm.valorMensal | currency: 'BRL' }}</strong></article>
+        <article><span>Observações</span><strong>{{ vm.contratoForm.observacoes || 'Sem observações' }}</strong></article>
+      </div>
+    </ng-container>
+    <ng-template #semContratoSelecionado>
+      <div class="empty-state"><strong>Nenhum contrato selecionado</strong><span>Selecione um contrato na pesquisa para visualizar os dados.</span></div>
+    </ng-template>
   </div>
 </section>
 
@@ -165,9 +151,12 @@
     <span>{{ vm.filteredCobrancas().length }} cobranças</span>
   </div>
 
-  <div class="tabs">
-    <button type="button" [class.active]="vm.cobrancasTab() === 'pesquisa'" (click)="vm.cobrancasTab.set('pesquisa')">Pesquisa</button>
-    <button type="button" [class.active]="vm.cobrancasTab() === 'dados'" (click)="vm.cobrancasTab.set('dados')">Dados da cobrança</button>
+  <div class="tabs-row">
+    <div class="tabs">
+      <button type="button" [class.active]="vm.cobrancasTab() === 'pesquisa'" (click)="vm.cobrancasTab.set('pesquisa')">Pesquisa</button>
+      <button type="button" [class.active]="vm.cobrancasTab() === 'dados'" (click)="vm.cobrancasTab.set('dados')">Dados da cobrança</button>
+    </div>
+    <button type="button" (click)="vm.abrirNovaCobrancaModal()">Nova cobrança</button>
   </div>
 
   <div class="tab-panel" *ngIf="vm.cobrancasTab() === 'pesquisa'">
@@ -180,9 +169,7 @@
 
     <div class="table-wrap excel-wrap">
       <table class="excel-table">
-        <thead>
-          <tr><th>Empresa</th><th>Descrição</th><th>Valor</th><th>Geração</th><th>Vencimento</th><th>Status</th><th></th></tr>
-        </thead>
+        <thead><tr><th>Empresa</th><th>Descrição</th><th>Valor</th><th>Geração</th><th>Vencimento</th><th>Status</th><th></th></tr></thead>
         <tbody>
           <tr *ngFor="let cobranca of vm.filteredCobrancas()">
             <td>{{ cobranca.empresa?.nomeFantasia || vm.nomeEmpresa(cobranca.empresaId) }}</td>
@@ -191,52 +178,34 @@
             <td>{{ cobranca.dataGeracao | date: 'dd/MM/yyyy HH:mm' }}</td>
             <td>{{ cobranca.dataVencimento | date: 'dd/MM/yyyy' }}</td>
             <td><span class="status">{{ cobranca.status }}</span></td>
-            <td class="actions"><button type="button" class="soft" (click)="vm.editarCobranca(cobranca)">Editar</button></td>
+            <td class="actions"><button type="button" class="soft" (click)="vm.selecionarCobranca(cobranca)">Ver dados</button></td>
           </tr>
-          <tr *ngIf="!vm.filteredCobrancas().length">
-            <td colspan="7" class="empty-cell">Nenhuma cobrança encontrada.</td>
-          </tr>
+          <tr *ngIf="!vm.filteredCobrancas().length"><td colspan="7" class="empty-cell">Nenhuma cobrança encontrada.</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
   <div class="tab-panel" *ngIf="vm.cobrancasTab() === 'dados'">
-    <form class="colaborador-form" (ngSubmit)="vm.salvarCobranca()">
-      <section class="form-section">
-        <div class="section-title"><span>01</span><div><strong>Dados financeiros</strong><small>Empresa, contrato, vencimento, valor e status.</small></div></div>
-        <div class="form-grid cols-4 no-margin">
-          <label>Empresa
-            <select name="cobrancaEmpresa" [(ngModel)]="vm.cobrancaForm.empresaId" required>
-              <option [ngValue]="0">Selecione</option>
-              <option *ngFor="let empresa of vm.empresas()" [ngValue]="empresa.id">{{ empresa.nomeFantasia }}</option>
-            </select>
-          </label>
-          <label>Contrato
-            <select name="cobrancaContrato" [(ngModel)]="vm.cobrancaForm.contratoId" required>
-              <option [ngValue]="0">Selecione</option>
-              <option *ngFor="let contrato of vm.contratos()" [ngValue]="contrato.id">{{ vm.nomeEmpresa(contrato.empresaId) }} - {{ contrato.plano }}</option>
-            </select>
-          </label>
-          <label>Status
-            <select name="cobrancaStatus" [(ngModel)]="vm.cobrancaForm.status">
-              <option>Pendente</option>
-              <option>Pago</option>
-              <option>Vencido</option>
-              <option>Cancelado</option>
-            </select>
-          </label>
-          <label>Valor<input name="cobrancaValor" [(ngModel)]="vm.cobrancaForm.valor" type="number" min="0" step="0.01" /></label>
-          <label>Data de geração<input name="cobrancaGeracao" [(ngModel)]="vm.cobrancaForm.dataGeracao" type="date" /></label>
-          <label>Vencimento<input name="cobrancaVencimento" [(ngModel)]="vm.cobrancaForm.dataVencimento" type="date" /></label>
-          <label class="span-2">Descrição<textarea name="cobrancaDescricao" [(ngModel)]="vm.cobrancaForm.descricao" required></textarea></label>
+    <ng-container *ngIf="vm.cobrancaForm.id; else semCobrancaSelecionada">
+      <div class="panel-title compact-title">
+        <div>
+          <h2>{{ vm.cobrancaForm.descricao }}</h2>
+          <p>{{ vm.nomeEmpresa(vm.cobrancaForm.empresaId) }} · {{ vm.cobrancaForm.status }}</p>
         </div>
-      </section>
-      <div class="form-actions">
-        <button type="submit">{{ vm.cobrancaForm.id ? 'Atualizar cobrança' : 'Cadastrar cobrança' }}</button>
-        <button type="button" class="soft" (click)="vm.cobrancaForm = vm.novaCobranca()">Limpar</button>
-        <button type="button" class="danger-soft" *ngIf="vm.cobrancaForm.id" (click)="vm.pedirExclusao('contratos/cobrancas', vm.cobrancaForm.id, vm.cobrancaForm.descricao)">Excluir</button>
+        <button type="button" (click)="vm.editarCobranca(vm.cobrancaForm)">Editar cobrança</button>
       </div>
-    </form>
+      <div class="detail-list elevated">
+        <article><span>Empresa</span><strong>{{ vm.nomeEmpresa(vm.cobrancaForm.empresaId) }}</strong></article>
+        <article><span>Contrato</span><strong>{{ vm.cobrancaForm.contratoId }}</strong></article>
+        <article><span>Valor</span><strong>{{ vm.cobrancaForm.valor | currency: 'BRL' }}</strong></article>
+        <article><span>Geração</span><strong>{{ vm.cobrancaForm.dataGeracao | date: 'dd/MM/yyyy' }}</strong></article>
+        <article><span>Vencimento</span><strong>{{ vm.cobrancaForm.dataVencimento | date: 'dd/MM/yyyy' }}</strong></article>
+        <article><span>Status</span><strong>{{ vm.cobrancaForm.status }}</strong></article>
+      </div>
+    </ng-container>
+    <ng-template #semCobrancaSelecionada>
+      <div class="empty-state"><strong>Nenhuma cobrança selecionada</strong><span>Selecione uma cobrança na pesquisa para visualizar os dados.</span></div>
+    </ng-template>
   </div>
 </section>

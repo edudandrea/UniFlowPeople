@@ -816,8 +816,25 @@ button {
   }
 }
 
+.tabs-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+
+  .tabs {
+    margin-bottom: 0;
+  }
+}
+
 .tab-panel {
   animation: fadeIn 0.22s ease-out;
+}
+
+.compact-title {
+  align-items: center;
 }
 
 .colaborador-search {
@@ -2275,6 +2292,59 @@ tr {
 
 .modal-card-xxl {
   width: min(1080px, 100%);
+}
+
+.contract-options {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  background: #f8fbf6;
+
+  label {
+    min-width: min(100%, 260px);
+  }
+}
+
+.contract-preview {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #d9e5d5;
+  border-radius: 8px;
+  padding: clamp(18px, 3vw, 34px);
+  color: #17231b;
+  background: #fff;
+
+  h1 {
+    margin: 0 0 8px;
+    color: #0f2c1b;
+    font-size: 22px;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  p {
+    margin: 0;
+    line-height: 1.58;
+  }
+
+  .signatures {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 40px;
+    margin-top: 44px;
+
+    span {
+      border-top: 1px solid #1d2a22;
+      padding-top: 10px;
+      text-align: center;
+      font-weight: 800;
+    }
+  }
 }
 
 .modal-head,

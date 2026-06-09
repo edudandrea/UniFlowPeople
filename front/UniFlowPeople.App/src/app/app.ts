@@ -189,6 +189,13 @@ export class App {
   usuarioModalOpen = signal(false);
   documentoModalOpen = signal(false);
   solicitacaoModalOpen = signal(false);
+  empresaModalOpen = signal(false);
+  planoModalOpen = signal(false);
+  contratoModalOpen = signal(false);
+  cobrancaModalOpen = signal(false);
+  contratoPreviewModalOpen = signal(false);
+  contratoAssinatura = signal<'GOV.BR' | 'Certificado digital'>('GOV.BR');
+  contratoGerado = signal<Contrato | null>(null);
   genericEditModal = signal<{ form: string; title: string } | null>(null);
   confirmDelete = signal<{ endpoint: string; id: number; label: string } | null>(null);
   cpfColaboradorDuplicado = signal(false);
@@ -407,7 +414,7 @@ export class App {
     ...(this.isSistemaAdmin()
       ? [
           { id: 'planos', label: 'Planos', icon: '◧', description: 'Catálogo de planos, prazos e valores.' },
-          { id: 'contratacoes', label: 'Contratações', icon: '◷', description: 'Contratos firmados com empresas contratantes.' },
+          { id: 'contratacoes', label: 'Contratos', icon: '◷', description: 'Contratos firmados com empresas contratantes.' },
           { id: 'cobrancas', label: 'Cobranças', icon: '▤', description: 'Cobranças geradas e status financeiro.' },
         ]
       : [
@@ -794,23 +801,45 @@ export class App {
 
   salvarEmpresa() {
     this.salvarCrud<Empresa>('empresas', this.empresaForm, () => (this.empresaForm = this.novaEmpresa()));
+    this.empresaModalOpen.set(false);
   }
 
-  editarEmpresa(item: Empresa) {
+  abrirNovaEmpresaModal() {
+    this.empresaForm = this.novaEmpresa();
+    this.empresaModalOpen.set(true);
+  }
+
+  selecionarEmpresa(item: Empresa) {
     this.empresaForm = { ...item };
     this.empresasTab.set('dados');
     this.scrollTop();
   }
 
-  salvarPlano() {
-    this.salvarCrud<Plano>('contratos/planos', this.planoForm, () => (this.planoForm = this.novoPlano()));
+  editarEmpresa(item: Empresa) {
+    this.empresaForm = { ...item };
+    this.empresaModalOpen.set(true);
   }
 
-  editarPlano(item: Plano) {
+  salvarPlano() {
+    this.salvarCrud<Plano>('contratos/planos', this.planoForm, () => (this.planoForm = this.novoPlano()));
+    this.planoModalOpen.set(false);
+  }
+
+  abrirNovoPlanoModal() {
+    this.planoForm = this.novoPlano();
+    this.planoModalOpen.set(true);
+  }
+
+  selecionarPlano(item: Plano) {
     this.planoForm = { ...item };
     this.activeModule.set('planos');
     this.planosTab.set('dados');
     this.scrollTop();
+  }
+
+  editarPlano(item: Plano) {
+    this.planoForm = { ...item };
+    this.planoModalOpen.set(true);
   }
 
   aplicarPlanoContrato(planoId?: number | null) {
@@ -830,21 +859,38 @@ export class App {
 
   salvarContrato() {
     this.salvarCrud<Contrato>('contratos', this.contratoForm, () => (this.contratoForm = this.novoContrato()));
+    this.contratoModalOpen.set(false);
   }
 
-  editarContrato(item: Contrato) {
+  abrirNovoContratoModal() {
+    this.contratoForm = this.novoContrato();
+    this.contratoModalOpen.set(true);
+  }
+
+  selecionarContrato(item: Contrato) {
     this.contratoForm = { ...item, dataFim: this.toDateInput(item.dataFim), dataInicio: this.toDateInput(item.dataInicio) };
     this.activeModule.set('contratacoes');
     this.contratacoesTab.set('dados');
     this.scrollTop();
   }
 
+  editarContrato(item: Contrato) {
+    this.contratoForm = { ...item, dataFim: this.toDateInput(item.dataFim), dataInicio: this.toDateInput(item.dataInicio) };
+    this.contratoModalOpen.set(true);
+  }
+
   salvarCobranca() {
     this.normalizeDateTime(this.cobrancaForm, ['dataGeracao', 'dataVencimento']);
     this.salvarCrud<Cobranca>('contratos/cobrancas', this.cobrancaForm, () => (this.cobrancaForm = this.novaCobranca()));
+    this.cobrancaModalOpen.set(false);
   }
 
-  editarCobranca(item: Cobranca) {
+  abrirNovaCobrancaModal() {
+    this.cobrancaForm = this.novaCobranca();
+    this.cobrancaModalOpen.set(true);
+  }
+
+  selecionarCobranca(item: Cobranca) {
     this.cobrancaForm = {
       ...item,
       dataGeracao: this.toDateInput(item.dataGeracao),
@@ -853,6 +899,89 @@ export class App {
     this.activeModule.set('cobrancas');
     this.cobrancasTab.set('dados');
     this.scrollTop();
+  }
+
+  editarCobranca(item: Cobranca) {
+    this.cobrancaForm = {
+      ...item,
+      dataGeracao: this.toDateInput(item.dataGeracao),
+      dataVencimento: this.toDateInput(item.dataVencimento),
+    };
+    this.cobrancaModalOpen.set(true);
+  }
+
+  gerarContrato(contrato?: Contrato) {
+    const selecionado = contrato ?? (this.contratoForm.id ? this.contratoForm : this.filteredContratos()[0]);
+    if (!selecionado?.id) {
+      this.notificar('Selecione um contrato para gerar o documento.', 'error');
+      return;
+    }
+
+    this.contratoGerado.set(selecionado);
+    this.contratoPreviewModalOpen.set(true);
+  }
+
+  imprimirContratoGerado() {
+    const contrato = this.contratoGerado();
+    if (!contrato) return;
+    this.imprimirHtml(this.htmlContratoComercial(contrato));
+  }
+
+  baixarContratoPdf() {
+    const contrato = this.contratoGerado();
+    if (!contrato) return;
+    this.notificar('Use a opção "Salvar como PDF" na janela de impressão.', 'info');
+    this.imprimirContratoGerado();
+  }
+
+  enviarContratoEmail() {
+    const contrato = this.contratoGerado();
+    if (!contrato) return;
+    const empresa = contrato.empresa ?? this.empresas().find((x) => x.id === contrato.empresaId);
+    const assunto = encodeURIComponent(`Contrato UniFlow People - ${empresa?.nomeFantasia || contrato.plano}`);
+    const corpo = encodeURIComponent(
+      `Olá,\n\nSegue contrato comercial do plano ${contrato.plano} para assinatura via ${this.contratoAssinatura()}.\n\nValor mensal: ${this.formatCurrencyPrint(contrato.valorMensal)}\nVigência: ${this.formatDatePrint(contrato.dataInicio)} a ${this.formatDatePrint(contrato.dataFim)}\n\nAtenciosamente,\nUniFlow People`,
+    );
+    window.location.href = `mailto:${empresa?.email ?? ''}?subject=${assunto}&body=${corpo}`;
+  }
+
+  definirAssinaturaContrato(value: string) {
+    this.contratoAssinatura.set(value === 'Certificado digital' ? 'Certificado digital' : 'GOV.BR');
+  }
+
+  formatCurrencyPrint(value: any) {
+    return Number(value ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  private htmlContratoComercial(contrato: Contrato) {
+    const empresa = contrato.empresa ?? this.empresas().find((x) => x.id === contrato.empresaId);
+    const assinatura = this.contratoAssinatura();
+    const contratante = this.escapeHtml(empresa?.razaoSocial || empresa?.nomeFantasia || 'Empresa contratante');
+    const cnpj = this.escapeHtml(empresa?.cnpj || 'CNPJ não informado');
+    const endereco = this.escapeHtml([empresa?.endereco, empresa?.cidade, empresa?.estado, empresa?.cep].filter(Boolean).join(', ') || 'Endereço não informado');
+
+    return `
+      <main class="document-template-page">
+        <h1>Contrato de Prestação de Serviços SaaS - UniFlow People</h1>
+        <div class="document-template-body">
+          <p><strong>Contratada:</strong> UniFlow People, plataforma de gestão de pessoas, doravante denominada CONTRATADA.</p>
+          <p><strong>Contratante:</strong> ${contratante}, inscrita no CNPJ sob nº ${cnpj}, com endereço em ${endereco}, doravante denominada CONTRATANTE.</p>
+          <p><strong>Objeto:</strong> disponibilização de acesso à plataforma UniFlow People para gestão de rotinas de RH, cadastros, documentos, processos, indicadores e módulos habilitados no plano contratado.</p>
+          <p><strong>Plano contratado:</strong> ${this.escapeHtml(contrato.plano)}. Limite operacional de ${this.escapeHtml(contrato.limiteColaboradores)} pessoas cadastradas, observadas as regras de uso aceitável, segurança da informação e disponibilidade do serviço.</p>
+          <p><strong>Vigência:</strong> de ${this.formatDatePrint(contrato.dataInicio)} até ${this.formatDatePrint(contrato.dataFim)}, renovável mediante concordância entre as partes ou continuidade de uso e pagamento.</p>
+          <p><strong>Remuneração:</strong> valor mensal de ${this.formatCurrencyPrint(contrato.valorMensal)}, com cobranças emitidas conforme calendário financeiro aplicável e vencimentos informados à CONTRATANTE.</p>
+          <p><strong>Responsabilidades da CONTRATADA:</strong> manter a plataforma disponível, aplicar boas práticas de segurança, prover manutenção evolutiva e corretiva, e proteger os dados tratados conforme legislação aplicável.</p>
+          <p><strong>Responsabilidades da CONTRATANTE:</strong> manter dados cadastrais corretos, controlar acessos de seus usuários, utilizar a plataforma de forma lícita e quitar os valores contratados nos prazos acordados.</p>
+          <p><strong>Proteção de dados:</strong> as partes comprometem-se a cumprir a LGPD, tratando dados pessoais somente para finalidades legítimas relacionadas à execução deste contrato.</p>
+          <p><strong>Assinatura:</strong> este instrumento poderá ser assinado eletronicamente por ${this.escapeHtml(assinatura)}, com validade jurídica reconhecida pelas partes.</p>
+          <p><strong>Observações comerciais:</strong> ${this.escapeHtml(contrato.observacoes || 'Sem observações adicionais.')}</p>
+          <div class="signatures">
+            <span>CONTRATANTE<br />${contratante}</span>
+            <span>CONTRATADA<br />UniFlow People</span>
+          </div>
+        </div>
+      </main>
+    `;
   }
 
   salvarUsuario() {
@@ -2569,7 +2698,7 @@ export class App {
     return value ? new Date(value).toISOString().slice(0, 16) : '';
   }
 
-  private formatDatePrint(value: any) {
+  formatDatePrint(value: any) {
     if (!value) return '';
     return new Date(value).toLocaleDateString('pt-BR');
   }
