@@ -1044,27 +1044,41 @@ export class App {
 
   private htmlContratoComercial(contrato: Contrato) {
     const empresa = contrato.empresa ?? this.empresas().find((x) => x.id === contrato.empresaId);
-    const assinatura = this.contratoAssinatura();
     const contratante = this.escapeHtml(empresa?.razaoSocial || empresa?.nomeFantasia || 'Empresa contratante');
     const cnpj = this.escapeHtml(empresa?.cnpj || 'CNPJ não informado');
-    const endereco = this.escapeHtml([empresa?.endereco, empresa?.cidade, empresa?.estado, empresa?.cep].filter(Boolean).join(', ') || 'Endereço não informado');
+    const representante = '_______________________________';
+    const cidade = this.escapeHtml(empresa?.cidade || '_______________________________');
+    const data = this.formatDatePrint(new Date()) || '____/____/________';
+    const mensalidade = this.formatCurrencyPrint(contrato.valorMensal);
+    const implementacao = this.formatCurrencyPrint(contrato.valorImplementacao);
+    const multa = contrato.multaQuebraContrato > 0
+      ? `Multa fixa pactuada: ${this.formatCurrencyPrint(contrato.multaQuebraContrato)}.`
+      : 'Alternativamente, poderá ser adotada multa fixa equivalente a 3 (três) mensalidades vigentes na data da rescisão, conforme pactuado entre as partes.';
 
     return `
       <main class="document-template-page">
-        <h1>Contrato de Prestação de Serviços SaaS - UniFlow People</h1>
+        <h1>Contrato de Licenciamento de Uso de Software, Implantação e Suporte</h1>
         <div class="document-template-body">
-          <p><strong>Contratada:</strong> UniFlow People, plataforma de gestão de pessoas, doravante denominada CONTRATADA.</p>
-          <p><strong>Contratante:</strong> ${contratante}, inscrita no CNPJ sob nº ${cnpj}, com endereço em ${endereco}, doravante denominada CONTRATANTE.</p>
-          <p><strong>Objeto:</strong> disponibilização de acesso à plataforma UniFlow People para gestão de rotinas de RH, cadastros, documentos, processos, indicadores e módulos habilitados no plano contratado.</p>
-          <p><strong>Plano contratado:</strong> ${this.escapeHtml(contrato.plano)}. Limite operacional de ${this.escapeHtml(contrato.limiteColaboradores)} pessoas cadastradas, observadas as regras de uso aceitável, segurança da informação e disponibilidade do serviço.</p>
-          <p><strong>Vigência:</strong> de ${this.formatDatePrint(contrato.dataInicio)} até ${this.formatDatePrint(contrato.dataFim)}, renovável mediante concordância entre as partes ou continuidade de uso e pagamento.</p>
-          <p><strong>Remuneração:</strong> valor mensal de ${this.formatCurrencyPrint(contrato.valorMensal)}, valor de implementação de ${this.formatCurrencyPrint(contrato.valorImplementacao)}, com cobranças emitidas conforme calendário financeiro aplicável e vencimentos informados à CONTRATANTE.</p>
-          <p><strong>Multa por quebra de contrato:</strong> em caso de rescisão antecipada sem justa causa ou descumprimento das condições comerciais pactuadas, aplica-se multa de ${this.formatCurrencyPrint(contrato.multaQuebraContrato)}, sem prejuízo de valores vencidos e não pagos.</p>
-          <p><strong>Responsabilidades da CONTRATADA:</strong> manter a plataforma disponível, aplicar boas práticas de segurança, prover manutenção evolutiva e corretiva, e proteger os dados tratados conforme legislação aplicável.</p>
-          <p><strong>Responsabilidades da CONTRATANTE:</strong> manter dados cadastrais corretos, controlar acessos de seus usuários, utilizar a plataforma de forma lícita e quitar os valores contratados nos prazos acordados.</p>
-          <p><strong>Proteção de dados:</strong> as partes comprometem-se a cumprir a LGPD, tratando dados pessoais somente para finalidades legítimas relacionadas à execução deste contrato.</p>
-          <p><strong>Assinatura:</strong> este instrumento poderá ser assinado eletronicamente por ${this.escapeHtml(assinatura)}, com validade jurídica reconhecida pelas partes.</p>
-          <p><strong>Observações comerciais:</strong> ${this.escapeHtml(contrato.observacoes || 'Sem observações adicionais.')}</p>
+          <p><strong>CONTRATANTE:</strong><br />Razão Social: ${contratante}<br />CNPJ: ${cnpj}<br />Representante Legal: ${representante}</p>
+          <p><strong>CONTRATADA:</strong><br />Razão Social: UniFlow People<br />CNPJ: _______________________________<br />Representante Legal: _______________________________</p>
+          <p><strong>CLÁUSULA 1 - OBJETO</strong><br />Concessão de licença de uso não exclusiva do sistema, incluindo implantação, treinamento, hospedagem e suporte técnico.</p>
+          <p><strong>CLÁUSULA 2 - LICENÇA DE USO</strong><br />A licença é não exclusiva, intransferível e destinada exclusivamente ao uso interno do CONTRATANTE. É vedada a revenda, cópia, engenharia reversa ou disponibilização do sistema a terceiros sem autorização.</p>
+          <p><strong>CLÁUSULA 3 - IMPLANTAÇÃO</strong><br />Valor da implantação: ${implementacao}. Inclui configuração inicial, parametrização, importação de dados (quando aplicável) e treinamento inicial.</p>
+          <p><strong>CLÁUSULA 4 - MENSALIDADE</strong><br />Mensalidade: ${mensalidade}. Vencimento: conforme cobranças emitidas. Reajuste anual pelo IPCA ou índice substituto.</p>
+          <p><strong>CLÁUSULA 5 - HOSPEDAGEM</strong><br />A CONTRATADA disponibilizará o sistema em ambiente próprio ou contratado, não se responsabilizando por indisponibilidades decorrentes de força maior ou falhas de terceiros.</p>
+          <p><strong>CLÁUSULA 6 - SUPORTE TÉCNICO</strong><br />Suporte de segunda a sexta-feira, das 08h às 18h, exceto feriados, incluindo esclarecimento de dúvidas e correção de falhas.</p>
+          <p><strong>CLÁUSULA 7 - DESENVOLVIMENTOS ADICIONAIS</strong><br />Customizações e novas funcionalidades serão objeto de orçamento e contratação específica.</p>
+          <p><strong>CLÁUSULA 8 - OBRIGAÇÕES DA CONTRATADA</strong><br />Manter o sistema operacional, corrigir falhas, preservar a confidencialidade e cumprir a legislação aplicável.</p>
+          <p><strong>CLÁUSULA 9 - OBRIGAÇÕES DO CONTRATANTE</strong><br />Utilizar o sistema de forma lícita, preservar credenciais de acesso e manter os pagamentos em dia.</p>
+          <p><strong>CLÁUSULA 10 - PROTEÇÃO DE DADOS (LGPD)</strong><br />As partes comprometem-se a cumprir integralmente a legislação vigente de proteção de dados pessoais.</p>
+          <p><strong>CLÁUSULA 11 - ATRASO DE PAGAMENTO</strong><br />Multa de 2%, juros de 1% ao mês e correção monetária. Após 15 dias poderá ocorrer suspensão do acesso ao sistema.</p>
+          <p><strong>CLÁUSULA 12 - PRAZO E RESCISÃO</strong><br />Contrato por prazo indeterminado, podendo ser rescindido mediante aviso prévio de 30 dias.</p>
+          <p><strong>CLÁUSULA 13 - PROPRIEDADE INTELECTUAL</strong><br />Todo o código-fonte, documentação, marca e demais ativos permanecem de propriedade exclusiva da CONTRATADA.</p>
+          <p><strong>CLÁUSULA 14 - CONFIDENCIALIDADE</strong><br />As partes comprometem-se a manter sigilo sobre informações comerciais, financeiras e técnicas obtidas durante a vigência do contrato.</p>
+          <p><strong>CLÁUSULA 15 - MULTA POR RESCISÃO ANTECIPADA</strong><br />Caso o CONTRATANTE rescinda o presente contrato antes do prazo mínimo de vigência estabelecido entre as partes, sem justa causa atribuível à CONTRATADA, ficará obrigado ao pagamento de multa rescisória equivalente a 30% (trinta por cento) do valor das mensalidades vincendas até o término do período de fidelidade contratado.</p>
+          <p>${this.escapeHtml(multa)}</p>
+          <p><strong>CLÁUSULA 16 - FORO</strong><br />Fica eleito o foro da comarca da CONTRATADA para dirimir quaisquer controvérsias oriundas deste contrato.</p>
+          <p>Cidade: ${cidade}<br />Data: ${data}</p>
           <div class="signatures">
             <span>CONTRATANTE<br />${contratante}</span>
             <span>CONTRATADA<br />UniFlow People</span>
