@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 3,
   "targets": {
     "net10.0": {
       "Humanizer.Core/2.14.1": {
@@ -3419,11 +3419,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Eduardo\\Documents\\Dev\\UniFlowPeople\\back\\uniflowpeople.api\\UniFlowPeople.Api.csproj",
+      "projectUniqueName": "D:\\Dev\\UniflowPeople\\back\\UniFlowPeople.Api\\UniFlowPeople.Api.csproj",
       "projectName": "UniFlowPeople.Api",
-      "projectPath": "C:\\Users\\Eduardo\\Documents\\Dev\\UniFlowPeople\\back\\uniflowpeople.api\\UniFlowPeople.Api.csproj",
+      "projectPath": "D:\\Dev\\UniflowPeople\\back\\UniFlowPeople.Api\\UniFlowPeople.Api.csproj",
       "packagesPath": "C:\\Users\\Eduardo\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Eduardo\\Documents\\Dev\\UniFlowPeople\\back\\uniflowpeople.api\\obj\\",
+      "outputPath": "D:\\Dev\\UniflowPeople\\back\\UniFlowPeople.Api\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Eduardo\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -3436,7 +3436,6 @@
       },
       "frameworks": {
         "net10.0": {
-          "framework": "net10.0",
           "targetAlias": "net10.0",
           "projectReferences": {}
         }
@@ -3451,11 +3450,10 @@
         "auditLevel": "low",
         "auditMode": "all"
       },
-      "SdkAnalysisLevel": "10.0.300"
+      "SdkAnalysisLevel": "10.0.200"
     },
     "frameworks": {
       "net10.0": {
-        "framework": "net10.0",
         "targetAlias": "net10.0",
         "dependencies": {
           "Microsoft.AspNetCore.Authentication.JwtBearer": {
@@ -3514,7 +3512,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.300/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.203/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.AspNetCore": "(,10.0.32767]",
           "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
@@ -3937,7 +3935,7 @@
       "code": "NU1510",
       "level": "Warning",
       "warningLevel": 1,
-      "message": "PackageReference Microsoft.AspNetCore.Http não será podado. Considere remover este pacote das dependências, pois ele provavelmente é desnecessário.",
+      "message": "PackageReference Microsoft.AspNetCore.Http will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary.",
       "libraryId": "Microsoft.AspNetCore.Http",
       "targetGraphs": [
         "net10.0"
@@ -3947,7 +3945,7 @@
       "code": "NU1510",
       "level": "Warning",
       "warningLevel": 1,
-      "message": "PackageReference Microsoft.AspNetCore.SignalR.Core não será podado. Considere remover este pacote das dependências, pois ele provavelmente é desnecessário.",
+      "message": "PackageReference Microsoft.AspNetCore.SignalR.Core will not be pruned. Consider removing this package from your dependencies, as it is likely unnecessary.",
       "libraryId": "Microsoft.AspNetCore.SignalR.Core",
       "targetGraphs": [
         "net10.0"

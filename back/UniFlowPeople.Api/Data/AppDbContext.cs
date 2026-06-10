@@ -111,8 +111,24 @@ namespace UniFlowPeople.Api.Data
                 .Property(x => x.ValorMensal)
                 .HasPrecision(18, 2);
 
+            modelBuilder.Entity<Contrato>()
+                .Property(x => x.ValorImplementacao)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Contrato>()
+                .Property(x => x.MultaQuebraContrato)
+                .HasPrecision(18, 2);
+
             modelBuilder.Entity<Plano>()
                 .Property(x => x.ValorCobranca)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Plano>()
+                .Property(x => x.ValorImplementacao)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Plano>()
+                .Property(x => x.MultaQuebraContrato)
                 .HasPrecision(18, 2);
 
             modelBuilder.Entity<Cobranca>()

@@ -678,7 +678,6 @@ D:\Dev\UniflowPeople\back\UniFlowPeople.Api\obj\codex-verify\tr\Microsoft.CodeAn
 D:\Dev\UniflowPeople\back\UniFlowPeople.Api\obj\codex-verify\zh-Hans\Microsoft.CodeAnalysis.Workspaces.MSBuild.resources.dll
 D:\Dev\UniflowPeople\back\UniFlowPeople.Api\obj\codex-verify\zh-Hant\Microsoft.CodeAnalysis.Workspaces.MSBuild.resources.dll
 D:\Dev\UniflowPeople\back\UniFlowPeople.Api\obj\codex-verify\runtimes\win\lib\net9.0\System.Windows.Extensions.dll
-D:\Dev\UniflowPeople\back\UniFlowPeople.Api\bin\Debug\net10.0\UniFlowPeople.Api.exe
 D:\Dev\UniflowPeople\back\UniFlowPeople.Api\obj\Debug\net10.0\compressed\z1mgzplaqx-{0}-zrjwijoui3-zrjwijoui3.gz
 D:\Dev\UniflowPeople\back\UniFlowPeople.Api\obj\Debug\net10.0\compressed\wh63s979sq-{0}-hrq02937wd-hrq02937wd.gz
 D:\Dev\UniflowPeople\back\UniFlowPeople.Api\obj\Debug\net10.0\compressed\ikrhm5es06-{0}-jocehjqdrn-jocehjqdrn.gz
@@ -1129,3 +1128,4 @@ C:\Users\Eduardo\Documents\Dev\UniFlowPeople\back\uniflowpeople.api\obj\Debug\ne
 C:\Users\Eduardo\Documents\Dev\UniFlowPeople\back\uniflowpeople.api\obj\Debug\net10.0\UniFlowPeople.Api.pdb
 C:\Users\Eduardo\Documents\Dev\UniFlowPeople\back\uniflowpeople.api\obj\Debug\net10.0\UniFlowPeople.Api.genruntimeconfig.cache
 C:\Users\Eduardo\Documents\Dev\UniFlowPeople\back\uniflowpeople.api\obj\Debug\net10.0\ref\UniFlowPeople.Api.dll
+D:\Dev\UniflowPeople\back\UniFlowPeople.Api\bin\Debug\net10.0\UniFlowPeople.Api.exe

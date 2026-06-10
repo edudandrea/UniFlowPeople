@@ -54,6 +54,8 @@
         <article><span>Prazo</span><strong>{{ vm.planoForm.prazoDias }} dias</strong></article>
         <article><span>Limite de pessoas</span><strong>{{ vm.planoForm.limiteColaboradores }}</strong></article>
         <article><span>Valor de cobrança</span><strong>{{ vm.planoForm.valorCobranca | currency: 'BRL' }}</strong></article>
+        <article><span>Valor de implementação</span><strong>{{ vm.planoForm.valorImplementacao | currency: 'BRL' }}</strong></article>
+        <article><span>Multa por quebra</span><strong>{{ vm.planoForm.multaQuebraContrato | currency: 'BRL' }}</strong></article>
         <article><span>Status</span><strong>{{ vm.planoForm.status }}</strong></article>
         <article><span>Observações</span><strong>{{ vm.planoForm.observacoes || 'Sem observações' }}</strong></article>
       </div>
@@ -133,6 +135,8 @@
         <article><span>Vigência</span><strong>{{ vm.contratoForm.dataInicio | date: 'dd/MM/yyyy' }} - {{ vm.contratoForm.dataFim | date: 'dd/MM/yyyy' }}</strong></article>
         <article><span>Limite</span><strong>{{ vm.contratoForm.limiteColaboradores }}</strong></article>
         <article><span>Valor mensal</span><strong>{{ vm.contratoForm.valorMensal | currency: 'BRL' }}</strong></article>
+        <article><span>Implementação</span><strong>{{ vm.contratoForm.valorImplementacao | currency: 'BRL' }}</strong></article>
+        <article><span>Multa por quebra</span><strong>{{ vm.contratoForm.multaQuebraContrato | currency: 'BRL' }}</strong></article>
         <article><span>Observações</span><strong>{{ vm.contratoForm.observacoes || 'Sem observações' }}</strong></article>
       </div>
     </ng-container>
@@ -156,7 +160,10 @@
       <button type="button" [class.active]="vm.cobrancasTab() === 'pesquisa'" (click)="vm.cobrancasTab.set('pesquisa')">Pesquisa</button>
       <button type="button" [class.active]="vm.cobrancasTab() === 'dados'" (click)="vm.cobrancasTab.set('dados')">Dados da cobrança</button>
     </div>
-    <button type="button" (click)="vm.abrirNovaCobrancaModal()">Nova cobrança</button>
+    <div class="row-actions">
+      <button type="button" class="soft" (click)="vm.abrirCobrancaPeriodoModal()">Gerar por período</button>
+      <button type="button" (click)="vm.abrirNovaCobrancaModal()">Nova cobrança</button>
+    </div>
   </div>
 
   <div class="tab-panel" *ngIf="vm.cobrancasTab() === 'pesquisa'">

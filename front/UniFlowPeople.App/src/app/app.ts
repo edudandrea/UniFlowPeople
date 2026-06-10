@@ -20,6 +20,7 @@ import { EtapasProcessosPage } from './pages/etapas-processos-page/etapas-proces
 import { FeriasPage } from './pages/ferias-page/ferias-page';
 import { FinanceiroPage } from './pages/financeiro-page/financeiro-page';
 import { PontoPage } from './pages/ponto-page/ponto-page';
+import { RelatoriosPage } from './pages/relatorios-page/relatorios-page';
 import { RecrutamentoPage } from './pages/recrutamento-page/recrutamento-page';
 import { SolicitacoesPage } from './pages/solicitacoes-page/solicitacoes-page';
 import { TreinamentosPage } from './pages/treinamentos-page/treinamentos-page';
@@ -68,6 +69,8 @@ interface Contrato {
   dataFim?: string;
   limiteColaboradores: number;
   valorMensal: number;
+  valorImplementacao: number;
+  multaQuebraContrato: number;
   observacoes?: string;
   empresa?: Empresa;
   planoCadastro?: Plano;
@@ -80,6 +83,8 @@ interface Plano {
   prazoDias: number;
   limiteColaboradores: number;
   valorCobranca: number;
+  valorImplementacao: number;
+  multaQuebraContrato: number;
   status: string;
   observacoes?: string;
 }
@@ -95,6 +100,15 @@ interface Cobranca {
   status: string;
   empresa?: Empresa;
   contrato?: Contrato;
+}
+
+interface CobrancaPeriodoForm {
+  contratoId: number;
+  dataInicio: string;
+  dataFim: string;
+  intervaloMeses: number;
+  valor?: number;
+  descricao: string;
 }
 
 interface UsuarioCreate {
@@ -138,6 +152,7 @@ interface ModuleItem {
     FeriasPage,
     FinanceiroPage,
     PontoPage,
+    RelatoriosPage,
     RecrutamentoPage,
     SolicitacoesPage,
     TreinamentosPage,
@@ -193,6 +208,7 @@ export class App {
   planoModalOpen = signal(false);
   contratoModalOpen = signal(false);
   cobrancaModalOpen = signal(false);
+  cobrancaPeriodoModalOpen = signal(false);
   contratoPreviewModalOpen = signal(false);
   contratoAssinatura = signal<'GOV.BR' | 'Certificado digital'>('GOV.BR');
   contratoGerado = signal<Contrato | null>(null);
@@ -215,6 +231,7 @@ export class App {
   planoSearch = signal('');
   contratoSearch = signal('');
   cobrancaSearch = signal('');
+  relatorioMes = signal(new Date().toISOString().slice(0, 7));
   admissaoPage = signal(1);
   demissaoPage = signal(1);
   empresasTab = signal<'pesquisa' | 'dados'>('pesquisa');
@@ -248,6 +265,7 @@ export class App {
   planoForm: Plano = this.novoPlano();
   contratoForm: Contrato = this.novoContrato();
   cobrancaForm: Cobranca = this.novaCobranca();
+  cobrancaPeriodoForm: CobrancaPeriodoForm = this.novaCobrancaPeriodo();
   usuarioForm: UsuarioCreate = this.novoUsuario();
   filialForm: any = this.novaFilial();
   departamentoForm: any = this.novoDepartamento();
@@ -405,6 +423,7 @@ export class App {
           { id: 'dashboard', label: 'Visão geral', icon: '✦', description: 'Indicadores rápidos do RH.' },
           { id: 'documentos', label: 'Documentos', icon: '▧', description: 'Documentos e validações dos colaboradores.' },
           { id: 'solicitacoes', label: 'Solicitações', icon: '▢', description: 'Pedidos enviados ao setor de RH.' },
+          { id: 'relatorios', label: 'Relatórios', icon: '▤', description: 'Aniversários, tempo de empresa e contratos de experiência.' },
           { id: 'treinamentos', label: 'Treinamentos', icon: '◎', description: 'Portal de treinamentos, colaboradores e presença.' },
           { id: 'usuarios', label: 'Usuários', icon: '◎', description: 'Contas e perfis de acesso.' },
         ],
@@ -473,6 +492,40 @@ export class App {
         String(value ?? '').toLowerCase().includes(term),
       ),
     );
+  });
+  aniversariantesRelatorio = computed(() =>
+    this.colaboradoresAtivosNoMes('dataNascimento').map((colaborador) => ({
+      ...colaborador,
+      dataEvento: colaborador.dataNascimento,
+      idade: this.anosEntre(colaborador.dataNascimento, this.dataReferenciaRelatorio()),
+    })),
+  );
+  aniversariosEmpresaRelatorio = computed(() =>
+    this.colaboradoresAtivosNoMes('dataAdmissao').map((colaborador) => ({
+      ...colaborador,
+      dataEvento: colaborador.dataAdmissao,
+      tempoEmpresa: this.anosEntre(colaborador.dataAdmissao, this.dataReferenciaRelatorio()),
+    })),
+  );
+  vencimentosExperienciaRelatorio = computed(() => {
+    const referencia = this.mesAnoRelatorio();
+    return this.colaboradores()
+      .filter((colaborador) => colaborador.status !== 'Demitido' && !colaborador.dataDemissao)
+      .filter((colaborador) => String(colaborador.tipoContrato ?? '').toLowerCase().includes('exper'))
+      .flatMap((colaborador) =>
+        [
+          { etapa: '1ª etapa', dataEvento: this.adicionarDias(colaborador.dataAdmissao, 45) },
+          { etapa: '2ª etapa', dataEvento: this.adicionarDias(colaborador.dataAdmissao, 90) },
+        ]
+          .filter((item) => item.dataEvento && this.mesAno(item.dataEvento) === referencia)
+          .map((item) => ({
+            ...colaborador,
+            etapa: item.etapa,
+            dataEvento: item.dataEvento,
+            diasRestantes: this.diasAte(item.dataEvento),
+          })),
+      )
+      .sort((a, b) => new Date(a.dataEvento).getTime() - new Date(b.dataEvento).getTime());
   });
   filteredUsuarios = computed(() =>
     this.filterBySignal(this.usuarios(), this.usuarioSearch(), ['nome', 'login', 'email', 'role'], (item) =>
@@ -850,6 +903,8 @@ export class App {
     this.contratoForm.plano = plano.nome;
     this.contratoForm.limiteColaboradores = plano.limiteColaboradores;
     this.contratoForm.valorMensal = plano.valorCobranca;
+    this.contratoForm.valorImplementacao = plano.valorImplementacao;
+    this.contratoForm.multaQuebraContrato = plano.multaQuebraContrato;
     if (this.contratoForm.dataInicio) {
       const fim = new Date(this.contratoForm.dataInicio);
       fim.setDate(fim.getDate() + plano.prazoDias);
@@ -885,9 +940,43 @@ export class App {
     this.cobrancaModalOpen.set(false);
   }
 
+  gerarCobrancasPeriodo() {
+    if (!this.cobrancaPeriodoForm.contratoId || !this.cobrancaPeriodoForm.dataInicio || !this.cobrancaPeriodoForm.dataFim) {
+      this.notificar('Informe contrato, início e fim do período.', 'error');
+      return;
+    }
+
+    const payload = this.normalizePayload({
+      ...this.cobrancaPeriodoForm,
+      intervaloMeses: Number(this.cobrancaPeriodoForm.intervaloMeses || 1),
+      valor: Number(this.cobrancaPeriodoForm.valor || 0) || null,
+    });
+
+    this.http.post<Cobranca[]>(`${this.api}/contratos/cobrancas/periodo`, payload).subscribe({
+      next: (cobrancas) => {
+        this.cobrancaPeriodoForm = this.novaCobrancaPeriodo();
+        this.cobrancaPeriodoModalOpen.set(false);
+        this.carregarDados();
+        this.notificar(`${cobrancas?.length ?? 0} cobranças geradas para o período.`, 'success');
+      },
+      error: () => this.notificar('Não foi possível gerar as cobranças do período.', 'error'),
+    });
+  }
+
   abrirNovaCobrancaModal() {
     this.cobrancaForm = this.novaCobranca();
     this.cobrancaModalOpen.set(true);
+  }
+
+  abrirCobrancaPeriodoModal() {
+    this.cobrancaPeriodoForm = this.novaCobrancaPeriodo();
+    const contrato = this.contratoForm.id ? this.contratoForm : this.filteredContratos()[0];
+    if (contrato?.id) {
+      this.cobrancaPeriodoForm.contratoId = contrato.id;
+      this.cobrancaPeriodoForm.valor = contrato.valorMensal;
+      this.cobrancaPeriodoForm.descricao = `Mensalidade do plano ${contrato.plano}`;
+    }
+    this.cobrancaPeriodoModalOpen.set(true);
   }
 
   selecionarCobranca(item: Cobranca) {
@@ -969,7 +1058,8 @@ export class App {
           <p><strong>Objeto:</strong> disponibilização de acesso à plataforma UniFlow People para gestão de rotinas de RH, cadastros, documentos, processos, indicadores e módulos habilitados no plano contratado.</p>
           <p><strong>Plano contratado:</strong> ${this.escapeHtml(contrato.plano)}. Limite operacional de ${this.escapeHtml(contrato.limiteColaboradores)} pessoas cadastradas, observadas as regras de uso aceitável, segurança da informação e disponibilidade do serviço.</p>
           <p><strong>Vigência:</strong> de ${this.formatDatePrint(contrato.dataInicio)} até ${this.formatDatePrint(contrato.dataFim)}, renovável mediante concordância entre as partes ou continuidade de uso e pagamento.</p>
-          <p><strong>Remuneração:</strong> valor mensal de ${this.formatCurrencyPrint(contrato.valorMensal)}, com cobranças emitidas conforme calendário financeiro aplicável e vencimentos informados à CONTRATANTE.</p>
+          <p><strong>Remuneração:</strong> valor mensal de ${this.formatCurrencyPrint(contrato.valorMensal)}, valor de implementação de ${this.formatCurrencyPrint(contrato.valorImplementacao)}, com cobranças emitidas conforme calendário financeiro aplicável e vencimentos informados à CONTRATANTE.</p>
+          <p><strong>Multa por quebra de contrato:</strong> em caso de rescisão antecipada sem justa causa ou descumprimento das condições comerciais pactuadas, aplica-se multa de ${this.formatCurrencyPrint(contrato.multaQuebraContrato)}, sem prejuízo de valores vencidos e não pagos.</p>
           <p><strong>Responsabilidades da CONTRATADA:</strong> manter a plataforma disponível, aplicar boas práticas de segurança, prover manutenção evolutiva e corretiva, e proteger os dados tratados conforme legislação aplicável.</p>
           <p><strong>Responsabilidades da CONTRATANTE:</strong> manter dados cadastrais corretos, controlar acessos de seus usuários, utilizar a plataforma de forma lícita e quitar os valores contratados nos prazos acordados.</p>
           <p><strong>Proteção de dados:</strong> as partes comprometem-se a cumprir a LGPD, tratando dados pessoais somente para finalidades legítimas relacionadas à execução deste contrato.</p>
@@ -1778,6 +1868,63 @@ export class App {
 
   ultimaCobrancaEmpresa() {
     return this.cobrancasEmpresa()[0] ?? null;
+  }
+
+  periodoRelatorioLabel() {
+    return this.dataReferenciaRelatorio().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  }
+
+  private colaboradoresAtivosNoMes(campo: 'dataNascimento' | 'dataAdmissao') {
+    const referencia = this.mesAnoRelatorio();
+    return this.colaboradores()
+      .filter((colaborador) => colaborador.status !== 'Demitido' && !colaborador.dataDemissao)
+      .filter((colaborador) => this.mesAno(colaborador[campo]) === referencia)
+      .sort((a, b) => new Date(a[campo]).getDate() - new Date(b[campo]).getDate());
+  }
+
+  private mesAnoRelatorio() {
+    const [ano, mes] = this.relatorioMes().split('-').map(Number);
+    return `${ano}-${String(mes).padStart(2, '0')}`;
+  }
+
+  private dataReferenciaRelatorio() {
+    const [ano, mes] = this.relatorioMes().split('-').map(Number);
+    return new Date(ano, mes, 0);
+  }
+
+  private mesAno(value: any) {
+    if (!value) return '';
+    const data = new Date(value);
+    if (Number.isNaN(data.getTime())) return '';
+    return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  private adicionarDias(value: any, dias: number) {
+    if (!value) return '';
+    const data = new Date(value);
+    if (Number.isNaN(data.getTime())) return '';
+    data.setDate(data.getDate() + dias);
+    return data.toISOString();
+  }
+
+  private diasAte(value: any) {
+    if (!value) return 0;
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const data = new Date(value);
+    data.setHours(0, 0, 0, 0);
+    return Math.ceil((data.getTime() - hoje.getTime()) / 86400000);
+  }
+
+  private anosEntre(inicio: any, referencia: Date) {
+    if (!inicio) return 0;
+    const data = new Date(inicio);
+    if (Number.isNaN(data.getTime())) return 0;
+    let anos = referencia.getFullYear() - data.getFullYear();
+    const aniversarioAindaNaoChegou =
+      referencia.getMonth() < data.getMonth() || (referencia.getMonth() === data.getMonth() && referencia.getDate() < data.getDate());
+    if (aniversarioAindaNaoChegou) anos--;
+    return Math.max(0, anos);
   }
 
   clientesEmDia() {
@@ -2890,6 +3037,8 @@ export class App {
       dataFim: '',
       limiteColaboradores: 50,
       valorMensal: 0,
+      valorImplementacao: 0,
+      multaQuebraContrato: 0,
       observacoes: '',
     };
   }
@@ -2900,6 +3049,8 @@ export class App {
       prazoDias: 30,
       limiteColaboradores: 50,
       valorCobranca: 0,
+      valorImplementacao: 0,
+      multaQuebraContrato: 0,
       status: 'Ativo',
       observacoes: '',
     };
@@ -2917,6 +3068,21 @@ export class App {
       dataGeracao: hoje.toISOString().slice(0, 10),
       dataVencimento: vencimento.toISOString().slice(0, 10),
       status: 'Pendente',
+    };
+  }
+
+  novaCobrancaPeriodo(): CobrancaPeriodoForm {
+    const hoje = new Date();
+    const fim = new Date();
+    fim.setFullYear(fim.getFullYear() + 1);
+    fim.setMonth(fim.getMonth() - 1);
+    return {
+      contratoId: 0,
+      dataInicio: hoje.toISOString().slice(0, 10),
+      dataFim: fim.toISOString().slice(0, 10),
+      intervaloMeses: 1,
+      valor: 0,
+      descricao: '',
     };
   }
 

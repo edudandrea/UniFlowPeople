@@ -606,6 +606,14 @@ namespace UniFlowPeople.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<decimal>("MultaQuebraContrato")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("ValorImplementacao")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
                     b.Property<decimal>("ValorMensal")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
@@ -1118,7 +1126,15 @@ namespace UniFlowPeople.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<decimal>("MultaQuebraContrato")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
                     b.Property<decimal>("ValorCobranca")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("ValorImplementacao")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 

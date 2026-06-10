@@ -13,6 +13,14 @@ namespace UniFlowPeople.Api.Controllers;
 [Authorize]
 public class ContratosController(AppDbContext db, ITenantContext tenant) : ControllerBase
 {
+    public record GerarCobrancasPeriodoRequest(
+        int ContratoId,
+        DateTime DataInicio,
+        DateTime DataFim,
+        int IntervaloMeses,
+        decimal? Valor,
+        string? Descricao);
+
     [HttpGet]
     [Authorize(Roles = Roles.SistemaAdmin)]
     public async Task<ActionResult<IEnumerable<Contrato>>> GetAll(string? status = null)
@@ -130,6 +138,47 @@ public class ContratosController(AppDbContext db, ITenantContext tenant) : Contr
         db.Cobrancas.Add(cobranca);
         await db.SaveChangesAsync();
         return CreatedAtAction(nameof(GetCobrancaById), new { id = cobranca.Id }, cobranca);
+    }
+
+    [HttpPost("cobrancas/periodo")]
+    [Authorize(Roles = Roles.SistemaAdmin)]
+    public async Task<ActionResult<IEnumerable<Cobranca>>> CreateCobrancasPeriodo(GerarCobrancasPeriodoRequest request)
+    {
+        if (request.DataFim.Date < request.DataInicio.Date)
+            return BadRequest("A data final deve ser maior ou igual a data inicial.");
+
+        var contrato = await db.Contratos.AsNoTracking().FirstOrDefaultAsync(x => x.Id == request.ContratoId);
+        if (contrato is null) return NotFound("Contrato nao encontrado.");
+
+        var intervaloMeses = Math.Max(1, request.IntervaloMeses);
+        var valor = request.Valor.GetValueOrDefault(contrato.ValorMensal);
+        var descricaoBase = string.IsNullOrWhiteSpace(request.Descricao)
+            ? $"Mensalidade do plano {contrato.Plano}"
+            : request.Descricao.Trim();
+
+        var data = DateTime.SpecifyKind(request.DataInicio.Date, DateTimeKind.Utc);
+        var dataFim = DateTime.SpecifyKind(request.DataFim.Date, DateTimeKind.Utc);
+        var cobrancas = new List<Cobranca>();
+
+        while (data <= dataFim)
+        {
+            cobrancas.Add(new Cobranca
+            {
+                EmpresaId = contrato.EmpresaId,
+                ContratoId = contrato.Id,
+                Descricao = $"{descricaoBase} - {data:MM/yyyy}",
+                Valor = valor,
+                DataGeracao = DateTime.UtcNow,
+                DataVencimento = data,
+                Status = "Pendente"
+            });
+
+            data = data.AddMonths(intervaloMeses);
+        }
+
+        db.Cobrancas.AddRange(cobrancas);
+        await db.SaveChangesAsync();
+        return Ok(cobrancas);
     }
 
     [HttpPut("cobrancas/{id:int}")]
@@ -259,6 +308,8 @@ public class ContratosController(AppDbContext db, ITenantContext tenant) : Contr
         contrato.Plano = plano.Nome;
         contrato.LimiteColaboradores = plano.LimiteColaboradores;
         contrato.ValorMensal = plano.ValorCobranca;
+        contrato.ValorImplementacao = plano.ValorImplementacao;
+        contrato.MultaQuebraContrato = plano.MultaQuebraContrato;
         contrato.DataFim ??= contrato.DataInicio.AddDays(plano.PrazoDias);
     }
 

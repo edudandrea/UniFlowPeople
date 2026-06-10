@@ -1,0 +1,114 @@
+<section class="panel fade-in">
+  <div class="panel-title">
+    <div>
+      <h2>Relatórios</h2>
+      <p>Aniversários, tempo de empresa e vencimentos de contrato de experiência.</p>
+    </div>
+    <label class="search-box">
+      <span>Período</span>
+      <input type="month" [ngModel]="vm.relatorioMes()" (ngModelChange)="vm.relatorioMes.set($event)" name="relatorioMes" />
+    </label>
+  </div>
+</section>
+
+<section class="grid metrics fade-in">
+  <article>
+    <span>Aniversariantes</span>
+    <strong>{{ vm.aniversariantesRelatorio().length }}</strong>
+    <small>{{ vm.periodoRelatorioLabel() }}</small>
+  </article>
+  <article>
+    <span>Aniversário de empresa</span>
+    <strong>{{ vm.aniversariosEmpresaRelatorio().length }}</strong>
+    <small>Tempo de casa no período</small>
+  </article>
+  <article>
+    <span>Experiência</span>
+    <strong>{{ vm.vencimentosExperienciaRelatorio().length }}</strong>
+    <small>1ª e 2ª etapa</small>
+  </article>
+</section>
+
+<section class="grid two fade-in">
+  <article class="panel">
+    <div class="panel-title">
+      <div>
+        <h2>Aniversariantes</h2>
+        <p>Colaboradores com data de nascimento no período selecionado.</p>
+      </div>
+      <span>{{ vm.aniversariantesRelatorio().length }}</span>
+    </div>
+
+    <div class="table-wrap excel-wrap" *ngIf="vm.aniversariantesRelatorio().length; else semAniversariantes">
+      <table class="excel-table">
+        <thead><tr><th>Colaborador</th><th>Cargo</th><th>Data</th><th>Idade</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let item of vm.aniversariantesRelatorio()">
+            <td>{{ item.nome }}</td>
+            <td>{{ vm.nomeCargo(item.cargoId) }}</td>
+            <td>{{ item.dataEvento | date: 'dd/MM' }}</td>
+            <td>{{ item.idade }} anos</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <ng-template #semAniversariantes>
+      <div class="empty-state"><strong>Nenhum aniversariante</strong><span>Não há colaboradores com aniversário neste período.</span></div>
+    </ng-template>
+  </article>
+
+  <article class="panel">
+    <div class="panel-title">
+      <div>
+        <h2>Aniversário de empresa</h2>
+        <p>Colaboradores que completam tempo de empresa no período.</p>
+      </div>
+      <span>{{ vm.aniversariosEmpresaRelatorio().length }}</span>
+    </div>
+
+    <div class="table-wrap excel-wrap" *ngIf="vm.aniversariosEmpresaRelatorio().length; else semTempoEmpresa">
+      <table class="excel-table">
+        <thead><tr><th>Colaborador</th><th>Cargo</th><th>Admissão</th><th>Tempo</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let item of vm.aniversariosEmpresaRelatorio()">
+            <td>{{ item.nome }}</td>
+            <td>{{ vm.nomeCargo(item.cargoId) }}</td>
+            <td>{{ item.dataEvento | date: 'dd/MM/yyyy' }}</td>
+            <td>{{ item.tempoEmpresa }} anos</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <ng-template #semTempoEmpresa>
+      <div class="empty-state"><strong>Nenhum aniversário de empresa</strong><span>Não há marcos de admissão neste período.</span></div>
+    </ng-template>
+  </article>
+</section>
+
+<section class="panel fade-in">
+  <div class="panel-title">
+    <div>
+      <h2>Vencimento de contrato de experiência</h2>
+      <p>Controle da 1ª etapa aos 45 dias e 2ª etapa aos 90 dias da admissão.</p>
+    </div>
+    <span>{{ vm.vencimentosExperienciaRelatorio().length }} vencimentos</span>
+  </div>
+
+  <div class="table-wrap excel-wrap" *ngIf="vm.vencimentosExperienciaRelatorio().length; else semExperiencia">
+    <table class="excel-table">
+      <thead><tr><th>Colaborador</th><th>Cargo</th><th>Etapa</th><th>Vencimento</th><th>Dias</th></tr></thead>
+      <tbody>
+        <tr *ngFor="let item of vm.vencimentosExperienciaRelatorio()">
+          <td>{{ item.nome }}</td>
+          <td>{{ vm.nomeCargo(item.cargoId) }}</td>
+          <td>{{ item.etapa }}</td>
+          <td>{{ item.dataEvento | date: 'dd/MM/yyyy' }}</td>
+          <td>{{ item.diasRestantes >= 0 ? item.diasRestantes + ' dias' : 'Vencido' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <ng-template #semExperiencia>
+    <div class="empty-state"><strong>Nenhum vencimento</strong><span>Não há contratos de experiência vencendo neste período.</span></div>
+  </ng-template>
+</section>

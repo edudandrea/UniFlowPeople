@@ -272,6 +272,7 @@
     <app-empresas-page *ngIf="isSistemaAdmin() && activeModule() === 'empresas'" [vm]="vm"></app-empresas-page>
     <app-contratos-page *ngIf="isSistemaAdmin() && (activeModule() === 'planos' || activeModule() === 'contratacoes' || activeModule() === 'cobrancas')" [vm]="vm"></app-contratos-page>
     <app-financeiro-page *ngIf="!isSistemaAdmin() && activeModule() === 'financeiro'" [vm]="vm"></app-financeiro-page>
+    <app-relatorios-page *ngIf="!isSistemaAdmin() && activeModule() === 'relatorios'" [vm]="vm"></app-relatorios-page>
     <app-colaboradores-page *ngIf="!isSistemaAdmin() && activeModule() === 'colaboradores'" [vm]="vm"></app-colaboradores-page>
     <app-epis-acessos-page *ngIf="!isSistemaAdmin() && activeModule() === 'epis-acessos'" [vm]="vm"></app-epis-acessos-page>
     <app-etapas-processos-page *ngIf="!isSistemaAdmin() && activeModule() === 'etapas-processos'" [vm]="vm"></app-etapas-processos-page>
@@ -655,6 +656,8 @@
       <label>Prazo em dias<input name="modalPlanoPrazo" [(ngModel)]="planoForm.prazoDias" type="number" required /></label>
       <label>Limite de pessoas<input name="modalPlanoLimite" [(ngModel)]="planoForm.limiteColaboradores" type="number" /></label>
       <label>Valor de cobrança<input name="modalPlanoValor" [(ngModel)]="planoForm.valorCobranca" type="number" min="0" step="0.01" /></label>
+      <label>Valor da implementação<input name="modalPlanoImplementacao" [(ngModel)]="planoForm.valorImplementacao" type="number" min="0" step="0.01" /></label>
+      <label>Multa por quebra<input name="modalPlanoMulta" [(ngModel)]="planoForm.multaQuebraContrato" type="number" min="0" step="0.01" /></label>
       <label class="span-2">Observações<textarea name="modalPlanoObs" [(ngModel)]="planoForm.observacoes"></textarea></label>
     </div>
     <div class="modal-actions">
@@ -683,6 +686,8 @@
       <label>Data de vencimento<input name="modalContratoFim" [(ngModel)]="contratoForm.dataFim" type="date" /></label>
       <label>Limite de pessoas<input name="modalContratoLimite" [(ngModel)]="contratoForm.limiteColaboradores" type="number" /></label>
       <label>Valor mensal<input name="modalContratoValor" [(ngModel)]="contratoForm.valorMensal" type="number" min="0" step="0.01" /></label>
+      <label>Valor da implementação<input name="modalContratoImplementacao" [(ngModel)]="contratoForm.valorImplementacao" type="number" min="0" step="0.01" /></label>
+      <label>Multa por quebra<input name="modalContratoMulta" [(ngModel)]="contratoForm.multaQuebraContrato" type="number" min="0" step="0.01" /></label>
       <label class="span-2">Observações<textarea name="modalContratoObs" [(ngModel)]="contratoForm.observacoes"></textarea></label>
     </div>
     <div class="modal-actions">
@@ -721,6 +726,43 @@
   </form>
 </section>
 
+<section class="modal-backdrop" *ngIf="cobrancaPeriodoModalOpen()">
+  <form class="modal-card modal-card-wide pop" (ngSubmit)="gerarCobrancasPeriodo()">
+    <div class="modal-head">
+      <div>
+        <h2>Gerar cobranças por período</h2>
+        <p>Crie cobranças recorrentes para um contrato sem lançamento manual mês a mês.</p>
+      </div>
+      <button type="button" (click)="cobrancaPeriodoModalOpen.set(false)">×</button>
+    </div>
+    <div class="form-grid cols-2 no-margin">
+      <label>Contrato
+        <select name="modalPeriodoContrato" [(ngModel)]="cobrancaPeriodoForm.contratoId" required>
+          <option [ngValue]="0">Selecione</option>
+          <option *ngFor="let contrato of contratos()" [ngValue]="contrato.id">{{ nomeEmpresa(contrato.empresaId) }} - {{ contrato.plano }}</option>
+        </select>
+      </label>
+      <label>Intervalo
+        <select name="modalPeriodoIntervalo" [(ngModel)]="cobrancaPeriodoForm.intervaloMeses">
+          <option [ngValue]="1">Mensal</option>
+          <option [ngValue]="3">Trimestral</option>
+          <option [ngValue]="6">Semestral</option>
+          <option [ngValue]="12">Anual</option>
+        </select>
+      </label>
+      <label>Início<input name="modalPeriodoInicio" [(ngModel)]="cobrancaPeriodoForm.dataInicio" type="date" required /></label>
+      <label>Fim<input name="modalPeriodoFim" [(ngModel)]="cobrancaPeriodoForm.dataFim" type="date" required /></label>
+      <label>Valor por cobrança<input name="modalPeriodoValor" [(ngModel)]="cobrancaPeriodoForm.valor" type="number" min="0" step="0.01" /></label>
+      <label class="span-2">Descrição base<textarea name="modalPeriodoDescricao" [(ngModel)]="cobrancaPeriodoForm.descricao"></textarea></label>
+    </div>
+    <div class="modal-actions">
+      <span></span>
+      <button type="button" class="soft" (click)="cobrancaPeriodoModalOpen.set(false)">Cancelar</button>
+      <button type="submit">Gerar cobranças</button>
+    </div>
+  </form>
+</section>
+
 <section class="modal-backdrop" *ngIf="contratoPreviewModalOpen()">
   <div class="modal-card modal-card-xxl pop" *ngIf="contratoGerado() as contrato">
     <div class="modal-head">
@@ -750,6 +792,8 @@
       <p><strong>Plano:</strong> {{ contrato.plano }} com limite de {{ contrato.limiteColaboradores }} pessoas cadastradas.</p>
       <p><strong>Vigência:</strong> {{ contrato.dataInicio | date: 'dd/MM/yyyy' }} até {{ contrato.dataFim | date: 'dd/MM/yyyy' }}.</p>
       <p><strong>Valor mensal:</strong> {{ contrato.valorMensal | currency: 'BRL' }}.</p>
+      <p><strong>Valor de implementação:</strong> {{ contrato.valorImplementacao | currency: 'BRL' }}.</p>
+      <p><strong>Multa por quebra de contrato:</strong> {{ contrato.multaQuebraContrato | currency: 'BRL' }}.</p>
       <p><strong>Proteção de dados:</strong> as partes comprometem-se a cumprir a LGPD e aplicar medidas adequadas de segurança da informação.</p>
       <p><strong>Assinatura:</strong> este instrumento poderá ser assinado eletronicamente por {{ contratoAssinatura() }}.</p>
       <div class="signatures">
