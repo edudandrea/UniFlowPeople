@@ -1909,6 +1909,29 @@ export class App {
     });
   }
 
+  reextrairTextoModeloDocumentoInstitucional() {
+    const id = this.modeloDocumentoInstitucionalForm.id;
+    if (!id) return;
+
+    this.extraindoTextoModeloDocumento.set(true);
+    this.http
+      .post<{ conteudo: string }>(`${this.api}/documentosInstitucionais/modelos/${id}/reextrair-texto`, {})
+      .pipe(finalize(() => this.extraindoTextoModeloDocumento.set(false)))
+      .subscribe({
+        next: (response) => {
+          const conteudo = response?.conteudo ?? '';
+          if (conteudo.trim()) {
+            this.modeloDocumentoInstitucionalForm.conteudo = conteudo;
+            this.carregarDados();
+            this.notificar('Texto reextraido do arquivo salvo.', 'success');
+          } else {
+            this.notificar('Nao foi possivel extrair texto desse arquivo.', 'info');
+          }
+        },
+        error: () => this.notificar('Erro ao reextrair texto do modelo.', 'error'),
+      });
+  }
+
   salvarSolicitacao() {
     if (!this.podeGerenciarSolicitacoes()) {
       this.solicitacaoForm.status = 'Enviada';

@@ -118,6 +118,28 @@ public class DocumentosInstitucionaisController(
         }
     }
 
+    [HttpPost("modelos/{id:int}/reextrair-texto")]
+    [Authorize(Roles = Roles.AdminOrRh)]
+    public async Task<ActionResult<PreviewTextoModeloResponse>> ReextrairTextoModelo(int id)
+    {
+        if (tenant.EmpresaId is null) return Forbid();
+        var documento = await db.DocumentosInstitucionais
+            .FirstOrDefaultAsync(x => x.Id == id && x.EmpresaId == tenant.EmpresaId.Value && x.IsModelo);
+        if (documento is null) return NotFound();
+
+        var filePath = CaminhoFisicoSeguro(documento.UrlArquivoModelo);
+        if (filePath is null || !System.IO.File.Exists(filePath)) return BadRequest("Arquivo do modelo nao encontrado.");
+
+        var conteudo = await ExtrairTextoSeguro(filePath, Path.GetExtension(filePath));
+        if (!string.IsNullOrWhiteSpace(conteudo))
+        {
+            documento.Conteudo = conteudo;
+            await db.SaveChangesAsync();
+        }
+
+        return new PreviewTextoModeloResponse(conteudo);
+    }
+
     [HttpDelete("{id:int}")]
     [Authorize(Roles = Roles.AdminOrRh)]
     public async Task<IActionResult> Delete(int id)
@@ -200,9 +222,25 @@ public class DocumentosInstitucionaisController(
 
     private static string ExtrairTextoMelhorEsforco(byte[] bytes)
     {
-        var raw = Encoding.UTF8.GetString(bytes);
-        var latin = Encoding.Latin1.GetString(bytes);
-        var matches = Regex.Matches($"{raw} {latin}", @"\(([^\)]{3,})\)|<([0-9A-Fa-f\s]{8,})>|([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s.,;:!?ºª°()/+\-]{12,})");
+        var candidates = new[]
+            {
+                ExtrairTextoDecodificado(Encoding.UTF8.GetString(bytes)),
+                ExtrairTextoDecodificado(Encoding.Latin1.GetString(bytes)),
+                ExtrairTextoDecodificado(Encoding.Unicode.GetString(bytes)),
+                ExtrairTextoDecodificado(Encoding.BigEndianUnicode.GetString(bytes))
+            }
+            .Where(text => !string.IsNullOrWhiteSpace(text))
+            .Distinct()
+            .OrderByDescending(PontuarTextoExtraido)
+            .ToList();
+
+        return candidates.FirstOrDefault() ?? string.Empty;
+    }
+
+    private static string ExtrairTextoDecodificado(string text)
+    {
+        var normalized = Regex.Replace(text, @"[\u0000-\u0008\u000B\u000C\u000E-\u001F]", " ");
+        var matches = Regex.Matches(normalized, @"\(([^\)]{3,})\)|<([0-9A-Fa-f\s]{8,})>|([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s\.,;:!?ºª°%$()/+\-]{12,})");
         var parts = matches
             .Select(match =>
             {
@@ -211,10 +249,23 @@ public class DocumentosInstitucionaisController(
                 return match.Groups[3].Value;
             })
             .Select(text => Regex.Unescape(text).Trim())
-            .Where(text => Regex.IsMatch(text, @"[A-Za-zÀ-ÿ]"));
+            .Where(text => Regex.IsMatch(text, @"[A-Za-zÀ-ÿ]"))
+            .Where(text => !Regex.IsMatch(text, @"(.)\1{24,}"))
+            .Where(text => text.Count(char.IsLetterOrDigit) >= 8);
 
-        var extracted = string.Join(" ", parts);
-        return Regex.Replace(extracted, @"\s{2,}", " ").Trim();
+        var extracted = string.Join(Environment.NewLine, parts);
+        extracted = Regex.Replace(extracted, @"[ \t]{2,}", " ");
+        extracted = Regex.Replace(extracted, @"(\r?\n\s*){3,}", Environment.NewLine + Environment.NewLine);
+        return extracted.Trim();
+    }
+
+    private static int PontuarTextoExtraido(string text)
+    {
+        var letters = text.Count(char.IsLetter);
+        var accents = text.Count(c => c is >= 'À' and <= 'ÿ');
+        var invalid = text.Count(c => c is '�' or 'ÿ' or 'þ');
+        var usefulWords = Regex.Matches(text, @"\b[A-Za-zÀ-ÿ]{4,}\b").Count;
+        return letters + accents * 5 + usefulWords * 3 - invalid * 20;
     }
 
     private static string HexToText(string hex)
@@ -240,12 +291,18 @@ public class DocumentosInstitucionaisController(
 
     private void RemoverArquivoFisico(string? urlArquivo)
     {
-        if (string.IsNullOrWhiteSpace(urlArquivo) || !Uri.TryCreate(urlArquivo, UriKind.Absolute, out var uri)) return;
+        var filePath = CaminhoFisicoSeguro(urlArquivo);
+        if (filePath is not null && System.IO.File.Exists(filePath)) System.IO.File.Delete(filePath);
+    }
+
+    private string? CaminhoFisicoSeguro(string? urlArquivo)
+    {
+        if (string.IsNullOrWhiteSpace(urlArquivo) || !Uri.TryCreate(urlArquivo, UriKind.Absolute, out var uri)) return null;
         var relativePath = uri.AbsolutePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
         var webRoot = WebRoot();
         var filePath = Path.GetFullPath(Path.Combine(webRoot, relativePath));
-        if (!filePath.StartsWith(Path.GetFullPath(webRoot), StringComparison.OrdinalIgnoreCase)) return;
-        if (System.IO.File.Exists(filePath)) System.IO.File.Delete(filePath);
+        if (!filePath.StartsWith(Path.GetFullPath(webRoot), StringComparison.OrdinalIgnoreCase)) return null;
+        return filePath;
     }
 
     public sealed class ModeloDocumentoRequest

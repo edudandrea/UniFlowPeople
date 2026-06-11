@@ -1552,6 +1552,23 @@ textarea {
   }
 }
 
+.field-inline-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 4px 0 8px;
+
+  small {
+    color: var(--muted);
+  }
+
+  button {
+    min-height: 34px;
+    padding: 8px 12px;
+  }
+}
+
 .table-wrap {
   overflow: auto;
   border: 1px solid var(--line);

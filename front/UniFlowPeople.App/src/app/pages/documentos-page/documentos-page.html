@@ -99,7 +99,18 @@
         </label>
       </fieldset>
       <label class="span-2">Texto do modelo
-        <small *ngIf="vm.extraindoTextoModeloDocumento()">Extraindo texto do arquivo...</small>
+        <span class="field-inline-actions">
+          <small *ngIf="vm.extraindoTextoModeloDocumento()">Extraindo texto do arquivo...</small>
+          <button
+            type="button"
+            class="soft"
+            *ngIf="vm.modeloDocumentoInstitucionalForm.id && vm.modeloDocumentoInstitucionalForm.urlArquivoModelo"
+            [disabled]="vm.extraindoTextoModeloDocumento()"
+            (click)="vm.reextrairTextoModeloDocumentoInstitucional()"
+          >
+            Reextrair texto
+          </button>
+        </span>
         <textarea name="modeloDocConteudo" [(ngModel)]="vm.modeloDocumentoInstitucionalForm.conteudo" rows="12"></textarea>
       </label>
     </div>
