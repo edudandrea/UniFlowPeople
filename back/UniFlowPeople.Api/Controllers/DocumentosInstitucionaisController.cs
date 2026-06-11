@@ -127,10 +127,7 @@ public class DocumentosInstitucionaisController(
             .FirstOrDefaultAsync(x => x.Id == id && x.EmpresaId == tenant.EmpresaId.Value && x.IsModelo);
         if (documento is null) return NotFound();
 
-        var filePath = CaminhoFisicoSeguro(documento.UrlArquivoModelo);
-        if (filePath is null || !System.IO.File.Exists(filePath)) return BadRequest("Arquivo do modelo nao encontrado.");
-
-        var conteudo = await ExtrairTextoSeguro(filePath, Path.GetExtension(filePath));
+        var conteudo = await ExtrairTextoDoModeloSalvo(documento);
         if (!string.IsNullOrWhiteSpace(conteudo))
         {
             documento.Conteudo = conteudo;
@@ -188,6 +185,62 @@ public class DocumentosInstitucionaisController(
         try
         {
             return await ExtrairTexto(filePath, extension);
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    private async Task<string> ExtrairTextoDoModeloSalvo(DocumentoInstitucional documento)
+    {
+        var filePath = CaminhoFisicoSeguro(documento.UrlArquivoModelo);
+        if (filePath is not null && System.IO.File.Exists(filePath))
+        {
+            return await ExtrairTextoSeguro(filePath, Path.GetExtension(filePath));
+        }
+
+        if (!Uri.TryCreate(documento.UrlArquivoModelo, UriKind.Absolute, out var uri))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            using var http = new HttpClient();
+            var bytes = await http.GetByteArrayAsync(uri);
+            var extension = Path.GetExtension(uri.AbsolutePath);
+            if (string.IsNullOrWhiteSpace(extension)) extension = Path.GetExtension(documento.NomeArquivoModelo ?? string.Empty);
+            return await ExtrairTextoBytesSeguro(bytes, extension);
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    private static async Task<string> ExtrairTextoBytesSeguro(byte[] bytes, string extension)
+    {
+        try
+        {
+            extension = extension.ToLowerInvariant();
+            if (extension == ".txt") return Encoding.UTF8.GetString(bytes);
+            if (extension is ".pdf" or ".doc") return ExtrairTextoMelhorEsforco(bytes);
+            if (extension == ".docx")
+            {
+                var tempPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.docx");
+                try
+                {
+                    await System.IO.File.WriteAllBytesAsync(tempPath, bytes);
+                    return ExtrairDocx(tempPath);
+                }
+                finally
+                {
+                    if (System.IO.File.Exists(tempPath)) System.IO.File.Delete(tempPath);
+                }
+            }
+
+            return string.Empty;
         }
         catch
         {
@@ -297,8 +350,11 @@ public class DocumentosInstitucionaisController(
 
     private string? CaminhoFisicoSeguro(string? urlArquivo)
     {
-        if (string.IsNullOrWhiteSpace(urlArquivo) || !Uri.TryCreate(urlArquivo, UriKind.Absolute, out var uri)) return null;
-        var relativePath = uri.AbsolutePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+        if (string.IsNullOrWhiteSpace(urlArquivo)) return null;
+        var path = Uri.TryCreate(urlArquivo, UriKind.Absolute, out var uri)
+            ? uri.AbsolutePath
+            : urlArquivo;
+        var relativePath = path.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
         var webRoot = WebRoot();
         var filePath = Path.GetFullPath(Path.Combine(webRoot, relativePath));
         if (!filePath.StartsWith(Path.GetFullPath(webRoot), StringComparison.OrdinalIgnoreCase)) return null;
