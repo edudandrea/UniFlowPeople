@@ -81,9 +81,25 @@
       <label>Arquivo modelo
         <input name="modeloDocArquivo" type="file" accept=".pdf,.doc,.docx,.txt" (change)="vm.selecionarArquivoModeloDocumentoInstitucional($event)" />
       </label>
-      <label class="check"><input name="modeloDocAdm" [(ngModel)]="vm.modeloDocumentoInstitucionalForm.documentoAdmissao" type="checkbox" /> Documento de admissao</label>
-      <label class="check"><input name="modeloDocDem" [(ngModel)]="vm.modeloDocumentoInstitucionalForm.documentoDemissao" type="checkbox" /> Documento de demissao</label>
+      <fieldset class="institutional-usage-field">
+        <legend>Uso do documento</legend>
+        <label class="usage-check">
+          <input name="modeloDocAdm" [(ngModel)]="vm.modeloDocumentoInstitucionalForm.documentoAdmissao" type="checkbox" />
+          <span>
+            <strong>Admissao</strong>
+            <small>Gerar no fim do processo admissional</small>
+          </span>
+        </label>
+        <label class="usage-check">
+          <input name="modeloDocDem" [(ngModel)]="vm.modeloDocumentoInstitucionalForm.documentoDemissao" type="checkbox" />
+          <span>
+            <strong>Demissao</strong>
+            <small>Gerar no fim do processo demissional</small>
+          </span>
+        </label>
+      </fieldset>
       <label class="span-2">Texto do modelo
+        <small *ngIf="vm.extraindoTextoModeloDocumento()">Extraindo texto do arquivo...</small>
         <textarea name="modeloDocConteudo" [(ngModel)]="vm.modeloDocumentoInstitucionalForm.conteudo" rows="12"></textarea>
       </label>
     </div>

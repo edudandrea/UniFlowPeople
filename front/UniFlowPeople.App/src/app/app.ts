@@ -297,6 +297,7 @@ export class App {
   documentoForm: any = this.novoDocumento();
   modeloDocumentoInstitucionalForm: any = this.novoModeloDocumentoInstitucional();
   arquivoModeloDocumentoInstitucional: File | null = null;
+  extraindoTextoModeloDocumento = signal(false);
   beneficioColaboradorForm: any = this.novoBeneficioColaborador();
   solicitacaoForm: any = this.novaSolicitacao();
 
@@ -1800,18 +1801,41 @@ export class App {
   abrirNovoModeloDocumentoInstitucional() {
     this.modeloDocumentoInstitucionalForm = this.novoModeloDocumentoInstitucional();
     this.arquivoModeloDocumentoInstitucional = null;
+    this.extraindoTextoModeloDocumento.set(false);
     this.documentoInstitucionalModalOpen.set(true);
   }
 
   editarModeloDocumentoInstitucional(item: any) {
     this.modeloDocumentoInstitucionalForm = { ...item };
     this.arquivoModeloDocumentoInstitucional = null;
+    this.extraindoTextoModeloDocumento.set(false);
     this.documentoInstitucionalModalOpen.set(true);
   }
 
   selecionarArquivoModeloDocumentoInstitucional(event: Event) {
     const input = event.target as HTMLInputElement;
-    this.arquivoModeloDocumentoInstitucional = input.files?.[0] ?? null;
+    const arquivo = input.files?.[0] ?? null;
+    this.arquivoModeloDocumentoInstitucional = arquivo;
+    if (!arquivo) return;
+
+    const form = new FormData();
+    form.append('arquivo', arquivo);
+    this.extraindoTextoModeloDocumento.set(true);
+    this.http
+      .post<{ conteudo: string }>(`${this.api}/documentosInstitucionais/modelos/preview-texto`, form)
+      .pipe(finalize(() => this.extraindoTextoModeloDocumento.set(false)))
+      .subscribe({
+        next: (response) => {
+          const conteudo = response?.conteudo ?? '';
+          if (conteudo.trim()) {
+            this.modeloDocumentoInstitucionalForm.conteudo = conteudo;
+            this.notificar('Texto extraido do arquivo. Revise antes de salvar.', 'success');
+          } else {
+            this.notificar('Arquivo carregado, mas não foi possível extrair texto automaticamente.', 'info');
+          }
+        },
+        error: () => this.notificar('Não foi possível extrair o texto do arquivo.', 'error'),
+      });
   }
 
   salvarModeloDocumentoInstitucional() {

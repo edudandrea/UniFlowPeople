@@ -1496,6 +1496,62 @@ textarea {
   }
 }
 
+.institutional-usage-field {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  legend {
+    grid-column: 1 / -1;
+    margin-bottom: 2px;
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 800;
+  }
+}
+
+.usage-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  min-height: 72px;
+  padding: 12px;
+  border: 1px solid rgba(120, 170, 126, 0.28);
+  border-radius: 12px;
+  background: rgba(242, 250, 239, 0.72);
+  color: var(--text);
+
+  input {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: var(--green);
+  }
+
+  span {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  strong,
+  small {
+    overflow-wrap: anywhere;
+  }
+
+  small {
+    color: var(--muted);
+    font-weight: 700;
+    line-height: 1.35;
+  }
+}
+
 .table-wrap {
   overflow: auto;
   border: 1px solid var(--line);

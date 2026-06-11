@@ -90,6 +90,34 @@ public class DocumentosInstitucionaisController(
         return NoContent();
     }
 
+    [HttpPost("modelos/preview-texto")]
+    [Authorize(Roles = Roles.AdminOrRh)]
+    public async Task<ActionResult<PreviewTextoModeloResponse>> PreviewTextoModelo([FromForm] IFormFile arquivo)
+    {
+        if (tenant.EmpresaId is null) return Forbid();
+        if (arquivo is null || arquivo.Length == 0) return BadRequest("Selecione um arquivo para extrair o texto.");
+
+        var extension = Path.GetExtension(arquivo.FileName);
+        var tempDir = Path.Combine(Path.GetTempPath(), "uniflowpeople-modelos");
+        Directory.CreateDirectory(tempDir);
+        var tempPath = Path.Combine(tempDir, $"{Guid.NewGuid():N}{extension}");
+
+        try
+        {
+            await using (var stream = System.IO.File.Create(tempPath))
+            {
+                await arquivo.CopyToAsync(stream);
+            }
+
+            var conteudo = await ExtrairTexto(tempPath, extension);
+            return new PreviewTextoModeloResponse(conteudo);
+        }
+        finally
+        {
+            if (System.IO.File.Exists(tempPath)) System.IO.File.Delete(tempPath);
+        }
+    }
+
     [HttpDelete("{id:int}")]
     [Authorize(Roles = Roles.AdminOrRh)]
     public async Task<IActionResult> Delete(int id)
@@ -204,4 +232,6 @@ public class DocumentosInstitucionaisController(
         public bool DocumentoDemissao { get; set; }
         public IFormFile? Arquivo { get; set; }
     }
+
+    public sealed record PreviewTextoModeloResponse(string Conteudo);
 }
