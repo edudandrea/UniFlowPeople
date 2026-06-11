@@ -1,14 +1,21 @@
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace UniFlowPeople.Api.Migrations
 {
-    [Migration("20260611120000_DocumentosInstitucionaisModelos")]
+    /// <inheritdoc />
     public partial class DocumentosInstitucionaisModelos : Migration
     {
+        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AddColumn<int>(
+                name: "DemissaoProcessoId",
+                table: "DocumentosInstitucionais",
+                type: "integer",
+                nullable: true);
+
             migrationBuilder.AddColumn<bool>(
                 name: "DocumentoAdmissao",
                 table: "DocumentosInstitucionais",
@@ -22,12 +29,6 @@ namespace UniFlowPeople.Api.Migrations
                 type: "boolean",
                 nullable: false,
                 defaultValue: false);
-
-            migrationBuilder.AddColumn<int>(
-                name: "DemissaoProcessoId",
-                table: "DocumentosInstitucionais",
-                type: "integer",
-                nullable: true);
 
             migrationBuilder.AddColumn<bool>(
                 name: "IsModelo",
@@ -79,7 +80,7 @@ namespace UniFlowPeople.Api.Migrations
                 onDelete: ReferentialAction.SetNull);
 
             migrationBuilder.AddForeignKey(
-                name: "FK_DocumentosInstitucionais_DocumentosInstitucionais_ModeloDocumentoId",
+                name: "FK_DocumentosInstitucionais_DocumentosInstitucionais_ModeloDoc~",
                 table: "DocumentosInstitucionais",
                 column: "ModeloDocumentoId",
                 principalTable: "DocumentosInstitucionais",
@@ -87,6 +88,7 @@ namespace UniFlowPeople.Api.Migrations
                 onDelete: ReferentialAction.SetNull);
         }
 
+        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropForeignKey(
@@ -94,7 +96,7 @@ namespace UniFlowPeople.Api.Migrations
                 table: "DocumentosInstitucionais");
 
             migrationBuilder.DropForeignKey(
-                name: "FK_DocumentosInstitucionais_DocumentosInstitucionais_ModeloDocumentoId",
+                name: "FK_DocumentosInstitucionais_DocumentosInstitucionais_ModeloDoc~",
                 table: "DocumentosInstitucionais");
 
             migrationBuilder.DropIndex(
@@ -106,15 +108,15 @@ namespace UniFlowPeople.Api.Migrations
                 table: "DocumentosInstitucionais");
 
             migrationBuilder.DropColumn(
+                name: "DemissaoProcessoId",
+                table: "DocumentosInstitucionais");
+
+            migrationBuilder.DropColumn(
                 name: "DocumentoAdmissao",
                 table: "DocumentosInstitucionais");
 
             migrationBuilder.DropColumn(
                 name: "DocumentoDemissao",
-                table: "DocumentosInstitucionais");
-
-            migrationBuilder.DropColumn(
-                name: "DemissaoProcessoId",
                 table: "DocumentosInstitucionais");
 
             migrationBuilder.DropColumn(
