@@ -184,6 +184,7 @@ export class App {
   peopleMenuOpen = signal(false);
   financeiroMenuOpen = signal(false);
   recrutamentoMenuOpen = signal(false);
+  documentosMenuOpen = signal(false);
   profileModalOpen = signal(false);
   passwordModalOpen = signal(false);
   admissaoProcessoModalOpen = signal(false);
@@ -399,6 +400,7 @@ export class App {
   pageTitle = computed(
     () =>
       this.modules().find((x) => x.id === this.activeModule())?.label ??
+      this.documentosModules().find((x) => x.id === this.activeModule())?.label ??
       this.cadastroModules().find((x) => x.id === this.activeModule())?.label ??
       this.financeiroModules().find((x) => x.id === this.activeModule())?.label ??
       this.peopleModules().find((x) => x.id === this.activeModule())?.label ??
@@ -408,6 +410,7 @@ export class App {
   pageDescription = computed(
     () =>
       this.modules().find((x) => x.id === this.activeModule())?.description ??
+      this.documentosModules().find((x) => x.id === this.activeModule())?.description ??
       this.cadastroModules().find((x) => x.id === this.activeModule())?.description ??
       this.financeiroModules().find((x) => x.id === this.activeModule())?.description ??
       this.peopleModules().find((x) => x.id === this.activeModule())?.description ??
@@ -424,13 +427,27 @@ export class App {
         ]
       : [
           { id: 'dashboard', label: 'Visão geral', icon: '✦', description: 'Indicadores rápidos do RH.' },
-          { id: 'documentos', label: 'Documentos', icon: '▧', description: 'Documentos e validações dos colaboradores.' },
           { id: 'solicitacoes', label: 'Solicitações', icon: '▢', description: 'Pedidos enviados ao setor de RH.' },
           { id: 'relatorios', label: 'Relatórios', icon: '▤', description: 'Aniversários, tempo de empresa e contratos de experiência.' },
           { id: 'treinamentos', label: 'Treinamentos', icon: '◎', description: 'Portal de treinamentos, colaboradores e presença.' },
           { id: 'usuarios', label: 'Usuários', icon: '◎', description: 'Contas e perfis de acesso.' },
         ],
   );
+
+  documentosModules = computed<ModuleItem[]>(() => [
+    {
+      id: 'documentos-colaborador',
+      label: 'Documentos do colaborador',
+      icon: '▧',
+      description: 'Documentos vinculados aos colaboradores, obrigatoriedade e validação.',
+    },
+    {
+      id: 'documentos-institucionais',
+      label: 'Documentos institucionais',
+      icon: '▨',
+      description: 'Modelos institucionais para admissão, demissão e assinatura.',
+    },
+  ]);
 
   cadastroModules = computed<ModuleItem[]>(() => [
     ...(this.isSistemaAdmin()
@@ -696,6 +713,7 @@ export class App {
     this.userMenuOpen.set(false);
     this.cadastroMenuOpen.set(false);
     this.peopleMenuOpen.set(false);
+    this.documentosMenuOpen.set(false);
     this.financeiroMenuOpen.set(false);
     this.activeModule.set('dashboard');
   }
@@ -2751,6 +2769,7 @@ export class App {
 
   setModule(id: string) {
     this.activeModule.set(id);
+    if (this.documentosModules().some((module) => module.id === id)) this.documentosMenuOpen.set(true);
     if (this.cadastroModules().some((module) => module.id === id)) this.cadastroMenuOpen.set(true);
     if (this.financeiroModules().some((module) => module.id === id)) this.financeiroMenuOpen.set(true);
     if (this.peopleModules().some((module) => module.id === id)) this.peopleMenuOpen.set(true);
@@ -2846,6 +2865,7 @@ export class App {
     this.usuario.set(response.usuario);
     this.cadastroMenuOpen.set(false);
     this.peopleMenuOpen.set(false);
+    this.documentosMenuOpen.set(false);
     this.financeiroMenuOpen.set(false);
     this.prepararPerfil();
     this.reiniciarTimerInatividade();

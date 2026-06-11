@@ -72,7 +72,7 @@
 
       <ng-template #companyMenu>
         <button
-          *ngFor="let module of modules().slice(0, 2)"
+          *ngFor="let module of modules().slice(0, 1)"
           type="button"
           [class.active]="activeModule() === module.id"
           (click)="setModule(module.id)"
@@ -80,6 +80,31 @@
           <span class="nav-icon">{{ module.icon }}</span>
           <span>{{ module.label }}</span>
         </button>
+
+        <div class="nav-group">
+          <button
+            class="nav-group-toggle"
+            type="button"
+            [class.active]="activeModule().startsWith('documentos-')"
+            (click)="documentosMenuOpen.set(!documentosMenuOpen())"
+          >
+            <span class="nav-icon">▧</span>
+            <span>Documentos</span>
+            <b>{{ documentosMenuOpen() ? '⌃' : '⌄' }}</b>
+          </button>
+
+          <div class="nav-submenu" *ngIf="documentosMenuOpen()">
+            <button
+              *ngFor="let module of documentosModules()"
+              type="button"
+              [class.active]="activeModule() === module.id"
+              (click)="setModule(module.id)"
+            >
+              <span class="nav-icon">{{ module.icon }}</span>
+              <span>{{ module.label }}</span>
+            </button>
+          </div>
+        </div>
 
         <div class="nav-group nav-group-featured">
           <button
@@ -132,7 +157,7 @@
         </div>
 
         <button
-          *ngFor="let module of modules().slice(2, 3)"
+          *ngFor="let module of modules().slice(1, 2)"
           type="button"
           [class.active]="activeModule() === module.id"
           (click)="setModule(module.id)"
@@ -167,7 +192,7 @@
         </div>
 
         <button
-          *ngFor="let module of modules().slice(3, 4)"
+          *ngFor="let module of modules().slice(2, 3)"
           type="button"
           [class.active]="activeModule() === module.id"
           (click)="setModule(module.id)"
@@ -202,7 +227,7 @@
       </div>
 
         <button
-          *ngFor="let module of modules().slice(4)"
+          *ngFor="let module of modules().slice(3)"
           type="button"
           [class.active]="activeModule() === module.id"
           (click)="setModule(module.id)"
@@ -282,7 +307,7 @@
     <app-ponto-page *ngIf="!isSistemaAdmin() && activeModule() === 'ponto'" [vm]="vm"></app-ponto-page>
     <app-ferias-page *ngIf="!isSistemaAdmin() && activeModule() === 'ferias'" [vm]="vm"></app-ferias-page>
     <app-beneficios-page *ngIf="!isSistemaAdmin() && activeModule() === 'beneficios'" [vm]="vm"></app-beneficios-page>
-    <app-documentos-page *ngIf="!isSistemaAdmin() && activeModule() === 'documentos'" [vm]="vm"></app-documentos-page>
+    <app-documentos-page *ngIf="!isSistemaAdmin() && activeModule().startsWith('documentos-')" [vm]="vm"></app-documentos-page>
     <app-solicitacoes-page *ngIf="!isSistemaAdmin() && activeModule() === 'solicitacoes'" [vm]="vm"></app-solicitacoes-page>
     <app-recrutamento-page *ngIf="!isSistemaAdmin() && activeModule().startsWith('recrutamento-')" [vm]="vm"></app-recrutamento-page>
     <app-treinamentos-page *ngIf="!isSistemaAdmin() && activeModule() === 'treinamentos'" [vm]="vm"></app-treinamentos-page>

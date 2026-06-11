@@ -1,21 +1,16 @@
-<section class="panel fade-in">
+<section class="panel fade-in" *ngIf="vm.activeModule() === 'documentos-institucionais'">
   <div class="panel-title">
-    <div><h2>Documentos</h2><p>Controle documentos obrigatorios, modelos institucionais e validacoes.</p></div>
+    <div><h2>Documentos institucionais</h2><p>Controle modelos institucionais para admissao e demissao.</p></div>
     <div class="panel-title-actions">
       <span>{{ vm.filteredModelosDocumentosInstitucionais().length }} modelos</span>
       <button type="button" (click)="vm.abrirNovoModeloDocumentoInstitucional()">Novo modelo institucional</button>
-      <span>{{ vm.filteredDocumentos().length }} documentos</span>
-      <button type="button" (click)="vm.abrirNovoDocumentoModal()">Novo documento</button>
       <label class="search-box">
-        <span>Pesquisar documento</span>
-        <input name="documentoSearch" [ngModel]="vm.documentoSearch()" (ngModelChange)="vm.documentoSearch.set($event)" placeholder="Modelo, colaborador, tipo ou arquivo" />
+        <span>Pesquisar modelo</span>
+        <input name="modeloDocumentoSearch" [ngModel]="vm.documentoSearch()" (ngModelChange)="vm.documentoSearch.set($event)" placeholder="Modelo, tipo ou arquivo" />
       </label>
     </div>
   </div>
 
-  <div class="section-subtitle">
-    <h3>Modelos institucionais</h3>
-  </div>
   <div class="table-wrap excel-wrap">
     <table class="excel-table">
       <thead><tr><th>Titulo</th><th>Tipo</th><th>Uso</th><th>Arquivo</th><th>Texto extraido</th></tr></thead>
@@ -39,10 +34,21 @@
       </tbody>
     </table>
   </div>
+</section>
 
-  <div class="section-subtitle">
-    <h3>Documentos dos colaboradores</h3>
+<section class="panel fade-in" *ngIf="vm.activeModule() === 'documentos-colaborador'">
+  <div class="panel-title">
+    <div><h2>Documentos do colaborador</h2><p>Controle documentos obrigatorios, arquivos e validacoes dos colaboradores.</p></div>
+    <div class="panel-title-actions">
+      <span>{{ vm.filteredDocumentos().length }} documentos</span>
+      <button type="button" (click)="vm.abrirNovoDocumentoModal()">Novo documento</button>
+      <label class="search-box">
+        <span>Pesquisar documento</span>
+        <input name="documentoSearch" [ngModel]="vm.documentoSearch()" (ngModelChange)="vm.documentoSearch.set($event)" placeholder="Colaborador, tipo ou arquivo" />
+      </label>
+    </div>
   </div>
+
   <div class="table-wrap excel-wrap">
     <table class="excel-table">
       <thead><tr><th>Tipo</th><th>Colaborador</th><th>Arquivo</th><th>Obrigatorio</th><th>Status</th></tr></thead>
