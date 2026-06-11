@@ -61,7 +61,10 @@
         <h3>{{ vm.colaboradorForm.nome }}</h3>
         <span>{{ vm.nomeCargo(vm.colaboradorForm.cargoId) }} · {{ vm.colaboradorForm.status }}</span>
       </div>
-      <button type="button" (click)="vm.editarColaborador(vm.colaboradorForm)">Editar</button>
+      <div class="row-actions">
+        <button type="button" class="soft" (click)="vm.abrirDocumentacaoColaborador(vm.colaboradorForm)">Gerar documentacao</button>
+        <button type="button" (click)="vm.editarColaborador(vm.colaboradorForm)">Editar</button>
+      </div>
     </div>
 
     <section class="detail-section">
@@ -131,6 +134,54 @@
     </section>
   </div>
 
+</section>
+
+<section class="modal-backdrop" *ngIf="vm.colaboradorDocumentacaoModalOpen() && vm.colaboradorDocumentacaoSelecionado">
+  <div class="modal-card modal-card-wide pop">
+    <div class="modal-head">
+      <div>
+        <h2>Gerar documentacao</h2>
+        <p>{{ vm.colaboradorDocumentacaoSelecionado.nome }} · {{ vm.nomeCargo(vm.colaboradorDocumentacaoSelecionado.cargoId) }}</p>
+      </div>
+      <button type="button" (click)="vm.fecharDocumentacaoColaborador()">x</button>
+    </div>
+
+    <div class="document-model-grid" *ngIf="vm.modelosInstitucionaisDisponiveis().length; else semModelosInstitucionais">
+      <article
+        class="document-model-card selectable-document-card"
+        *ngFor="let modelo of vm.modelosInstitucionaisDisponiveis()"
+        [class.selected]="vm.documentoColaboradorSelecionado(modelo)"
+        (click)="vm.alternarDocumentoColaborador(modelo)"
+      >
+        <label class="document-select-check" (click)="$event.stopPropagation()">
+          <input
+            type="checkbox"
+            [ngModel]="vm.documentoColaboradorSelecionado(modelo)"
+            (ngModelChange)="vm.alternarDocumentoColaborador(modelo)"
+            [name]="'modeloColaborador' + modelo.id"
+          />
+        </label>
+        <div class="document-model-thumb">
+          <span>{{ vm.miniaturaDocumentoInstitucional(modelo) }}</span>
+        </div>
+        <div class="document-model-info">
+          <strong>{{ modelo.titulo }}</strong>
+          <small>{{ modelo.nomeArquivoModelo || modelo.tipoDocumento }}</small>
+          <span>{{ (modelo.conteudo || '').slice(0, 110) }}{{ (modelo.conteudo || '').length > 110 ? '...' : '' }}</span>
+        </div>
+      </article>
+    </div>
+
+    <ng-template #semModelosInstitucionais>
+      <div class="empty-cell">Nenhum documento institucional cadastrado.</div>
+    </ng-template>
+
+    <div class="modal-actions">
+      <span>{{ vm.colaboradorDocumentosSelecionados().length }} selecionado(s)</span>
+      <button type="button" class="soft" (click)="vm.fecharDocumentacaoColaborador()">Cancelar</button>
+      <button type="button" [disabled]="!vm.colaboradorDocumentosSelecionados().length" (click)="vm.imprimirDocumentacaoColaborador()">Imprimir documentacao</button>
+    </div>
+  </div>
 </section>
 
 <section class="modal-backdrop" *ngIf="vm.colaboradorModalOpen()">

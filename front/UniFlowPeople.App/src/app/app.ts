@@ -192,6 +192,7 @@ export class App {
   admissaoColaboradorModalOpen = signal(false);
   demissaoProcessoModalOpen = signal(false);
   colaboradorModalOpen = signal(false);
+  colaboradorDocumentacaoModalOpen = signal(false);
   treinamentoModalOpen = signal(false);
   epiModalOpen = signal(false);
   cargoEpiModalOpen = signal(false);
@@ -273,6 +274,8 @@ export class App {
   departamentoForm: any = this.novoDepartamento();
   cargoForm: any = this.novoCargo();
   colaboradorForm: any = this.novoColaborador();
+  colaboradorDocumentacaoSelecionado: any = null;
+  colaboradorDocumentosSelecionados = signal<number[]>([]);
   beneficioForm: any = this.novoBeneficio();
   vagaForm: any = this.novaVaga();
   candidatoForm: any = this.novoCandidato();
@@ -1618,6 +1621,46 @@ export class App {
     return this.documentosInstitucionais().filter((x) => !x.isModelo && x.demissaoProcessoId === item?.id);
   }
 
+  modelosInstitucionaisDisponiveis() {
+    return this.documentosInstitucionais()
+      .filter((x) => x.isModelo)
+      .sort((a, b) => String(a.titulo ?? '').localeCompare(String(b.titulo ?? '')));
+  }
+
+  abrirDocumentacaoColaborador(colaborador: any) {
+    this.colaboradorDocumentacaoSelecionado = { ...colaborador };
+    this.colaboradorDocumentosSelecionados.set([]);
+    this.colaboradorDocumentacaoModalOpen.set(true);
+  }
+
+  fecharDocumentacaoColaborador() {
+    this.colaboradorDocumentacaoModalOpen.set(false);
+    this.colaboradorDocumentacaoSelecionado = null;
+    this.colaboradorDocumentosSelecionados.set([]);
+  }
+
+  alternarDocumentoColaborador(modelo: any) {
+    if (!modelo?.id) return;
+    this.colaboradorDocumentosSelecionados.update((ids) =>
+      ids.includes(modelo.id) ? ids.filter((id) => id !== modelo.id) : [...ids, modelo.id],
+    );
+  }
+
+  documentoColaboradorSelecionado(modelo: any) {
+    return this.colaboradorDocumentosSelecionados().includes(modelo?.id);
+  }
+
+  documentosSelecionadosColaborador() {
+    const ids = this.colaboradorDocumentosSelecionados();
+    return this.modelosInstitucionaisDisponiveis().filter((modelo) => ids.includes(modelo.id));
+  }
+
+  miniaturaDocumentoInstitucional(modelo: any) {
+    const nome = String(modelo?.nomeArquivoModelo ?? modelo?.titulo ?? '');
+    const extensao = nome.includes('.') ? nome.split('.').pop() : modelo?.tipoDocumento;
+    return String(extensao || 'DOC').slice(0, 4).toUpperCase();
+  }
+
   urlModeloDocumentoAdmissao(modelo: any) {
     const apiOrigin = this.api.replace(/\/api\/?$/, '');
     return `${apiOrigin}/modelos/admissao/${encodeURIComponent(modelo.arquivo)}`;
@@ -2762,6 +2805,71 @@ export class App {
         <span>Responsavel da empresa</span>
       </div>
     `);
+  }
+
+  imprimirDocumentacaoColaborador() {
+    const colaborador = this.colaboradorDocumentacaoSelecionado;
+    const documentos = this.documentosSelecionadosColaborador();
+    if (!colaborador?.id || !documentos.length) {
+      this.notificar('Selecione ao menos um documento para imprimir.', 'error');
+      return;
+    }
+
+    this.imprimirHtml(
+      documentos
+        .map((documento) => this.renderizarDocumentoColaborador(documento, colaborador))
+        .join(''),
+    );
+  }
+
+  private renderizarDocumentoColaborador(documento: any, colaborador: any) {
+    const conteudo = this.personalizarConteudoDocumentoColaborador(documento.conteudo || '', colaborador);
+    return `
+      <section class="document-page document-template-page">
+        <h1>${this.escapeHtml(documento.titulo || documento.tipoDocumento || 'Documento institucional')}</h1>
+        <p><strong>Tipo:</strong> ${this.escapeHtml(documento.tipoDocumento || 'Institucional')} &nbsp; <strong>Data:</strong> ${this.formatDatePrint(new Date())}</p>
+        <div class="document-template-body">${this.textoParaHtmlDocumento(conteudo)}</div>
+        <div class="signatures">
+          <span>Assinatura do colaborador</span>
+          <span>Responsavel da empresa</span>
+        </div>
+      </section>
+    `;
+  }
+
+  private personalizarConteudoDocumentoColaborador(conteudo: string, colaborador: any) {
+    const dados: Record<string, string> = {
+      Nome: colaborador.nome ?? '',
+      NomeColaborador: colaborador.nome ?? '',
+      CPF: colaborador.cpf ?? '',
+      RG: colaborador.rg ?? '',
+      Email: colaborador.email ?? '',
+      Telefone: colaborador.telefone ?? '',
+      Matricula: colaborador.matricula ?? '',
+      Cargo: this.nomeCargo(colaborador.cargoId) ?? '',
+      Departamento: this.nomeDepartamento(colaborador.departamentoId) ?? '',
+      Filial: this.nomeFilial(colaborador.filialId) ?? '',
+      DataAdmissao: this.formatDatePrint(colaborador.dataAdmissao),
+      DataDemissao: this.formatDatePrint(colaborador.dataDemissao),
+      Salario: this.formatCurrencyPrint(colaborador.salario),
+      Data: this.formatDatePrint(new Date()),
+    };
+
+    let texto = conteudo || '';
+    for (const [chave, valor] of Object.entries(dados)) {
+      texto = texto.replace(new RegExp(`\\{\\{${chave}\\}\\}`, 'gi'), valor);
+    }
+
+    const cabecalho = [
+      `Nome: ${dados['Nome']}`,
+      `CPF: ${dados['CPF']}`,
+      `Cargo: ${dados['Cargo']}`,
+      `Data de admissao: ${dados['DataAdmissao']}`,
+    ]
+      .filter((linha) => !linha.endsWith(': '))
+      .join('\n');
+
+    return `${cabecalho}\n\n${texto}`.trim();
   }
 
   imprimirListaPresenca(treinamento: any) {

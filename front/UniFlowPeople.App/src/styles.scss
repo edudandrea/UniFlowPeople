@@ -1968,6 +1968,7 @@ textarea {
 }
 
 .document-model-card {
+  position: relative;
   display: grid;
   grid-template-columns: 64px minmax(0, 1fr);
   gap: 14px;
@@ -1981,6 +1982,45 @@ textarea {
   .row-actions {
     grid-column: 1 / -1;
     justify-content: flex-start;
+  }
+}
+
+.selectable-document-card {
+  padding-top: 38px;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+
+  &:hover,
+  &.selected {
+    border-color: rgba(31, 145, 38, 0.56);
+    box-shadow: 0 14px 32px rgba(31, 145, 38, 0.14);
+  }
+
+  &.selected {
+    background: linear-gradient(180deg, #ffffff, #f5fff1);
+  }
+}
+
+.document-select-check {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(120, 170, 126, 0.34);
+  border-radius: 8px;
+  background: #fff;
+
+  input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--green);
   }
 }
 

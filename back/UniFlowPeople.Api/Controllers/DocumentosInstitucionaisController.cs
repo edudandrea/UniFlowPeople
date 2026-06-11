@@ -109,7 +109,7 @@ public class DocumentosInstitucionaisController(
                 await arquivo.CopyToAsync(stream);
             }
 
-            var conteudo = await ExtrairTexto(tempPath, extension);
+            var conteudo = await ExtrairTextoSeguro(tempPath, extension);
             return new PreviewTextoModeloResponse(conteudo);
         }
         finally
@@ -154,10 +154,22 @@ public class DocumentosInstitucionaisController(
         documento.TipoArquivoModelo = string.IsNullOrWhiteSpace(arquivo.ContentType) ? "application/octet-stream" : arquivo.ContentType;
         documento.UrlArquivoModelo = $"{Request.Scheme}://{Request.Host}/uploads/modelos-institucionais/{fileName}";
 
-        var textoExtraido = await ExtrairTexto(filePath, extension);
+        var textoExtraido = await ExtrairTextoSeguro(filePath, extension);
         if (!string.IsNullOrWhiteSpace(textoExtraido))
         {
             documento.Conteudo = textoExtraido;
+        }
+    }
+
+    private static async Task<string> ExtrairTextoSeguro(string filePath, string extension)
+    {
+        try
+        {
+            return await ExtrairTexto(filePath, extension);
+        }
+        catch
+        {
+            return string.Empty;
         }
     }
 
@@ -189,9 +201,15 @@ public class DocumentosInstitucionaisController(
     private static string ExtrairTextoMelhorEsforco(byte[] bytes)
     {
         var raw = Encoding.UTF8.GetString(bytes);
-        var matches = Regex.Matches(raw, @"\(([^\)]{3,})\)|<([0-9A-Fa-f\s]{8,})>");
+        var latin = Encoding.Latin1.GetString(bytes);
+        var matches = Regex.Matches($"{raw} {latin}", @"\(([^\)]{3,})\)|<([0-9A-Fa-f\s]{8,})>|([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s.,;:!?ºª°()/+\-]{12,})");
         var parts = matches
-            .Select(match => match.Groups[1].Success ? match.Groups[1].Value : HexToText(match.Groups[2].Value))
+            .Select(match =>
+            {
+                if (match.Groups[1].Success) return match.Groups[1].Value;
+                if (match.Groups[2].Success) return HexToText(match.Groups[2].Value);
+                return match.Groups[3].Value;
+            })
             .Select(text => Regex.Unescape(text).Trim())
             .Where(text => Regex.IsMatch(text, @"[A-Za-zÀ-ÿ]"));
 
@@ -204,11 +222,18 @@ public class DocumentosInstitucionaisController(
         var clean = Regex.Replace(hex, @"\s+", "");
         if (clean.Length % 2 != 0) return string.Empty;
 
-        var bytes = Enumerable.Range(0, clean.Length / 2)
-            .Select(i => Convert.ToByte(clean.Substring(i * 2, 2), 16))
-            .ToArray();
+        try
+        {
+            var bytes = Enumerable.Range(0, clean.Length / 2)
+                .Select(i => Convert.ToByte(clean.Substring(i * 2, 2), 16))
+                .ToArray();
 
-        return Encoding.BigEndianUnicode.GetString(bytes);
+            return Encoding.BigEndianUnicode.GetString(bytes);
+        }
+        catch
+        {
+            return string.Empty;
+        }
     }
 
     private string WebRoot() => environment.WebRootPath ?? Path.Combine(environment.ContentRootPath, "wwwroot");
