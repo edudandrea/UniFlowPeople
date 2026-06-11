@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Dev\\UniflowPeople\\back\\uniflowpeople.api\\UniFlowPeople.Api.csproj": {}
+    "D:\\Dev\\UniflowPeople\\back\\UniFlowPeople.Api\\UniFlowPeople.Api.csproj": {}
   },
   "projects": {
-    "D:\\Dev\\UniflowPeople\\back\\uniflowpeople.api\\UniFlowPeople.Api.csproj": {
+    "D:\\Dev\\UniflowPeople\\back\\UniFlowPeople.Api\\UniFlowPeople.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Dev\\UniflowPeople\\back\\uniflowpeople.api\\UniFlowPeople.Api.csproj",
+        "projectUniqueName": "D:\\Dev\\UniflowPeople\\back\\UniFlowPeople.Api\\UniFlowPeople.Api.csproj",
         "projectName": "UniFlowPeople.Api",
-        "projectPath": "D:\\Dev\\UniflowPeople\\back\\uniflowpeople.api\\UniFlowPeople.Api.csproj",
+        "projectPath": "D:\\Dev\\UniflowPeople\\back\\UniFlowPeople.Api\\UniFlowPeople.Api.csproj",
         "packagesPath": "C:\\Users\\Eduardo\\.nuget\\packages\\",
-        "outputPath": "D:\\Dev\\UniflowPeople\\back\\uniflowpeople.api\\obj\\",
+        "outputPath": "D:\\Dev\\UniflowPeople\\back\\UniFlowPeople.Api\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Eduardo\\AppData\\Roaming\\NuGet\\NuGet.Config"

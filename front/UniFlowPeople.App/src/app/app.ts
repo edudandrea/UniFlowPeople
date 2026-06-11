@@ -1775,9 +1775,7 @@ export class App {
 
     this.http.post(`${this.api}/demissoes/${item.id}/concluir`, {}).subscribe({
       next: () => {
-        this.demissaoEtapaSelecionada.set(null);
-        this.carregarDados();
-        this.notificar('Fluxo demissional concluído e colaborador inativado.', 'success');
+        this.gerarDocumentacaoDemissaoAoConcluir(item);
       },
       error: () => this.notificar('Erro ao concluir demissão.', 'error'),
     });
@@ -2823,35 +2821,6 @@ export class App {
     `);
   }
 
-  imprimirDocumentosAdmissao(colaborador: any) {
-    const data = this.formatDatePrint(new Date());
-    const docs = [
-      'Termo de Ciência, Concordância e Adesão à Política Interna de Pausas para Café',
-      'Termo de Responsabilidade de Chaves e Senhas de Alarmes kONECT',
-      'Termo ciência Refeição KONECT',
-      'Alelo Alimentação - Termo Recebimento + Absenteísmo KONECT',
-      'Termo Celulares',
-      'Aditivo Contrato de Trabalho - KONECT - Imagem LGPD',
-    ];
-
-    this.imprimirHtml(
-      docs
-        .map(
-          (titulo) => `
-            <section class="document-page">
-              <h1>${this.escapeHtml(titulo)}</h1>
-              <p><strong>Colaborador:</strong> ${this.escapeHtml(colaborador.nome)}</p>
-              <p><strong>CPF:</strong> ${this.escapeHtml(colaborador.cpf ?? '')}</p>
-              <p><strong>Data:</strong> ${data}</p>
-              <p class="placeholder">Documento institucional para conferência, ciência e assinatura ao concluir o processo de admissão.</p>
-              <div class="signature">Assinatura do colaborador</div>
-            </section>
-          `,
-        )
-        .join(''),
-    );
-  }
-
   imprimirDocumentoInstitucional(documento: any) {
     if (!documento) return;
     this.imprimirHtml(`
@@ -3017,9 +2986,7 @@ export class App {
   private registrarDocumentosAdmissaoNoColaborador(colaborador: any, admissao: any) {
     const documentos = this.documentosAnexadosAdmissao(admissao);
     if (!colaborador?.id || !documentos.length) {
-      this.admissaoSelecionada = null;
-      this.carregarDados();
-      this.notificar('Colaborador cadastrado pela admissão.', 'success');
+      this.gerarDocumentacaoAdmissaoAoConcluir(admissao, 'Colaborador cadastrado pela admissao.');
       return;
     }
 
@@ -3036,14 +3003,58 @@ export class App {
 
     forkJoin(requests).subscribe({
       next: () => {
+        this.gerarDocumentacaoAdmissaoAoConcluir(admissao, 'Colaborador cadastrado e documentos vinculados.');
+      },
+      error: () => {
+        this.gerarDocumentacaoAdmissaoAoConcluir(
+          admissao,
+          'Colaborador cadastrado, mas nao foi possivel vincular todos os documentos.',
+          'error',
+        );
+      },
+    });
+  }
+
+  private gerarDocumentacaoAdmissaoAoConcluir(admissao: any, mensagemBase: string, tipoMensagem: MessageType = 'success') {
+    if (!admissao?.id) {
+      this.admissaoSelecionada = null;
+      this.carregarDados();
+      this.notificar(mensagemBase, tipoMensagem);
+      return;
+    }
+
+    this.http.post(`${this.api}/admissoes/${admissao.id}/documentos`, {}).subscribe({
+      next: () => {
         this.admissaoSelecionada = null;
         this.carregarDados();
-        this.notificar('Colaborador cadastrado e documentos vinculados.', 'success');
+        this.notificar(`${mensagemBase} Documentacao institucional gerada.`, tipoMensagem);
       },
       error: () => {
         this.admissaoSelecionada = null;
         this.carregarDados();
-        this.notificar('Colaborador cadastrado, mas não foi possível vincular todos os documentos.', 'error');
+        this.notificar(`${mensagemBase} Nao foi possivel gerar a documentacao institucional.`, 'error');
+      },
+    });
+  }
+
+  private gerarDocumentacaoDemissaoAoConcluir(item: any) {
+    if (!item?.id) {
+      this.demissaoEtapaSelecionada.set(null);
+      this.carregarDados();
+      this.notificar('Fluxo demissional concluido e colaborador inativado.', 'success');
+      return;
+    }
+
+    this.http.post(`${this.api}/demissoes/${item.id}/documentos`, {}).subscribe({
+      next: () => {
+        this.demissaoEtapaSelecionada.set(null);
+        this.carregarDados();
+        this.notificar('Fluxo demissional concluido e documentacao institucional gerada.', 'success');
+      },
+      error: () => {
+        this.demissaoEtapaSelecionada.set(null);
+        this.carregarDados();
+        this.notificar('Fluxo demissional concluido, mas nao foi possivel gerar a documentacao institucional.', 'error');
       },
     });
   }
