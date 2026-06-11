@@ -2048,11 +2048,46 @@ export class App {
     this.http.delete(`${this.api}/${item.endpoint}/${item.id}`).subscribe({
       next: () => {
         this.confirmDelete.set(null);
+        this.fecharModaisAposExclusao(item.endpoint);
         this.carregarDados();
         this.notificar('Registro excluído.', 'success');
       },
       error: () => this.notificar('Não foi possível excluir o registro.', 'error'),
     });
+  }
+
+  private fecharModaisAposExclusao(endpoint: string) {
+    this.genericEditModal.set(null);
+
+    if (endpoint === 'documentosColaboradores') {
+      this.documentoModalOpen.set(false);
+      this.documentoForm = this.novoDocumento();
+    }
+
+    if (endpoint === 'documentosInstitucionais') {
+      this.documentoInstitucionalModalOpen.set(false);
+      this.modeloDocumentoInstitucionalForm = this.novoModeloDocumentoInstitucional();
+      this.arquivoModeloDocumentoInstitucional = null;
+      this.extraindoTextoModeloDocumento.set(false);
+    }
+
+    this.usuarioModalOpen.set(false);
+    this.empresaModalOpen.set(false);
+    this.planoModalOpen.set(false);
+    this.contratoModalOpen.set(false);
+    this.cobrancaModalOpen.set(false);
+    this.colaboradorModalOpen.set(false);
+    this.treinamentoModalOpen.set(false);
+    this.epiModalOpen.set(false);
+    this.cargoEpiModalOpen.set(false);
+    this.colaboradorEpiModalOpen.set(false);
+    this.ferramentaAcessoModalOpen.set(false);
+    this.colaboradorFerramentaAcessoModalOpen.set(false);
+    this.etapaProcessoModalOpen.set(false);
+    this.vagaModalOpen.set(false);
+    this.candidatoModalOpen.set(false);
+    this.curriculoModalOpen.set(false);
+    this.solicitacaoModalOpen.set(false);
   }
 
   nomeEmpresa(id?: number) {
