@@ -203,6 +203,7 @@ export class App {
   curriculoModalOpen = signal(false);
   usuarioModalOpen = signal(false);
   documentoModalOpen = signal(false);
+  documentoInstitucionalModalOpen = signal(false);
   solicitacaoModalOpen = signal(false);
   empresaModalOpen = signal(false);
   planoModalOpen = signal(false);
@@ -293,6 +294,8 @@ export class App {
   feriasForm: any = this.novaFerias();
   pontoForm: any = this.novoPonto();
   documentoForm: any = this.novoDocumento();
+  modeloDocumentoInstitucionalForm: any = this.novoModeloDocumentoInstitucional();
+  arquivoModeloDocumentoInstitucional: File | null = null;
   beneficioColaboradorForm: any = this.novoBeneficioColaborador();
   solicitacaoForm: any = this.novaSolicitacao();
 
@@ -609,6 +612,13 @@ export class App {
   filteredDocumentos = computed(() =>
     this.filterBySignal(this.documentos(), this.documentoSearch(), ['tipoDocumento', 'nomeArquivo', 'urlArquivo'], (item) =>
       this.nomeColaborador(item.colaboradorId),
+    ),
+  );
+  filteredModelosDocumentosInstitucionais = computed(() =>
+    this.filterBySignal(
+      this.documentosInstitucionais().filter((x) => x.isModelo),
+      this.documentoSearch(),
+      ['tipoDocumento', 'titulo', 'conteudo', 'nomeArquivoModelo'],
     ),
   );
   filteredSolicitacoes = computed(() =>
@@ -1582,7 +1592,11 @@ export class App {
   }
 
   documentosDaAdmissao(item: any) {
-    return this.documentosInstitucionais().filter((x) => x.admissaoProcessoId === item?.id);
+    return this.documentosInstitucionais().filter((x) => !x.isModelo && x.admissaoProcessoId === item?.id);
+  }
+
+  documentosDaDemissao(item: any) {
+    return this.documentosInstitucionais().filter((x) => !x.isModelo && x.demissaoProcessoId === item?.id);
   }
 
   urlModeloDocumentoAdmissao(modelo: any) {
@@ -1644,6 +1658,18 @@ export class App {
     if (!item?.id) return;
 
     this.http.post(`${this.api}/admissoes/${item.id}/documentos`, {}).subscribe({
+      next: () => {
+        this.carregarDados();
+        this.notificar('Documentacao institucional gerada com sucesso.', 'success');
+      },
+      error: () => this.notificar('Erro ao gerar documentacao institucional.', 'error'),
+    });
+  }
+
+  gerarDocumentosDemissao(item: any) {
+    if (!item?.id) return;
+
+    this.http.post(`${this.api}/demissoes/${item.id}/documentos`, {}).subscribe({
       next: () => {
         this.carregarDados();
         this.notificar('Documentacao institucional gerada com sucesso.', 'success');
@@ -1751,6 +1777,51 @@ export class App {
   editarDocumento(item: any) {
     this.documentoForm = { ...item };
     this.documentoModalOpen.set(true);
+  }
+
+  abrirNovoModeloDocumentoInstitucional() {
+    this.modeloDocumentoInstitucionalForm = this.novoModeloDocumentoInstitucional();
+    this.arquivoModeloDocumentoInstitucional = null;
+    this.documentoInstitucionalModalOpen.set(true);
+  }
+
+  editarModeloDocumentoInstitucional(item: any) {
+    this.modeloDocumentoInstitucionalForm = { ...item };
+    this.arquivoModeloDocumentoInstitucional = null;
+    this.documentoInstitucionalModalOpen.set(true);
+  }
+
+  selecionarArquivoModeloDocumentoInstitucional(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.arquivoModeloDocumentoInstitucional = input.files?.[0] ?? null;
+  }
+
+  salvarModeloDocumentoInstitucional() {
+    const editando = !!this.modeloDocumentoInstitucionalForm.id;
+    const form = new FormData();
+    form.append('titulo', this.modeloDocumentoInstitucionalForm.titulo ?? '');
+    form.append('tipoDocumento', this.modeloDocumentoInstitucionalForm.tipoDocumento ?? 'Institucional');
+    form.append('conteudo', this.modeloDocumentoInstitucionalForm.conteudo ?? '');
+    form.append('documentoAdmissao', String(!!this.modeloDocumentoInstitucionalForm.documentoAdmissao));
+    form.append('documentoDemissao', String(!!this.modeloDocumentoInstitucionalForm.documentoDemissao));
+    if (this.arquivoModeloDocumentoInstitucional) {
+      form.append('arquivo', this.arquivoModeloDocumentoInstitucional);
+    }
+
+    const request = editando
+      ? this.http.put(`${this.api}/documentosInstitucionais/modelos/${this.modeloDocumentoInstitucionalForm.id}`, form)
+      : this.http.post(`${this.api}/documentosInstitucionais/modelos`, form);
+
+    request.subscribe({
+      next: () => {
+        this.modeloDocumentoInstitucionalForm = this.novoModeloDocumentoInstitucional();
+        this.arquivoModeloDocumentoInstitucional = null;
+        this.documentoInstitucionalModalOpen.set(false);
+        this.carregarDados();
+        this.notificar(editando ? 'Modelo institucional atualizado.' : 'Modelo institucional salvo.', 'success');
+      },
+      error: () => this.notificar('Erro ao salvar modelo institucional.', 'error'),
+    });
   }
 
   salvarSolicitacao() {
@@ -2638,6 +2709,19 @@ export class App {
     );
   }
 
+  imprimirDocumentoInstitucional(documento: any) {
+    if (!documento) return;
+    this.imprimirHtml(`
+      <h1>${this.escapeHtml(documento.titulo || documento.tipoDocumento || 'Documento institucional')}</h1>
+      <p><strong>Tipo:</strong> ${this.escapeHtml(documento.tipoDocumento || 'Institucional')} &nbsp; <strong>Gerado em:</strong> ${this.formatDatePrint(documento.dataGeracao || new Date())}</p>
+      <div class="document-template-body">${this.textoParaHtmlDocumento(documento.conteudo || '')}</div>
+      <div class="signatures">
+        <span>Assinatura do colaborador</span>
+        <span>Responsavel da empresa</span>
+      </div>
+    `);
+  }
+
   imprimirListaPresenca(treinamento: any) {
     const participantes = this.treinamentosColaboradores().filter((x) => x.treinamentoId === treinamento.id);
     const linhas = participantes
@@ -3346,6 +3430,16 @@ export class App {
       urlArquivo: '',
       obrigatorio: false,
       validado: false,
+    };
+  }
+
+  private novoModeloDocumentoInstitucional() {
+    return {
+      titulo: '',
+      tipoDocumento: 'Institucional',
+      conteudo: '',
+      documentoAdmissao: true,
+      documentoDemissao: false,
     };
   }
 

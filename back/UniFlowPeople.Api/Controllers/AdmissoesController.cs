@@ -235,13 +235,20 @@ public class AdmissoesController(
     {
         if (tenant.EmpresaId is null) return Forbid();
         var processo = await db.Admissoes
+            .Include(x => x.Colaborador)
             .Include(x => x.DocumentosInstitucionais)
             .FirstOrDefaultAsync(x => x.Id == id && x.EmpresaId == tenant.EmpresaId.Value);
         if (processo is null) return NotFound();
         if (processo.Status != "Admitido") return BadRequest("Conclua a admissao antes de gerar a documentacao institucional.");
         if (processo.DocumentosInstitucionais.Any()) return processo.DocumentosInstitucionais.ToList();
 
-        var documentos = GerarDocumentos(processo);
+        var modelos = await db.DocumentosInstitucionais
+            .AsNoTracking()
+            .Where(x => x.EmpresaId == tenant.EmpresaId.Value && x.IsModelo && x.DocumentoAdmissao)
+            .OrderBy(x => x.Titulo)
+            .ToListAsync();
+
+        var documentos = modelos.Select(modelo => GerarDocumento(processo, modelo)).ToArray();
         foreach (var documento in documentos)
         {
             db.DocumentosInstitucionais.Add(documento);
@@ -251,22 +258,57 @@ public class AdmissoesController(
         return documentos;
     }
 
-    private DocumentoInstitucional[] GerarDocumentos(AdmissaoProcesso processo) =>
-    [
-        NovoDocumento(processo, "Termo de admissao", $"Termo de admissao de {processo.NomeCandidato} para o cargo {processo.CargoPretendido}."),
-        NovoDocumento(processo, "Politica institucional", $"Declaro ciencia das politicas internas da empresa na data de admissao prevista {processo.DataPrevistaAdmissao:dd/MM/yyyy}."),
-        NovoDocumento(processo, "Checklist de onboarding", $"Checklist institucional gerado para {processo.NomeCandidato}.")
-    ];
-
-    private DocumentoInstitucional NovoDocumento(AdmissaoProcesso processo, string tipo, string conteudo) => new()
+    private DocumentoInstitucional GerarDocumento(AdmissaoProcesso processo, DocumentoInstitucional modelo) => new()
     {
         EmpresaId = processo.EmpresaId,
         ColaboradorId = processo.ColaboradorId,
         AdmissaoProcessoId = processo.Id,
-        TipoDocumento = tipo,
-        Titulo = tipo,
-        Conteudo = conteudo
+        ModeloDocumentoId = modelo.Id,
+        TipoDocumento = modelo.TipoDocumento,
+        Titulo = modelo.Titulo,
+        Conteudo = PersonalizarConteudoAdmissao(modelo.Conteudo, processo)
     };
+
+    private string PersonalizarConteudoAdmissao(string conteudo, AdmissaoProcesso processo)
+    {
+        var colaborador = processo.Colaborador;
+        var dados = new Dictionary<string, string?>
+        {
+            ["Nome"] = colaborador?.Nome ?? processo.NomeCandidato,
+            ["NomeColaborador"] = colaborador?.Nome ?? processo.NomeCandidato,
+            ["NomeCandidato"] = processo.NomeCandidato,
+            ["CPF"] = colaborador?.Cpf,
+            ["Email"] = colaborador?.Email ?? processo.Email,
+            ["Telefone"] = colaborador?.Telefone ?? processo.Telefone,
+            ["Cargo"] = colaborador is not null ? string.Empty : processo.CargoPretendido,
+            ["CargoPretendido"] = processo.CargoPretendido,
+            ["DataAdmissao"] = FormatarData(colaborador?.DataAdmissao ?? processo.DataPrevistaAdmissao),
+            ["DataPrevistaAdmissao"] = FormatarData(processo.DataPrevistaAdmissao),
+            ["Matricula"] = colaborador?.Matricula
+        };
+
+        return MontarDocumentoComDados(conteudo, "Dados do colaborador", dados);
+    }
+
+    private static string MontarDocumentoComDados(string conteudo, string tituloDados, Dictionary<string, string?> dados)
+    {
+        var texto = conteudo ?? string.Empty;
+        foreach (var (chave, valor) in dados)
+        {
+            texto = texto.Replace($"{{{{{chave}}}}}", valor ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+        }
+
+        var cabecalho = string.Join(Environment.NewLine, dados
+            .Where(x => !string.IsNullOrWhiteSpace(x.Value))
+            .Select(x => $"{SepararPalavras(x.Key)}: {x.Value}"));
+
+        return $"{tituloDados}{Environment.NewLine}{cabecalho}{Environment.NewLine}{Environment.NewLine}{texto}".Trim();
+    }
+
+    private static string FormatarData(DateTime? data) => data?.ToString("dd/MM/yyyy") ?? string.Empty;
+
+    private static string SepararPalavras(string texto) =>
+        System.Text.RegularExpressions.Regex.Replace(texto, "([a-z])([A-Z])", "$1 $2");
 
     private void RemoverArquivoFisico(string urlArquivo)
     {

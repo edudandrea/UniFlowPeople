@@ -87,6 +87,20 @@
                       <button type="button" [disabled]="!vm.podeConcluirDemissao(item)" (click)="vm.concluirDemissao(item)">
                         Efetivar demissão
                       </button>
+                      <button class="soft" type="button" *ngIf="item.status === 'Concluido'" (click)="vm.gerarDocumentosDemissao(item)">
+                        Gerar documentação institucional
+                      </button>
+                    </div>
+                    <div class="document-list" *ngIf="vm.documentosDaDemissao(item).length">
+                      <div class="document-preview" *ngFor="let doc of vm.documentosDaDemissao(item)">
+                        <div class="document-thumb">
+                          <span>DOC</span>
+                        </div>
+                        <div class="document-meta">
+                          <strong>{{ doc.titulo }}</strong>
+                          <button type="button" class="soft" (click)="vm.imprimirDocumentoInstitucional(doc)">Imprimir</button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

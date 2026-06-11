@@ -1627,8 +1627,18 @@ textarea {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    justify-content: flex-end;
-  }
+  justify-content: flex-end;
+}
+
+.section-subtitle {
+  margin: 18px 0 10px;
+}
+
+.section-subtitle h3 {
+  margin: 0;
+  color: #233045;
+  font-size: 1rem;
+}
 
   button {
     min-height: 32px;

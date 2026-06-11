@@ -422,24 +422,27 @@
       <button type="button" (click)="fecharModalDocumentacaoAdmissao()">×</button>
     </div>
 
-    <div class="document-model-grid">
-      <article class="document-model-card" *ngFor="let modelo of modelosDocumentosAdmissao">
+    <div class="document-model-grid" *ngIf="documentosDaAdmissao(admissaoSelecionada).length; else semDocumentosAdmissao">
+      <article class="document-model-card" *ngFor="let documento of documentosDaAdmissao(admissaoSelecionada)">
         <div class="document-model-thumb">
-          <span>{{ modelo.tipo }}</span>
+          <span>{{ documento.tipoDocumento }}</span>
         </div>
         <div class="document-model-info">
-          <strong>{{ modelo.titulo }}</strong>
-          <small>{{ modelo.arquivo }}</small>
+          <strong>{{ documento.titulo }}</strong>
+          <small>Gerado em {{ documento.dataGeracao | date: 'dd/MM/yyyy HH:mm' }}</small>
           <span>{{ nomeDocumentoAdmissao(admissaoSelecionada) || 'Nome pendente' }} · CPF {{ cpfDocumentoAdmissao(admissaoSelecionada) || 'pendente' }}</span>
         </div>
         <div class="row-actions">
-          <a class="soft-link" [href]="urlModeloDocumentoAdmissao(modelo)" target="_blank" rel="noopener">Abrir modelo</a>
-          <button type="button" (click)="imprimirModeloDocumentoAdmissao(modelo, admissaoSelecionada)">Imprimir</button>
+          <button type="button" (click)="imprimirDocumentoInstitucional(documento)">Imprimir</button>
         </div>
       </article>
     </div>
+    <ng-template #semDocumentosAdmissao>
+      <div class="empty-cell">Nenhuma documentação institucional gerada para este processo.</div>
+    </ng-template>
 
     <div class="modal-actions">
+      <button type="button" (click)="gerarDocumentosAdmissao()">Gerar documentação institucional</button>
       <button type="button" class="soft" (click)="fecharModalDocumentacaoAdmissao()">Fechar</button>
     </div>
   </div>

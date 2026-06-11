@@ -22,6 +22,7 @@ public class DemissoesController(AppDbContext db, ITenantContext tenant) : BaseT
         var processos = await db.Demissoes
             .Include(x => x.Colaborador)
             .Include(x => x.Etapas)
+            .Include(x => x.DocumentosInstitucionais)
             .Where(x => x.EmpresaId == tenant.EmpresaId.Value)
             .OrderByDescending(x => x.DataSolicitacao)
             .ToListAsync();
@@ -65,6 +66,7 @@ public class DemissoesController(AppDbContext db, ITenantContext tenant) : BaseT
             .AsNoTracking()
             .Include(x => x.Colaborador)
             .Include(x => x.Etapas)
+            .Include(x => x.DocumentosInstitucionais)
             .FirstOrDefaultAsync(x => x.Id == id && x.EmpresaId == tenant.EmpresaId.Value);
 
         if (processo is not null)
@@ -164,6 +166,35 @@ public class DemissoesController(AppDbContext db, ITenantContext tenant) : BaseT
         return NoContent();
     }
 
+    [HttpPost("{id:int}/documentos")]
+    [Authorize(Roles = Roles.AdminOrRh)]
+    public async Task<ActionResult<IEnumerable<DocumentoInstitucional>>> GerarDocumentosInstitucionais(int id)
+    {
+        if (tenant.EmpresaId is null) return Forbid();
+        var processo = await db.Demissoes
+            .Include(x => x.Colaborador)
+            .Include(x => x.DocumentosInstitucionais)
+            .FirstOrDefaultAsync(x => x.Id == id && x.EmpresaId == tenant.EmpresaId.Value);
+        if (processo is null) return NotFound();
+        if (processo.Status != "Concluido") return BadRequest("Conclua a demissao antes de gerar a documentacao institucional.");
+        if (processo.DocumentosInstitucionais.Any()) return processo.DocumentosInstitucionais.ToList();
+
+        var modelos = await db.DocumentosInstitucionais
+            .AsNoTracking()
+            .Where(x => x.EmpresaId == tenant.EmpresaId.Value && x.IsModelo && x.DocumentoDemissao)
+            .OrderBy(x => x.Titulo)
+            .ToListAsync();
+
+        var documentos = modelos.Select(modelo => GerarDocumento(processo, modelo)).ToArray();
+        foreach (var documento in documentos)
+        {
+            db.DocumentosInstitucionais.Add(documento);
+        }
+
+        await db.SaveChangesAsync();
+        return documentos;
+    }
+
     private async Task<List<EtapaProcessoConfig>> EtapasConfig(string tipoProcesso)
     {
         if (tenant.EmpresaId is null) return EtapasPadrao();
@@ -209,4 +240,56 @@ public class DemissoesController(AppDbContext db, ITenantContext tenant) : BaseT
 
         processo.Status = etapaAtual?.Nome ?? "Pronto para efetivar";
     }
+
+    private DocumentoInstitucional GerarDocumento(DemissaoProcesso processo, DocumentoInstitucional modelo) => new()
+    {
+        EmpresaId = processo.EmpresaId,
+        ColaboradorId = processo.ColaboradorId,
+        DemissaoProcessoId = processo.Id,
+        ModeloDocumentoId = modelo.Id,
+        TipoDocumento = modelo.TipoDocumento,
+        Titulo = modelo.Titulo,
+        Conteudo = PersonalizarConteudoDemissao(modelo.Conteudo, processo)
+    };
+
+    private string PersonalizarConteudoDemissao(string conteudo, DemissaoProcesso processo)
+    {
+        var colaborador = processo.Colaborador;
+        var dados = new Dictionary<string, string?>
+        {
+            ["Nome"] = colaborador.Nome,
+            ["NomeColaborador"] = colaborador.Nome,
+            ["CPF"] = colaborador.Cpf,
+            ["Email"] = colaborador.Email,
+            ["Telefone"] = colaborador.Telefone,
+            ["Matricula"] = colaborador.Matricula,
+            ["TipoDemissao"] = processo.TipoDemissao,
+            ["DataSolicitacao"] = FormatarData(processo.DataSolicitacao),
+            ["DataDesligamento"] = FormatarData(processo.DataDesligamento),
+            ["Motivo"] = processo.Motivo,
+            ["Observacoes"] = processo.Observacoes
+        };
+
+        return MontarDocumentoComDados(conteudo, "Dados do desligamento", dados);
+    }
+
+    private static string MontarDocumentoComDados(string conteudo, string tituloDados, Dictionary<string, string?> dados)
+    {
+        var texto = conteudo ?? string.Empty;
+        foreach (var (chave, valor) in dados)
+        {
+            texto = texto.Replace($"{{{{{chave}}}}}", valor ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+        }
+
+        var cabecalho = string.Join(Environment.NewLine, dados
+            .Where(x => !string.IsNullOrWhiteSpace(x.Value))
+            .Select(x => $"{SepararPalavras(x.Key)}: {x.Value}"));
+
+        return $"{tituloDados}{Environment.NewLine}{cabecalho}{Environment.NewLine}{Environment.NewLine}{texto}".Trim();
+    }
+
+    private static string FormatarData(DateTime? data) => data?.ToString("dd/MM/yyyy") ?? string.Empty;
+
+    private static string SepararPalavras(string texto) =>
+        System.Text.RegularExpressions.Regex.Replace(texto, "([a-z])([A-Z])", "$1 $2");
 }

@@ -15,5 +15,6 @@ namespace UniFlowPeople.Api.Models
         public Empresa Empresa { get; set; } = null!;
         public Colaborador Colaborador { get; set; } = null!;
         public ICollection<DemissaoEtapa> Etapas { get; set; } = new List<DemissaoEtapa>();
+        public ICollection<DocumentoInstitucional> DocumentosInstitucionais { get; set; } = new List<DocumentoInstitucional>();
     }
 }

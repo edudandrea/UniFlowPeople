@@ -239,6 +239,18 @@ namespace UniFlowPeople.Api.Data
                 .HasForeignKey(x => x.AdmissaoProcessoId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            modelBuilder.Entity<DocumentoInstitucional>()
+                .HasOne(x => x.DemissaoProcesso)
+                .WithMany(x => x.DocumentosInstitucionais)
+                .HasForeignKey(x => x.DemissaoProcessoId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<DocumentoInstitucional>()
+                .HasOne(x => x.ModeloDocumento)
+                .WithMany()
+                .HasForeignKey(x => x.ModeloDocumentoId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             modelBuilder.Entity<DemissaoProcesso>()
                 .HasOne(x => x.Colaborador)
                 .WithMany()
